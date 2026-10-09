@@ -1,0 +1,2238 @@
+[
+  {
+    "collection": "checklists",
+    "key": "visa",
+    "data": {
+      "title": "Visa",
+      "description": "Working Holiday Visa for NZ, plus the longer-term visa question. Re-open the INZ pages before acting; rules change.",
+      "area": "visa",
+      "phase": "now",
+      "order": 1
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "leaving-nl",
+    "data": {
+      "title": "Leaving NL (deregistration & insurance)",
+      "description": "What to arrange in the Netherlands before you deregister from the BRP: DigiD, AOW/Anw, tax, DUO, post. The actual deregistration is in Departure week.",
+      "area": "admin",
+      "phase": "before-departure",
+      "order": 2
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "health-insurance",
+    "data": {
+      "title": "Health & insurance",
+      "description": "A Working Holiday Visa holder is not covered by NZ public healthcare (ACC covers accidents only), so the policy must cover illness, hospital, evacuation and repatriation.",
+      "area": "health",
+      "phase": "before-departure",
+      "order": 3
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "money",
+    "data": {
+      "title": "Banking & money",
+      "description": "Dutch account, Wise, NZ bank account and visa funds proof.",
+      "area": "finance",
+      "phase": "before-departure",
+      "order": 4
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "phone-driving",
+    "data": {
+      "title": "Phone & driving licence",
+      "description": "Keep a Dutch number for DigiD and banking; IDP for driving in NZ.",
+      "area": "travel",
+      "phase": "before-departure",
+      "order": 5
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "support",
+    "data": {
+      "title": "Support raising",
+      "description": "Building a team of monthly partners: target EUR 1,000/month (minimum EUR 750), about 40 partners at ~EUR 25 average, roughly 8-10 conversations a week from October to December.",
+      "area": "support",
+      "phase": "now",
+      "order": 6
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "newsletter",
+    "data": {
+      "title": "Newsletter & website",
+      "description": "Self-hosted site and newsletter (Cloudflare + Brevo). Setup steps from missions/website/README.md.",
+      "area": "newsletter",
+      "phase": "now",
+      "order": 7
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "selling-housing",
+    "data": {
+      "title": "Selling & housing",
+      "description": "Ending rent and subscriptions, deciding what to sell, keep or store.",
+      "area": "selling",
+      "phase": "before-departure",
+      "order": 8
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "packing",
+    "data": {
+      "title": "Packing",
+      "description": "Packing tasks. The items themselves live in the packing list.",
+      "area": "packing",
+      "phase": "before-departure",
+      "order": 9
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "departure-week",
+    "data": {
+      "title": "Departure week",
+      "description": "Thu 31 Dec - Tue 5 Jan. Deregistration window falls over New Year: 1 Jan is a public holiday, 2-3 Jan is a weekend.",
+      "area": "travel",
+      "phase": "departure-week",
+      "order": 10
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "arrival",
+    "data": {
+      "title": "Arrival in Queenstown",
+      "description": "First weeks in NZ.",
+      "area": "ywam",
+      "phase": "arrival",
+      "order": 11
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "from-abroad",
+    "data": {
+      "title": "Ongoing from abroad",
+      "description": "Recurring and later tasks once you have left: Dutch admin from abroad, newsletter rhythm, partner care.",
+      "area": "admin",
+      "phase": "ongoing",
+      "order": 12
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-ask-ywam-which-visa",
+    "data": {
+      "title": "Ask YWAM Queenstown in writing which visa they advise for your role",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "high",
+      "dueDate": "2026-10-11",
+      "notes": "Also ask whether they have other Dutch or European staff on a Working Holiday Visa. Their website does not cover visas. This answer decides which visa you need.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown",
+          "label": "YWAM Queenstown"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 1
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-ask-ywam-role",
+    "data": {
+      "title": "Confirm with YWAM: DTS or staff first, start date and monthly staff fee",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "high",
+      "dueDate": "2026-10-11",
+      "sourceUrl": "https://www.ywamqueenstown.com/about-dts",
+      "notes": "January DTS intakes: Arise, MTB, Sports, Worship (12 weeks lecture in NZ + ~10 weeks outreach). A DTS lecture phase counts as study/training (max 6 months on the WHV). Going straight onto staff: unpaid volunteering for food/bed counts as work, which the WHV allows as long as it is temporary.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 2
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-ask-ywam-beyond-12",
+    "data": {
+      "title": "Ask YWAM their plan for people who want to stay beyond 12 months",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2026-10-11",
+      "notes": "The WHV can be granted only once and lasts 12 months.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 3
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-check-passport",
+    "data": {
+      "title": "Check passport is valid until at least early April 2028",
+      "status": "todo",
+      "area": "visa",
+      "priority": "high",
+      "dueDate": "2026-10-11",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/netherlands-working-holiday-visa/",
+      "notes": "Must be valid at least 3 months after the visa ends. Renewing takes about 1 week at the gemeente. Also check you are 30 or younger on the application date.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "passport",
+          "label": "Passport"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 4
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-funds",
+    "data": {
+      "title": "Have at least NZD 4,200 visible in your account for the visa",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2026-10-18",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/netherlands-working-holiday-visa/",
+      "notes": "Bank or card statements showing NZD 4,200+ for living costs when you apply and when you fly, plus a ticket out or separate money to buy one. Check the current EUR rate.",
+      "links": [
+        {
+          "collection": "budget",
+          "key": "visa-funds-proof"
+        },
+        {
+          "collection": "documents",
+          "key": "funds-statement"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 5
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-apply-whv",
+    "data": {
+      "title": "Apply for the Working Holiday Visa",
+      "status": "todo",
+      "area": "visa",
+      "priority": "high",
+      "dueDate": "2026-10-18",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/netherlands-working-holiday-visa/",
+      "notes": "Once YWAM confirms. Fee from NZD 770; 80% decided within 2 weeks, applying by 18 Oct leaves margin for extra requests (X-ray, medical or police certificate only if INZ asks). You must enter NZ within 12 months of issue or the visa lapses, and you can't get another one.",
+      "links": [
+        {
+          "collection": "budget",
+          "key": "visa-fee-whv"
+        },
+        {
+          "collection": "documents",
+          "key": "working-holiday-visa"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 6
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-onward-ticket",
+    "data": {
+      "title": "Arrange onward ticket or separate funds to buy one",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/netherlands-working-holiday-visa/",
+      "notes": "Required for the WHV on top of the NZD 4,200 funds.",
+      "checklistId": "visa",
+      "order": 7
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-nzeta-option",
+    "data": {
+      "title": "Decide on the NZeTA route for a DTS (only if YWAM agrees)",
+      "status": "todo",
+      "area": "visa",
+      "priority": "low",
+      "dueDate": "2026-10-18",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/visa-waiver-visitor-visa",
+      "notes": "Dutch citizens can enter visa-free on an NZeTA for up to 3 months and study up to 3 months in any 12, which covers a 12-week lecture phase; then return on the WHV for 12 months of staff time (~18 months in total). Catches: onward ticket needed, no reward-based volunteering on the NZeTA, and the WHV must be issued within 12 months of re-entry. Only worth it if YWAM confirms DTS students come in as visitors.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 8
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-save-approval",
+    "data": {
+      "title": "Save the visa approval letter in Documents (offline)",
+      "status": "todo",
+      "area": "visa",
+      "priority": "normal",
+      "notes": "Carry it printed and on your phone when you fly.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "working-holiday-visa"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 9
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-religious-worker-evidence",
+    "data": {
+      "title": "Start collecting evidence for a possible Religious Worker Work Visa",
+      "status": "todo",
+      "area": "visa",
+      "priority": "normal",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/religious-worker-work-visa/",
+      "notes": "Up to 2 years (4 in total), from NZD 1,355, sponsored by a registered religious charity. Needs at least 2 years of religious training and/or work experience; religious study alone doesn't count as work. A DTS plus one staff year likely isn't enough on its own; earlier church or youth work in NL might count. Collect certificates, role descriptions and letters from leaders.",
+      "checklistId": "visa",
+      "order": 10
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "visa-month6-talk",
+    "data": {
+      "title": "Talk to YWAM about what comes after month 12",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2027-07-01",
+      "sourceUrl": "https://www.immigration.govt.nz/visas/religious-worker-work-visa/",
+      "notes": "Around month 6. The WHV ends ~Jan 2028; options are the Religious Worker visa or another route.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "visa",
+      "order": 11
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-digid-setup",
+    "data": {
+      "title": "Set up DigiD app with ID check and SMS check",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2026-10-31",
+      "sourceUrl": "https://www.digid.nl/inlogmethodes/digid-app/",
+      "notes": "Do this before you deregister: applying from abroad later only works at a counter. The ID check scans your passport chip. Add your phone number before you change phones. Needed for online deregistration.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "digid-backup"
+        }
+      ],
+      "checklistId": "leaving-nl",
+      "order": 12
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-gemeente-online-form",
+    "data": {
+      "title": "Check your gemeente's online emigration form",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2026-10-31",
+      "sourceUrl": "https://www.denhaag.nl/nl/verhuizen-en-migratie/vertrek-naar-het-buitenland-emigratie-doorgeven/",
+      "notes": "Most gemeenten let you report emigration online with DigiD if you move alone (example link: Den Haag). Over New Year the counter is open on at most two days of your window, so plan for online.",
+      "checklistId": "leaving-nl",
+      "order": 13
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-berichtenbox",
+    "data": {
+      "title": "Turn on MijnOverheid Berichtenbox",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "sourceUrl": "https://www.nederlandwereldwijd.nl/rni/adres-wijzigen",
+      "notes": "After deregistering the government only reaches you by post via your RNI address; the Berichtenbox gives you digital post.",
+      "checklistId": "leaving-nl",
+      "order": 14
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-duo-check",
+    "data": {
+      "title": "Check whether DUO applies (study debt or student finance)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "sourceUrl": "https://duo.nl/particulieren/terugbetaler/buitenland/aflossen-vanuit-het-buitenland.asp",
+      "notes": "Repayment continues abroad; student finance stops. Outside SEPA you transfer each month yourself or pay once a year (request in October, pay by 31 December). For a lower, income-based amount send DUO proof of foreign income.",
+      "checklistId": "leaving-nl",
+      "order": 15
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-belastingdienst-voorlopig",
+    "data": {
+      "title": "Stop or adjust any voorlopige aanslag at the Belastingdienst",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "sourceUrl": "https://belastingdienst.nl/wps/wcm/connect/nl/buitenland/content/emigreren-checklist",
+      "notes": "2027 is your emigration year.",
+      "checklistId": "leaving-nl",
+      "order": 16
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-aow-decision",
+    "data": {
+      "title": "Decide on voluntary AOW (and Anw) insurance",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2026-12-07",
+      "sourceUrl": "https://www.svb.nl/nl/vv/",
+      "notes": "No AOW build-up while abroad: each uninsured year costs 2% of your future AOW. You can insure voluntarily with the SVB up to 1 year after leaving (deadline ~early Jan 2028). Premium is income-based, probably low on a support income. Anw (survivor's benefit) can be insured alongside; mainly relevant with a partner or kids. Background: https://www.rijksoverheid.nl/vraag-en-antwoord/uitkering-meenemen-naar-buitenland/bouw-ik-aow-op-als-ik-in-het-buitenland-ga-wonen-of-werken / https://www.rijksoverheid.nl/vraag-en-antwoord/algemene-nabestaandenwet-anw/kan-ik-mezelf-vrijwillig-verzekeren-voor-de-algemene-nabestaandenwet-anw",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "abroad-aow-apply"
+        }
+      ],
+      "checklistId": "leaving-nl",
+      "order": 17
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-rni-post-address",
+    "data": {
+      "title": "Choose a reachable postal address for the RNI",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-12-15",
+      "sourceUrl": "https://www.nederlandwereldwijd.nl/rni/adres-wijzigen",
+      "notes": "YWAM's address, or a parent's for post. You keep your BSN and are registered in the RNI after deregistering.",
+      "checklistId": "leaving-nl",
+      "order": 18
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "nl-zorg-wlz-check",
+    "data": {
+      "title": "Confirm your Dutch basic health insurance has to stop",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "normal",
+      "sourceUrl": "https://www.nederlandwereldwijd.nl/zorgverzekering-buitenland/check",
+      "dueDate": "2026-11-15",
+      "notes": "Living and volunteering abroad without a Dutch employer means you're no longer Wlz-insured, so the basic insurance must stop; staying insured wrongly can lead to claims being clawed back. Unsure? Ask the SVB for a Wlz ruling.",
+      "checklistId": "leaving-nl",
+      "order": 19
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-ask-ywam-insurer",
+    "data": {
+      "title": "Ask YWAM Queenstown (and YWAM NL) which insurer their international staff use",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "normal",
+      "dueDate": "2026-10-25",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "health-insurance",
+      "order": 20
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-compare-quotes",
+    "data": {
+      "title": "Compare health/travel insurance quotes",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "high",
+      "dueDate": "2026-11-15",
+      "sourceUrl": "https://www.govt.nz/browse/health/public-health-services/healthcare-on-a-work-visa/",
+      "notes": "Compare a Dutch working-holiday/emigrant policy with an international health policy used by mission organisations. Check each quote for: 12 months (or longer), illness + hospital + emergency evacuation + repatriation, cover during voluntary work, outreach countries (some regions excluded), winter and adventure sports (Queenstown; MTB/Ski/Sports DTS), dental emergencies, liability, belongings (laptop, phone). The visa requires full medical insurance incl. hospital for the whole stay.",
+      "checklistId": "health-insurance",
+      "order": 21
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-buy-insurance",
+    "data": {
+      "title": "Buy health/travel insurance starting 5 Jan 2027",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "high",
+      "dueDate": "2026-11-30",
+      "notes": "Certificate needed to fly; carry it printed and on your phone. Start date must match the day your Dutch insurance stops.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "insurance-policy"
+        },
+        {
+          "collection": "tasks",
+          "key": "dep-cancel-zorgverzekering"
+        }
+      ],
+      "checklistId": "health-insurance",
+      "order": 22
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-vaccinations",
+    "data": {
+      "title": "Check routine vaccinations are current (MMR/BMR, DTP)",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "notes": "NZ requires no vaccinations for entry, but measles has circulated in NZ recently. Ask your GP or check your record at the GGD.",
+      "checklistId": "health-insurance",
+      "order": 23
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-ggd-consult",
+    "data": {
+      "title": "Book a GGD travel-vaccination consult (if outreach)",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "sourceUrl": "https://www.lcr.nl/",
+      "notes": "6 to 8 weeks before leaving. The outreach destination decides the rest (hepatitis A, typhoid, malaria prophylaxis). If the destination is only known later, book before outreach instead.",
+      "checklistId": "health-insurance",
+      "order": 24
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-gp",
+    "data": {
+      "title": "GP check-up",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "health-insurance",
+      "order": 25
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-dentist",
+    "data": {
+      "title": "Dentist check-up",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "health-insurance",
+      "order": 26
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-prescriptions",
+    "data": {
+      "title": "Get 3 months of repeat prescriptions plus a letter for medication you carry",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-12-15",
+      "links": [
+        {
+          "collection": "packing",
+          "key": "medication"
+        }
+      ],
+      "checklistId": "health-insurance",
+      "order": 27
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-bank-nonresident",
+    "data": {
+      "title": "Ask your bank about rules for non-residents",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "notes": "Keep your Dutch account. Some banks have rules for non-residents; asking now leaves time to switch banks if needed.",
+      "checklistId": "money",
+      "order": 28
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-wise",
+    "data": {
+      "title": "Open a Wise (or similar) account for EUR to NZD",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "checklistId": "money",
+      "order": 29
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-certified-copy",
+    "data": {
+      "title": "Get a certified passport copy for the NZ bank application",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-12-15",
+      "sourceUrl": "https://nzpocketguide.com/how-to-open-new-zealand-bank-account/",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "passport"
+        }
+      ],
+      "checklistId": "money",
+      "order": 30
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-nz-bank-apply",
+    "data": {
+      "title": "Send the ANZ or BNZ account application",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-12-24",
+      "sourceUrl": "https://nzpocketguide.com/how-to-open-new-zealand-bank-account/",
+      "notes": "ANZ and BNZ are the easiest for working-holiday makers. ANZ accepts applications up to 90 days before arrival; send it ~10 days before you fly. Needs a migrant form, certified passport copy, proof of Dutch address and your visa. Before arrival it can only receive money. Source is secondary, so check with the bank.",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "money-certified-copy"
+        },
+        {
+          "collection": "tasks",
+          "key": "arr-activate-bank"
+        }
+      ],
+      "checklistId": "money",
+      "order": 31
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-gifts-tax-nz",
+    "data": {
+      "title": "Get YWAM Queenstown or IRD to confirm how support gifts are taxed in NZ",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-12-15",
+      "sourceUrl": "https://www.ird.govt.nz/topics/tax-residency/temporary-tax-exemption",
+      "notes": "Gifts are normally not taxable, but money that looks like payment for work could be. Routing support through YWAM Netherlands or another ANBI keeps this clean. Confirm before monthly support starts.",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        },
+        {
+          "collection": "tasks",
+          "key": "sup-anbi"
+        }
+      ],
+      "checklistId": "money",
+      "order": 32
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "drive-check-licence",
+    "data": {
+      "title": "Check your rijbewijs expiry date",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-10-11",
+      "sourceUrl": "https://www.nzta.govt.nz/driver-licences/new-residents-and-visitors/driving-on-an-overseas-licence/",
+      "notes": "If it expires within ~2 years, renew at your gemeente before leaving; renewing from abroad is much harder.",
+      "checklistId": "phone-driving",
+      "order": 33
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "phone-dutch-number",
+    "data": {
+      "title": "Get a Dutch prepaid SIM/eSIM number if you are switching",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-12-07",
+      "notes": "DigiD SMS checks and Dutch bank verification often still go to a Dutch number. Check how long prepaid credit stays valid without top-ups. Change the number in DigiD before cancelling the old one.",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "nl-digid-setup"
+        }
+      ],
+      "checklistId": "phone-driving",
+      "order": 34
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "phone-cancel-contract",
+    "data": {
+      "title": "Give notice on your phone contract so it ends in early January",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "notes": "Notice periods are often 1 month. Change your number in DigiD first if you are switching numbers.",
+      "checklistId": "phone-driving",
+      "order": 35
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "drive-idp",
+    "data": {
+      "title": "Get an International Driving Permit at the ANWB",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-12-18",
+      "sourceUrl": "https://www.nzta.govt.nz/driver-licences/new-residents-and-visitors/driving-on-an-overseas-licence/",
+      "notes": "Valid 1 year from issue, so get it mid-December rather than November. You can drive on a valid foreign licence for up to 12 months from arrival; if it isn't in English you need the IDP or an accurate translation. Always carry it with your Dutch licence.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "idp-licence"
+        }
+      ],
+      "checklistId": "phone-driving",
+      "order": 36
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-reflection",
+    "data": {
+      "title": "Answer the reflection questions in 1-visie.md",
+      "status": "todo",
+      "area": "support",
+      "priority": "high",
+      "dueDate": "2026-10-11",
+      "notes": "Write fast and unfiltered (20 min per block), polish a day later.",
+      "checklistId": "support",
+      "order": 37
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-vision-sentence",
+    "data": {
+      "title": "Write your vision in one sentence (NL and EN)",
+      "status": "todo",
+      "area": "support",
+      "priority": "high",
+      "dueDate": "2026-10-11",
+      "notes": "Template: Ik ga naar Queenstown om [wie] te [wat je doet], zodat [wat er verandert]. Put it on the website, prayer card and pitch once final.",
+      "checklistId": "support",
+      "order": 38
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-calling-statement",
+    "data": {
+      "title": "Write the half-A4 calling statement (NL and EN)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-14",
+      "notes": "Who I am / How I got here / Where I'm going / Why / What I'm asking (EUR 750-1,000 per month).",
+      "checklistId": "support",
+      "order": 39
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-review-vision",
+    "data": {
+      "title": "Have two people read your vision (one close, one outside church)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-16",
+      "checklistId": "support",
+      "order": 40
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-story-lengths",
+    "data": {
+      "title": "Practise your story out loud in 30 seconds, 3 minutes and 10 minutes",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "checklistId": "support",
+      "order": 41
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-names-list",
+    "data": {
+      "title": "Make a names list of 150+ people and code them A/B/C/K",
+      "status": "todo",
+      "area": "support",
+      "priority": "high",
+      "dueDate": "2026-10-14",
+      "notes": "Write down everyone, not just likely givers: family, church, friends, school, work, sport/hobbies, neighbours, YWAM contacts, local business owners, phone/Instagram/Facebook contacts. A = close, personal talk first; B = good contact, talk or video call; C = looser, personal message + newsletter invite; K = churches, groups, businesses.",
+      "checklistId": "support",
+      "order": 42
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-pitch-cards",
+    "data": {
+      "title": "Fill in and print the pitch and prayer/response cards",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-14",
+      "notes": "Pitch: support/2-pitch.html (budget lines are still blank). Cards: website/print/cards.html.",
+      "checklistId": "support",
+      "order": 43
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-anbi",
+    "data": {
+      "title": "Ask Jeugd met een Opdracht NL (or your home church) about receiving gifts via their ANBI",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2026-10-18",
+      "notes": "Gifts via an ANBI are tax-deductible for Dutch givers; a periodic gift (5+ years) is fully deductible without threshold. Ask whether they can receive gifts for you and what it costs. Not checked for your situation; confirm before putting it on the pitch. Fallback: a separate account used only for gifts (not deductible).",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "web-account-details"
+        }
+      ],
+      "checklistId": "support",
+      "order": 44
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-evenings",
+    "data": {
+      "title": "Block fixed evenings for 8-10 support conversations per week",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-14",
+      "checklistId": "support",
+      "order": 45
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-first-20",
+    "data": {
+      "title": "Hold the first 20 conversations (A-list, closest people)",
+      "status": "todo",
+      "area": "support",
+      "priority": "high",
+      "dueDate": "2026-10-28",
+      "notes": "Use 3-gesprek-script.md. Every conversation ends with a concrete next step and date in the tracker. About one in two or three personal conversations becomes a monthly partner (a rule of thumb, not a guarantee).",
+      "checklistId": "support",
+      "order": 46
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-pastor",
+    "data": {
+      "title": "Meet the pastor or mission committee of your church",
+      "status": "todo",
+      "area": "church",
+      "priority": "high",
+      "dueDate": "2026-10-25",
+      "notes": "Ask whether they will formally send you out, whether a contribution from the mission budget is possible, and whether you can speak in a service or church evening.",
+      "checklistId": "support",
+      "order": 47
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-diaconie",
+    "data": {
+      "title": "Ask the diaconie/ZWO committee about procedure and deadlines",
+      "status": "todo",
+      "area": "church",
+      "priority": "high",
+      "dueDate": "2026-10-25",
+      "notes": "Many Dutch churches have a budget for members sent abroad; budgets are often set in autumn.",
+      "checklistId": "support",
+      "order": 48
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-presentations",
+    "data": {
+      "title": "Prepare the 2, 5 and 15 minute church presentations",
+      "status": "todo",
+      "area": "church",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "notes": "See 5-kerkpresentatie.md. Practise out loud with a timer.",
+      "checklistId": "support",
+      "order": 49
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-ywam-photos",
+    "data": {
+      "title": "Ask YWAM Queenstown for photos or a video of the base",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-25",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "support",
+      "order": 50
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-weekly-followup",
+    "data": {
+      "title": "Weekly: follow up open conversations",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "notes": "Thank-you within 24h after each conversation; 'thinking about it' -> call on the agreed day, otherwise after 7 days; no reply to an invite -> one more call/message after 5 days; new partner -> handwritten card after the first gift and check after 1 month that it arrives.",
+      "checklistId": "support",
+      "order": 51
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-visieavond-date",
+    "data": {
+      "title": "Visieavond: pick a date (Fri/Sat mid-November) and venue",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "notes": "Home for up to ~25 people, otherwise a church hall. Due date assumes an evening around 13-14 Nov; adjust once fixed.",
+      "checklistId": "support",
+      "order": 52
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-visieavond-invite",
+    "data": {
+      "title": "Visieavond: send personal invitations (3 weeks ahead)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-24",
+      "notes": "Personal message or card, not a mass message; ask people to RSVP. Ask 3-4 friends/family to each bring five people you know less well. Send a reminder two days before.",
+      "checklistId": "support",
+      "order": 53
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-visieavond-helpers",
+    "data": {
+      "title": "Visieavond: ask helpers (host, tech, baker, interviewer, clean-up)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "checklistId": "support",
+      "order": 54
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-visieavond-after",
+    "data": {
+      "title": "Visieavond follow-up: cards into tracker, thank everyone, call interested people",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "notes": "Response cards into the tracker the same evening or next morning; thank-you message with newsletter link within 48h; call everyone who ticked 'want to hear more' within a week.",
+      "checklistId": "support",
+      "order": 55
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-sending-service",
+    "data": {
+      "title": "Plan the sending (uitzending) in a Sunday service with your church",
+      "status": "todo",
+      "area": "church",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "notes": "Plan well ahead; service schedules are often fixed weeks in advance.",
+      "checklistId": "support",
+      "order": 56
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-farewell",
+    "data": {
+      "title": "Plan the farewell evening (end Dec / early Jan)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "notes": "No support ask; show where you stand, small thank-you for partners, a guestbook for blessings and encouragement.",
+      "checklistId": "support",
+      "order": 57
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-christmas-cards",
+    "data": {
+      "title": "Send Christmas cards with your prayer card to your whole list",
+      "status": "todo",
+      "area": "support",
+      "priority": "low",
+      "dueDate": "2026-12-05",
+      "checklistId": "support",
+      "order": 58
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-final-followup",
+    "data": {
+      "title": "Last round of follow-ups before departure",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-12-20",
+      "checklistId": "support",
+      "order": 59
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sup-thank-you-cards",
+    "data": {
+      "title": "Send thank-you cards to partners before leaving",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-12-31",
+      "checklistId": "support",
+      "order": 60
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-domain",
+    "data": {
+      "title": "Register the domain (e.g. rubenonmission.nl)",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "high",
+      "dueDate": "2026-10-14",
+      "notes": "At a Dutch registrar (TransIP, Versio or similar), or a .com directly at Cloudflare. About EUR 10 per year.",
+      "links": [
+        {
+          "collection": "budget",
+          "key": "domain-name"
+        }
+      ],
+      "checklistId": "newsletter",
+      "order": 61
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-cloudflare",
+    "data": {
+      "title": "Create a Cloudflare account and point the nameservers to it",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-14",
+      "checklistId": "newsletter",
+      "order": 62
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-email-routing",
+    "data": {
+      "title": "Set up Cloudflare Email Routing for your site address",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-14",
+      "notes": "E.g. ruben@rubenonmission.nl forwarding to your own mailbox. Free.",
+      "checklistId": "newsletter",
+      "order": 63
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-brevo",
+    "data": {
+      "title": "Create a Brevo account, add the DNS records and an API key",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-16",
+      "notes": "Senders & Domains: add the domain and put the DKIM, SPF and DMARC records in Cloudflare. SMTP & API: create an API key. Accept the data processing agreement in account settings; optionally turn off open/click tracking.",
+      "checklistId": "newsletter",
+      "order": 64
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-deploy",
+    "data": {
+      "title": "Configure and deploy the site worker",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "notes": "Set SITE_URL and FROM_EMAIL in wrangler.toml; create the D1 database with --jurisdiction=eu; run the schema; set BREVO_API_KEY and ADMIN_TOKEN secrets (store ADMIN_TOKEN in your password manager); wrangler deploy; connect the domain under Workers & Pages.",
+      "checklistId": "newsletter",
+      "order": 65
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-test",
+    "data": {
+      "title": "Test signup, confirm and unsubscribe on your own site",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "checklistId": "newsletter",
+      "order": 66
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-privacy",
+    "data": {
+      "title": "Fill in name, town and email in privacy.html",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-18",
+      "checklistId": "newsletter",
+      "order": 67
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-account-details",
+    "data": {
+      "title": "Fill in the account details on steun.html and in the newsletter",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-10-25",
+      "notes": "Depends on the ANBI answer; otherwise a separate account just for gifts.",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "sup-anbi"
+        }
+      ],
+      "checklistId": "newsletter",
+      "order": 68
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-newsletter-1",
+    "data": {
+      "title": "Send newsletter #1 (share personally and invite people to sign up)",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "high",
+      "dueDate": "2026-10-28",
+      "notes": "Only people who sign up themselves go on the list (AVG). Don't import your address book; send the link personally. Send a test to yourself first and check it on your phone.",
+      "checklistId": "newsletter",
+      "order": 69
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "web-newsletter-predeparture",
+    "data": {
+      "title": "Send the pre-departure newsletter with where support stands",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-12-31",
+      "checklistId": "newsletter",
+      "order": 70
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "house-notice-rent",
+    "data": {
+      "title": "Give notice on your rent so it ends in early January",
+      "status": "todo",
+      "area": "housing",
+      "priority": "high",
+      "dueDate": "2026-11-15",
+      "notes": "Notice periods are often 1 month.",
+      "checklistId": "selling-housing",
+      "order": 71
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "house-cancel-subscriptions",
+    "data": {
+      "title": "Give notice on subscriptions so they end in early January",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "selling-housing",
+      "order": 72
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sell-decide",
+    "data": {
+      "title": "Go through your belongings: sell, give away, keep or store",
+      "status": "todo",
+      "area": "selling",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "notes": "Put each item in the Sell list with a status.",
+      "checklistId": "selling-housing",
+      "order": 73
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sell-storage",
+    "data": {
+      "title": "Arrange where kept items will be stored",
+      "status": "todo",
+      "area": "housing",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "checklistId": "selling-housing",
+      "order": 74
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "sell-sale-day",
+    "data": {
+      "title": "Hold a sale day / open house for your things (November)",
+      "status": "todo",
+      "area": "selling",
+      "priority": "low",
+      "dueDate": "2026-11-28",
+      "notes": "Idea from 6-visieavond.md: proceeds towards departure costs, combined with coffee and your story.",
+      "checklistId": "selling-housing",
+      "order": 75
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "house-handover",
+    "data": {
+      "title": "Clear out, clean and hand over the keys",
+      "status": "todo",
+      "area": "housing",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "checklistId": "selling-housing",
+      "order": 76
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "pack-airline-allowance",
+    "data": {
+      "title": "Check your airline's baggage allowance and weigh the bags",
+      "status": "todo",
+      "area": "packing",
+      "priority": "normal",
+      "dueDate": "2026-12-31",
+      "checklistId": "packing",
+      "order": 77
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "pack-scan-documents",
+    "data": {
+      "title": "Scan all key documents into the app and mark them offline",
+      "status": "todo",
+      "area": "packing",
+      "priority": "high",
+      "dueDate": "2026-12-20",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "passport"
+        },
+        {
+          "collection": "documents",
+          "key": "working-holiday-visa"
+        },
+        {
+          "collection": "documents",
+          "key": "insurance-policy"
+        },
+        {
+          "collection": "documents",
+          "key": "flight-ticket"
+        }
+      ],
+      "checklistId": "packing",
+      "order": 78
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "pack-documents-folder",
+    "data": {
+      "title": "Assemble the printed documents folder for carry-on",
+      "status": "todo",
+      "area": "packing",
+      "priority": "high",
+      "dueDate": "2027-01-03",
+      "notes": "Passport, visa, insurance certificate, bank statement (NZD 4,200+), onward ticket or funds proof, YWAM letter, IDP + licence. Also on your phone.",
+      "links": [
+        {
+          "collection": "packing",
+          "key": "documents-folder"
+        }
+      ],
+      "checklistId": "packing",
+      "order": 79
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-deregister",
+    "data": {
+      "title": "Deregister from the BRP (online with DigiD or at the counter)",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2027-01-04",
+      "remindAt": "2026-12-31T07:00:00.000Z",
+      "sourceUrl": "https://www.rijksoverheid.nl/vraag-en-antwoord/uitkering-meenemen-naar-buitenland/wat-regelen-als-ik-ga-emigreren",
+      "notes": "Required when living abroad more than 8 months a year. Not earlier than 5 days before departure: window Thu 31 Dec - Mon 4 Jan. 1 Jan is a public holiday and 2-3 Jan is a weekend. See also https://www.nederlandwereldwijd.nl/checklist-verhuizen-buitenland-emigreren",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "nl-digid-setup"
+        },
+        {
+          "collection": "tasks",
+          "key": "dep-brp-uittreksel"
+        }
+      ],
+      "checklistId": "departure-week",
+      "order": 80
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-brp-uittreksel",
+    "data": {
+      "title": "Request a BRP uittreksel on the day you deregister",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2027-01-04",
+      "notes": "You don't get proof of deregistration automatically. Your health insurer and others will ask for it; afterwards only the RNI counter can issue it.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "brp-uittreksel"
+        }
+      ],
+      "checklistId": "departure-week",
+      "order": 81
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-cancel-zorgverzekering",
+    "data": {
+      "title": "Cancel Dutch health insurance from 5 Jan (send the uittreksel)",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "high",
+      "dueDate": "2027-01-04",
+      "sourceUrl": "https://www.zorgwijzer.nl/faq/emigreren-en-zorgverzekering",
+      "notes": "The international policy must start the same day.",
+      "links": [
+        {
+          "collection": "documents",
+          "key": "brp-uittreksel"
+        },
+        {
+          "collection": "documents",
+          "key": "insurance-policy"
+        }
+      ],
+      "checklistId": "departure-week",
+      "order": 82
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-zorgtoeslag",
+    "data": {
+      "title": "Stop zorgtoeslag in Mijn toeslagen (if you get it)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "sourceUrl": "https://belastingdienst.nl/wps/wcm/connect/nl/buitenland/content/emigreren-checklist",
+      "notes": "It stops with the insurance; otherwise you will have to pay it back.",
+      "checklistId": "departure-week",
+      "order": 83
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-address-belastingdienst-bank",
+    "data": {
+      "title": "Give your foreign address to the Belastingdienst and your bank",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "sourceUrl": "https://belastingdienst.nl/wps/wcm/connect/nl/buitenland/content/emigreren-checklist",
+      "checklistId": "departure-week",
+      "order": 84
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-confirm-arrival-ywam",
+    "data": {
+      "title": "Confirm arrival details with YWAM Queenstown",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2026-12-31",
+      "links": [
+        {
+          "collection": "contacts",
+          "key": "ywam-queenstown"
+        }
+      ],
+      "checklistId": "departure-week",
+      "order": 85
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-traveller-declaration",
+    "data": {
+      "title": "Complete the NZ Traveller Declaration (within 24 h before the flight)",
+      "status": "todo",
+      "area": "travel",
+      "priority": "high",
+      "dueDate": "2027-01-04",
+      "notes": "Required for arrival.",
+      "checklistId": "departure-week",
+      "order": 86
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "dep-offline-check",
+    "data": {
+      "title": "Check all key documents open offline on your phone",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "pack-scan-documents"
+        }
+      ],
+      "checklistId": "departure-week",
+      "order": 87
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arr-activate-bank",
+    "data": {
+      "title": "Activate your NZ bank account at a branch",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2027-01-19",
+      "checklistId": "arrival",
+      "order": 88
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arr-nz-sim",
+    "data": {
+      "title": "Get an NZ prepay SIM or eSIM",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2027-01-19",
+      "notes": "One NZ, Spark or 2degrees; check coverage around Queenstown first.",
+      "checklistId": "arrival",
+      "order": 89
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arr-gp",
+    "data": {
+      "title": "Register with a GP / medical centre",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2027-01-19",
+      "checklistId": "arrival",
+      "order": 90
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arr-ird",
+    "data": {
+      "title": "Apply for an IRD number (only if you'll have NZ income)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2027-01-19",
+      "sourceUrl": "https://www.ird.govt.nz/managing-my-tax/ird-numbers/ird-numbers-for-individuals/new-arrival-to-new-zealand---ird-number-application",
+      "notes": "Via a myIR account with your passport, INZ application number and BSN; arrives in about 2 days. A pure volunteer may not need one. After 183+ days in NZ you become a (transitional) tax resident; income for services is not exempt.",
+      "checklistId": "arrival",
+      "order": 91
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arr-video-greeting",
+    "data": {
+      "title": "Send a one-minute video greeting to your church or home group",
+      "status": "todo",
+      "area": "support",
+      "priority": "low",
+      "dueDate": "2027-02-28",
+      "checklistId": "arrival",
+      "order": 92
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-vote",
+    "data": {
+      "title": "Register as a voter abroad (via gemeente Den Haag)",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2027-01-31",
+      "sourceUrl": "https://www.nederlandwereldwijd.nl/stemmen-buitenland/registreren",
+      "checklistId": "from-abroad",
+      "order": 93
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-duo",
+    "data": {
+      "title": "Send DUO your NZ address and income (if DUO applies)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2027-01-31",
+      "sourceUrl": "https://duo.nl/particulieren/terugbetaler/buitenland/aflossen-vanuit-het-buitenland.asp",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "nl-duo-check"
+        }
+      ],
+      "checklistId": "from-abroad",
+      "order": 94
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-aow-apply",
+    "data": {
+      "title": "Apply for voluntary AOW/Anw with the SVB (if you chose to)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2027-12-01",
+      "sourceUrl": "https://www.svb.nl/nl/vv/",
+      "notes": "Possible up to 1 year after leaving (deadline ~early Jan 2028).",
+      "links": [
+        {
+          "collection": "tasks",
+          "key": "nl-aow-decision"
+        }
+      ],
+      "checklistId": "from-abroad",
+      "order": 95
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-monthly-newsletter",
+    "data": {
+      "title": "Monthly: send the newsletter",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "notes": "Short, with a story, photos and prayer points.",
+      "checklistId": "from-abroad",
+      "order": 96
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-monthly-site",
+    "data": {
+      "title": "Monthly: update support numbers on steun.html and prayer points on bidden.html",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "checklistId": "from-abroad",
+      "order": 97
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-partner-care",
+    "data": {
+      "title": "Yearly: personal message or video call with each partner",
+      "status": "todo",
+      "area": "support",
+      "priority": "low",
+      "notes": "Also: birthdays in your calendar, a thank-you around Christmas, be open when support drops below target.",
+      "checklistId": "from-abroad",
+      "order": 98
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-tax-return-2027",
+    "data": {
+      "title": "File the 2027 emigration-year tax return (M-form) in 2028 if needed",
+      "status": "todo",
+      "area": "finance",
+      "priority": "low",
+      "sourceUrl": "https://belastingdienst.nl/wps/wcm/connect/nl/buitenland/content/emigreren-checklist",
+      "notes": "Only if you have Dutch income in 2027 or receive an invitation. Keep your NZ address current at the Belastingdienst.",
+      "checklistId": "from-abroad",
+      "order": 99
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "abroad-nz-licence",
+    "data": {
+      "title": "Convert to an NZ driving licence if staying beyond 12 months",
+      "status": "todo",
+      "area": "travel",
+      "priority": "low",
+      "sourceUrl": "https://www.nzta.govt.nz/driver-licences/new-residents-and-visitors/driving-on-an-overseas-licence/",
+      "checklistId": "from-abroad",
+      "order": 100
+    }
+  },
+  {
+    "collection": "settings",
+    "key": "main",
+    "data": {
+      "key": "main",
+      "departureDate": "2027-01-05",
+      "supportTargetMonthlyCents": 100000,
+      "supportMinimumMonthlyCents": 75000,
+      "currency": "EUR",
+      "nzdPerEur": 1.85
+    }
+  },
+  {
+    "collection": "contacts",
+    "key": "ywam-queenstown",
+    "data": {
+      "name": "YWAM Queenstown",
+      "organisation": "Youth With A Mission (Jeugd met een Opdracht)",
+      "role": "Base you are joining",
+      "address": "Queenstown, New Zealand",
+      "notes": "Website: https://www.ywamqueenstown.com/about-dts\n\nJanuary DTS intakes: Arise, MTB, Sports, Worship. 12 weeks lecture in NZ plus about 10 weeks outreach overseas. Their site does not cover visas, so ask visa questions in writing. Add the staff coordinator's name and email here once you have them.",
+      "tags": [
+        "ywam"
+      ]
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "passport",
+    "data": {
+      "title": "Passport",
+      "kind": "passport",
+      "offline": true,
+      "notes": "Must be valid until at least early April 2028."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "working-holiday-visa",
+    "data": {
+      "title": "Working Holiday Visa",
+      "kind": "visa",
+      "offline": true,
+      "notes": "Approval letter / eVisa. Enter NZ within 12 months of issue."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "insurance-policy",
+    "data": {
+      "title": "Health & travel insurance policy",
+      "kind": "insurance",
+      "offline": true,
+      "notes": "Certificate must show full medical incl. hospital cover for the whole stay."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "flight-ticket",
+    "data": {
+      "title": "Flight ticket",
+      "kind": "ticket",
+      "offline": true,
+      "notes": "Plus onward ticket or funds proof."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "funds-statement",
+    "data": {
+      "title": "Bank statement (NZD 4,200+)",
+      "kind": "bank",
+      "offline": true,
+      "notes": "Visa funds proof; carry it when you fly."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "ywam-letter",
+    "data": {
+      "title": "YWAM Queenstown letter",
+      "kind": "letter",
+      "offline": true,
+      "notes": "Carry printed and on your phone."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "idp-licence",
+    "data": {
+      "title": "International Driving Permit + Dutch licence",
+      "kind": "id",
+      "offline": true,
+      "notes": "IDP is valid 1 year from issue; always carry with the Dutch licence."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "brp-uittreksel",
+    "data": {
+      "title": "BRP uittreksel (proof of deregistration)",
+      "kind": "letter",
+      "offline": false,
+      "notes": "Request on the day you deregister; your health insurer needs it."
+    }
+  },
+  {
+    "collection": "documents",
+    "key": "digid-backup",
+    "data": {
+      "title": "DigiD backup codes",
+      "kind": "other",
+      "offline": false,
+      "notes": "Store recovery details for the DigiD app here (as an attached file, not in plain notes)."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "documents-folder",
+    "data": {
+      "name": "Documents folder (printed copies)",
+      "bag": "personal",
+      "category": "documents",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Passport, visa, insurance, bank statement, tickets, YWAM letter, IDP + licence."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "passport-wallet",
+    "data": {
+      "name": "Passport and wallet with bank cards",
+      "bag": "personal",
+      "category": "documents",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "phone-charger",
+    "data": {
+      "name": "Phone and charger",
+      "bag": "personal",
+      "category": "electronics",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "laptop",
+    "data": {
+      "name": "Laptop and charger",
+      "bag": "carry-on",
+      "category": "electronics",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "adapters",
+    "data": {
+      "name": "Travel adapters type I (NZ)",
+      "bag": "carry-on",
+      "category": "electronics",
+      "quantity": 2,
+      "packed": false,
+      "notes": "NZ uses type I plugs, 230 V."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "power-bank",
+    "data": {
+      "name": "Power bank",
+      "bag": "carry-on",
+      "category": "electronics",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Carry-on only, not in checked luggage."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "headphones",
+    "data": {
+      "name": "Headphones",
+      "bag": "personal",
+      "category": "electronics",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "medication",
+    "data": {
+      "name": "Medication (3 months) + doctor's letter",
+      "bag": "carry-on",
+      "category": "health",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "toiletries",
+    "data": {
+      "name": "Toiletries (travel size)",
+      "bag": "carry-on",
+      "category": "toiletries",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Liquids rules for carry-on; buy full-size in NZ."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "sunscreen",
+    "data": {
+      "name": "Sunscreen and sunglasses",
+      "bag": "checked",
+      "category": "health",
+      "quantity": 1,
+      "packed": false,
+      "notes": "January is summer in NZ."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "rain-jacket",
+    "data": {
+      "name": "Waterproof rain jacket",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "winter-jacket",
+    "data": {
+      "name": "Warm insulated winter jacket",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Queenstown winters (June-August) are cold."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "fleece",
+    "data": {
+      "name": "Fleece / mid layers",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 2,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "thermals",
+    "data": {
+      "name": "Thermal base layers",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 2,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "beanie-gloves",
+    "data": {
+      "name": "Beanie, gloves and scarf",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "hiking-boots",
+    "data": {
+      "name": "Hiking boots (cleaned)",
+      "bag": "checked",
+      "category": "shoes",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Clean them well; NZ has strict biosecurity checks on arrival."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "trainers",
+    "data": {
+      "name": "Trainers / running shoes",
+      "bag": "checked",
+      "category": "shoes",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "trousers",
+    "data": {
+      "name": "Trousers and jeans",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 3,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "tshirts",
+    "data": {
+      "name": "T-shirts",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 7,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "shorts-swim",
+    "data": {
+      "name": "Shorts and swimwear",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 2,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "underwear-socks",
+    "data": {
+      "name": "Underwear and socks (incl. wool socks)",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 10,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "smart-outfit",
+    "data": {
+      "name": "One smart outfit",
+      "bag": "checked",
+      "category": "clothes",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "day-backpack",
+    "data": {
+      "name": "Day backpack",
+      "bag": "carry-on",
+      "category": "gear",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "water-bottle",
+    "data": {
+      "name": "Reusable water bottle",
+      "bag": "checked",
+      "category": "gear",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "headlamp",
+    "data": {
+      "name": "Head torch",
+      "bag": "checked",
+      "category": "gear",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "sleeping-bag",
+    "data": {
+      "name": "Sleeping bag (check with YWAM if needed for outreach)",
+      "bag": "checked",
+      "category": "gear",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "ski-gear",
+    "data": {
+      "name": "Ski/snow gear",
+      "bag": "buy-there",
+      "category": "gear",
+      "quantity": 1,
+      "packed": false,
+      "notes": "Rent or buy second-hand in Queenstown if needed."
+    }
+  },
+  {
+    "collection": "packing",
+    "key": "dutch-gifts",
+    "data": {
+      "name": "Small Dutch gifts for your hosts (e.g. stroopwafels)",
+      "bag": "checked",
+      "category": "other",
+      "quantity": 1,
+      "packed": false
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "visa-fee-whv",
+    "data": {
+      "kind": "expense",
+      "label": "Working Holiday Visa fee",
+      "category": "visa",
+      "amountCents": 77000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "date": "2026-10-18",
+      "paid": false,
+      "notes": "From NZD 770 (INZ). Re-check the current fee before applying."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "visa-funds-proof",
+    "data": {
+      "kind": "saving",
+      "label": "Visa funds proof (must be visible in account)",
+      "category": "visa",
+      "amountCents": 420000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "date": "2026-10-18",
+      "notes": "At least NZD 4,200 for living costs when applying and flying, plus a ticket out or money to buy one. Not spent; it must stay visible."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "domain-name",
+    "data": {
+      "kind": "expense",
+      "label": "Domain name for website/newsletter",
+      "category": "newsletter",
+      "amountCents": 1000,
+      "currency": "EUR",
+      "recurrence": "yearly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "About EUR 10 per year. Hosting (Cloudflare) and sending (Brevo, up to 300 mails/day) are free."
+    }
+  }
+]

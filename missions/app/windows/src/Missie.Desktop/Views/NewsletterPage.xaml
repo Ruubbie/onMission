@@ -1,0 +1,138 @@
+<UserControl x:Class="Missie.Desktop.Views.NewsletterPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Missie;component/Views/Shared/PageStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="0,8,0,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Text="Newsletter" Style="{DynamicResource H1}" />
+            <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource MutedText}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="1" Margin="0,0,0,14" LastChildFill="False">
+            <TextBox DockPanel.Dock="Left" Width="280" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     c:Brutal.Glyph="&#xE721;" c:Brutal.Placeholder="Search…" ToolTip="Search titles and text" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource PrimaryButton}" Content="+  New issue" Click="New_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Export CSV…" Click="Export_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Import CSV…" Click="Import_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Click="CopyRecipients_Click" Margin="10,0,0,0"
+                    ToolTip="Emails of partners with 'newsletter' ticked, to paste in BCC">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE8C8;" Style="{StaticResource pgGlyph}" Margin="0,0,8,0" />
+                    <TextBlock Text="Copy recipient list" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </DockPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" MinWidth="360" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" MinWidth="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Issues -->
+            <c:BrutalCard Padding="8">
+                <ListBox x:Name="List" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Heading}" FontWeight="Bold" FontSize="15" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Style="{StaticResource pgBadge}" Background="{Binding StatusBrush}" Padding="6,0" BorderThickness="1.5">
+                                        <TextBlock Text="{Binding Meta}" FontSize="11" FontWeight="Bold" />
+                                    </Border>
+                                    <TextBlock Style="{DynamicResource MutedText}" VerticalAlignment="Center">
+                                        <Run Text="{Binding Words, Mode=OneWay}" /><Run Text=" words" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </c:BrutalCard>
+
+            <!-- Editor -->
+            <c:BrutalCard Grid.Column="2" Accent="{Binding Selected.StatusBrush}">
+                <Grid>
+                    <TextBlock Text="Pick an issue or start a new one. Write in Markdown: ## heading, **bold**, *italic*, [link](https://…), ![photo](https://…), - list. [Text in brackets] shows as a placeholder to fill in."
+                               Style="{StaticResource pgEmptyHint}"
+                               Visibility="{Binding HasSelection, Converter={StaticResource pgNotBoolVis}}" />
+                    <Grid DataContext="{Binding Selected}"
+                          Visibility="{Binding DataContext.HasSelection, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource pgBoolVis}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged, Delay=600}" FontSize="22" FontWeight="Black"
+                                 c:Brutal.Placeholder="Title" />
+                        <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Number" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <TextBox Text="{Binding NumberText}" Width="64" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Status" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{x:Static sh:Lists.NewsletterStatuses}" SelectedItem="{Binding Status}" Width="110" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Planned for" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <DatePicker SelectedDate="{Binding PlannedDate}" Width="150" />
+                            </StackPanel>
+                        </WrapPanel>
+                        <TextBlock Grid.Row="2" Text="Intro (first paragraph, also the e-mail preview line)" Style="{StaticResource pgLabel}" />
+                        <TextBox Grid.Row="3" Text="{Binding Intro, UpdateSourceTrigger=PropertyChanged, Delay=600}" AcceptsReturn="True"
+                                 TextWrapping="Wrap" MinHeight="60" MaxHeight="120" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
+                                 SpellCheck.IsEnabled="True" />
+                        <TextBlock Grid.Row="4" Text="Body (Markdown; {{NAAM}} becomes the reader's first name in the e-mail)" Style="{StaticResource pgLabel}" />
+                        <TextBox Grid.Row="5" Text="{Binding Body, UpdateSourceTrigger=PropertyChanged, Delay=600}"
+                                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+                                 VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource pgMono}" FontSize="14" Padding="12,10"
+                                 SpellCheck.IsEnabled="True" />
+                        <StackPanel Grid.Row="6" Margin="0,12,0,0">
+                            <WrapPanel>
+                                <Button Style="{DynamicResource PrimaryButton}" Content="Export for website…" Click="ExportWeb_Click" Margin="0,0,8,8" />
+                                <Button Content="Export email HTML…" Click="ExportEmail_Click" Margin="0,0,8,8" />
+                                <Button Content="&#x2713; Mark sent" Click="MarkSent_Click" Margin="0,0,8,8" />
+                                <Button Style="{DynamicResource DangerButton}" Content="Delete" Click="Delete_Click" Margin="0,0,8,8" />
+                            </WrapPanel>
+                            <TextBlock Text="Online at" Style="{StaticResource pgLabel}" Margin="0,4,0,4" />
+                            <TextBox Text="{Binding WebUrl}" c:Brutal.Placeholder="https://rubenonmission.nl/nieuwsbrief/…" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </c:BrutalCard>
+
+            <!-- Live preview -->
+            <c:BrutalCard Grid.Column="4" Padding="0" Accent="{DynamicResource Purple}">
+                <Grid>
+                    <WebBrowser x:Name="Browser" Navigating="Browser_Navigating" />
+                </Grid>
+            </c:BrutalCard>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="{Binding SendingHowTo}" Style="{DynamicResource MutedText}" Margin="0,14,0,0" TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

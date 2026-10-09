@@ -1,0 +1,27 @@
+# Mission App API: sync + files for the iPhone app and the Windows helper.
+# Separate Worker from the newsletter site, same Cloudflare account.
+name = "missionapp-api"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Deletes tombstones older than 180 days, once a day.
+[triggers]
+crons = ["17 3 * * *"]
+
+[vars]
+APP_VERSION = "1.0.0"
+MAX_FILE_MB = "50"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "missionapp"
+database_id = "VUL-HIER-HET-ID-IN"   # printed by: npx wrangler d1 create missionapp --jurisdiction=eu
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "missionapp-files"
+jurisdiction = "eu"
+
+# Secrets (npx wrangler secret put ...): SETUP_SECRET
+# Custom domain: add api.rubenonmission.nl under Settings > Domains & Routes after the first deploy.

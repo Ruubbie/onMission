@@ -1,0 +1,272 @@
+<UserControl x:Class="Missie.Desktop.Views.PartnersPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Missie;component/Views/Shared/PageStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="0,8,0,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="Partners" Style="{DynamicResource H1}" />
+            <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource MutedText}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Support meter: committed vs minimum vs target, plus gifts received this month -->
+        <Grid Grid.Row="1" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,24,0">
+                <TextBlock Text="{Binding MeterText}" FontWeight="Black" FontSize="18" Foreground="{DynamicResource Ink}" Margin="0,0,0,6" />
+                <sh:MeterBar Value="{Binding Committed}" Maximum="{Binding MeterMax}"
+                             Marker1="{Binding Minimum}" Marker1Label="{Binding MinimumLabel}"
+                             Marker2="{Binding Target}" Marker2Label="{Binding TargetLabel}"
+                             Fill="{DynamicResource Green}" BarHeight="32" />
+            </StackPanel>
+            <sh:StatTile Grid.Column="1" Label="Gifts this month" Value="{Binding ReceivedText}" Accent="{DynamicResource Lime}"
+                         Sub="from the Gifts list per partner" VerticalAlignment="Bottom" MaxWidth="320" />
+        </Grid>
+
+        <!-- Pipeline chips (click to filter) -->
+        <sh:ChipBar Grid.Row="2" ItemsSource="{Binding StageChips}" ChipClicked="Chip_Clicked" Margin="0,0,0,6" />
+
+        <!-- Toolbar -->
+        <DockPanel Grid.Row="3" Margin="0,0,0,14" LastChildFill="False">
+            <TextBox DockPanel.Dock="Left" Width="320" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     c:Brutal.Glyph="&#xE721;" c:Brutal.Placeholder="Search…" ToolTip="Search name, email, church, notes" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource PrimaryButton}" Content="+  New partner" Click="New_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Export CSV…" Click="Export_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Import CSV…" Click="Import_Click" Margin="10,0,0,0" />
+        </DockPanel>
+
+        <!-- Grid + detail -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="380" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="Grid" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                      AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                      SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                      EnableRowVirtualization="True" FrozenColumnCount="1" PreviewKeyDown="Grid_PreviewKeyDown">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource BrutalDataGridRow}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding FollowUpDue}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Pink}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="ToolTip" Value="Follow-up is due" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="170" />
+                    <DataGridTemplateColumn Header="Stage" Width="115" SortMemberPath="Stage">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="{Binding StageBrush}" BorderBrush="{DynamicResource Ink}" BorderThickness="2"
+                                        CornerRadius="6" Padding="6,0" Margin="2" HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding Stage}" FontWeight="Bold" FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{x:Static sh:Lists.PartnerStages}"
+                                          SelectedItem="{Binding Stage, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridComboBoxColumn Header="Cat." SelectedItemBinding="{Binding Category}" Width="52"
+                                            ItemsSource="{x:Static sh:Lists.PartnerCategories}" SortMemberPath="Category" />
+                    <DataGridTextColumn Header="Monthly €" Binding="{Binding MonthlyText}" Width="85" />
+                    <DataGridTextColumn Header="One-off €" Binding="{Binding OneOffText}" Width="85" />
+                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="170" />
+                    <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="110" />
+                    <DataGridTextColumn Header="Church" Binding="{Binding Church}" Width="110" />
+                    <DataGridTemplateColumn Header="Prays" Width="55" SortMemberPath="Prayer">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding Prayer, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="News" Width="55" SortMemberPath="Newsletter">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding Newsletter, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Last contact" Binding="{Binding LastContactText}" Width="95" />
+                    <DataGridTextColumn Header="Follow-up" Binding="{Binding NextFollowUpText}" Width="95" />
+                    <DataGridTextColumn Header="Thanked" Binding="{Binding ThankedText}" Width="95" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Detail panel -->
+            <c:BrutalCard Grid.Column="2" Accent="{Binding Selected.StageBrush}">
+                <Grid>
+                    <TextBlock Text="Select a partner to see notes, gifts and links. Dates can be typed as 2026-10-08 or 8-10-2026."
+                               Style="{StaticResource pgEmptyHint}"
+                               Visibility="{Binding HasSelection, Converter={StaticResource pgNotBoolVis}}" />
+                    <ScrollViewer Style="{StaticResource pgDetailScroll}"
+                                  Visibility="{Binding HasSelection, Converter={StaticResource pgBoolVis}}">
+                        <StackPanel DataContext="{Binding Selected}" Margin="2,0,2,8">
+                            <TextBox Text="{Binding Name}" FontSize="22" FontWeight="Black" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Stage" Style="{StaticResource pgLabel}" />
+                                    <ComboBox ItemsSource="{x:Static sh:Lists.PartnerStages}" SelectedItem="{Binding Stage}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Monthly €" Style="{StaticResource pgLabel}" />
+                                    <TextBox Text="{Binding MonthlyText}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="One-off €" Style="{StaticResource pgLabel}" />
+                                    <TextBox Text="{Binding OneOffText}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="Next step" Style="{StaticResource pgLabel}" />
+                            <TextBox Text="{Binding NextStep}" c:Brutal.Placeholder="e.g. coffee after church, send story" />
+
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel ToolTip="Category from the iPhone app: A, B, C or K">
+                                    <TextBlock Text="Category" Style="{StaticResource pgLabel}" />
+                                    <ComboBox ItemsSource="{x:Static sh:Lists.PartnerCategories}" SelectedItem="{Binding Category}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Birthday" Style="{StaticResource pgLabel}" />
+                                    <DatePicker SelectedDate="{Binding Birthday}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="Email / phone" Style="{StaticResource pgLabel}" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{DynamicResource IconButton}" Content="&#xE715;" ToolTip="Write an email"
+                                        Click="Mail_Click" Margin="8,0,0,0" />
+                                <TextBox Text="{Binding Email}" />
+                            </DockPanel>
+                            <TextBox Text="{Binding Phone}" Margin="0,6,0,0" />
+                            <TextBlock Text="Address" Style="{StaticResource pgLabel}" />
+                            <TextBox Text="{Binding Address}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" VerticalContentAlignment="Top" />
+
+                            <TextBlock Text="Next follow-up" Style="{StaticResource pgLabel}" />
+                            <DatePicker SelectedDate="{Binding NextFollowUpDate}" />
+
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Content="&#x2713; Contacted today" Click="Contacted_Click" Margin="0,0,8,8" />
+                                <Button Content="&#x2665; Thank-you sent today" Click="Thanked_Click" Margin="0,0,8,8" />
+                            </WrapPanel>
+                            <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap">
+                                <Run Text="Last contact:" /> <Run Text="{Binding LastContactNice, Mode=OneWay}" FontWeight="Bold" />
+                                <Run Text=" · Thanked:" /> <Run Text="{Binding ThankedNice, Mode=OneWay}" FontWeight="Bold" />
+                            </TextBlock>
+
+                            <TextBlock Text="Notes" Style="{StaticResource pgLabel}" />
+                            <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged, Delay=800}" AcceptsReturn="True"
+                                     TextWrapping="Wrap" MinHeight="90" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" />
+
+                            <!-- Log a conversation: creates a meeting note linked to this partner -->
+                            <TextBlock Text="Log a conversation" Style="{StaticResource pgLabel}" />
+                            <TextBox Text="{Binding DataContext.LogText, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" VerticalContentAlignment="Top"
+                                     ToolTip="What did you talk about? Saved as a meeting note linked to this partner." />
+                            <Button Content="Save as meeting note" Click="Log_Click" HorizontalAlignment="Left" Margin="0,8,0,0" />
+
+                            <!-- Gifts received -->
+                            <TextBlock Text="Gifts" Style="{StaticResource pgSectionTitle}" Margin="0,18,0,6" />
+                            <ItemsControl ItemsSource="{Binding DataContext.Gifts, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource Ink}" BorderThickness="2" CornerRadius="8" Padding="10,6" Margin="0,0,0,6"
+                                                Background="{DynamicResource Paper}">
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Style="{DynamicResource IconButton}" Content="&#xE74D;" ToolTip="Delete gift"
+                                                        Click="DeleteGift_Click" Margin="6,0,0,0" />
+                                                <Button DockPanel.Dock="Right" Content="Thanked" Click="ThankGift_Click" ToolTip="Mark this gift thanked today"
+                                                        Visibility="{Binding Thanked, Converter={StaticResource pgNotBoolVis}}" />
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="Black" FontSize="15">
+                                                        <Run Text="{Binding Amount, Mode=OneWay}" /> <Run Text="·" /> <Run Text="{Binding When, Mode=OneWay}" FontWeight="SemiBold" />
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Via}" Style="{DynamicResource MutedText}"
+                                                               Visibility="{Binding Via, Converter={StaticResource pgEmptyCollapsed}}" />
+                                                    <TextBlock Text="{Binding ThankedText}" Style="{DynamicResource MutedText}"
+                                                               Visibility="{Binding ThankedText, Converter={StaticResource pgEmptyCollapsed}}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Grid Margin="0,4,0,0" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Amount €" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <TextBlock Grid.Column="2" Text="Date" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <TextBlock Grid.Column="4" Text="Via" Style="{StaticResource pgLabel}" Margin="0,0,0,4" />
+                                <TextBox Grid.Row="1" x:Name="GiftAmount" Text="{Binding NewGiftAmount, UpdateSourceTrigger=PropertyChanged}" KeyDown="GiftAmount_KeyDown" />
+                                <DatePicker Grid.Row="1" Grid.Column="2" SelectedDate="{Binding NewGiftDate}" />
+                                <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding NewGiftVia, UpdateSourceTrigger=PropertyChanged}" ToolTip="bank, cash, ANBI…" />
+                                <DockPanel Grid.Row="2" Grid.ColumnSpan="5" Margin="0,8,0,0">
+                                    <CheckBox Content="Monthly gift" IsChecked="{Binding NewGiftRecurring}" VerticalAlignment="Center" />
+                                    <Button Content="+ Gift" Click="AddGift_Click" HorizontalAlignment="Right" />
+                                </DockPanel>
+                            </Grid>
+
+                            <TextBlock Text="Linked" Style="{StaticResource pgSectionTitle}" Margin="0,18,0,6" />
+                            <c:LinkChips Entity="{Binding Model}" />
+
+                            <Button Style="{DynamicResource DangerButton}" Content="Delete partner" Click="Delete_Click"
+                                    HorizontalAlignment="Left" Margin="0,22,0,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </c:BrutalCard>
+        </Grid>
+    </Grid>
+</UserControl>

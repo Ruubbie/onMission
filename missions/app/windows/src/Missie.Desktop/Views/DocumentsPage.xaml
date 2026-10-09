@@ -1,0 +1,209 @@
+<UserControl x:Class="Missie.Desktop.Views.DocumentsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls"
+             AllowDrop="True" DragEnter="Page_DragOver" DragOver="Page_DragOver" DragLeave="Page_DragLeave" Drop="Page_Drop"
+             Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Missie;component/Views/Shared/PageStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid Margin="0,8,0,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Margin="0,0,0,14">
+                <TextBlock Text="Documents" Style="{DynamicResource H1}" />
+                <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource MutedText}" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <sh:ChipBar Grid.Row="1" ItemsSource="{Binding Chips}" ChipClicked="Chip_Clicked" Margin="0,0,0,6" />
+
+            <DockPanel Grid.Row="2" Margin="0,0,0,14" LastChildFill="False">
+                <TextBox DockPanel.Dock="Left" Width="320" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                         c:Brutal.Glyph="&#xE721;" c:Brutal.Placeholder="Search…" ToolTip="Search title, kind, file name, notes" />
+                <TextBlock DockPanel.Dock="Left" Text="Drop files anywhere on this page to store them in the vault."
+                           Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <Button DockPanel.Dock="Right" Style="{DynamicResource PrimaryButton}" Content="+  New document" Click="New_Click" Margin="10,0,0,0" />
+                <Button DockPanel.Dock="Right" Content="Add files…" Click="AddFiles_Click" Margin="10,0,0,0" />
+                <Button DockPanel.Dock="Right" Content="Export CSV…" Click="Export_Click" Margin="10,0,0,0" />
+                <Button DockPanel.Dock="Right" Content="Import CSV…" Click="Import_Click" Margin="10,0,0,0" />
+            </DockPanel>
+
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="380" />
+                </Grid.ColumnDefinitions>
+
+                <ListBox x:Name="Cards" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Margin" Value="0,0,14,14" />
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Halo" Padding="6" CornerRadius="14" Background="Transparent">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Halo" Property="Background" Value="{DynamicResource Ink}" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Halo" Property="Opacity" Value="0.92" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <c:BrutalCard Accent="{Binding Accent}" FolderTab="True" Width="250" MinHeight="168">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Border Width="50" Height="50" CornerRadius="9" BorderThickness="2.5" BorderBrush="{DynamicResource Ink}"
+                                                Background="{Binding Accent}" DockPanel.Dock="Left">
+                                            <TextBlock Text="{Binding Glyph}" Style="{StaticResource pgGlyph}" FontSize="24" HorizontalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Kind}" Style="{DynamicResource MutedText}" HorizontalAlignment="Right" VerticalAlignment="Top" />
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Title}" Style="{DynamicResource H3}" TextWrapping="Wrap" Margin="0,12,0,4" />
+                                    <Border x:Name="Expiry" Style="{StaticResource pgBadge}" BorderThickness="0" Padding="0">
+                                        <TextBlock x:Name="ExpiryText" Text="{Binding ExpiryText}" FontSize="12" FontWeight="SemiBold" />
+                                    </Border>
+                                    <WrapPanel Margin="0,6,0,0">
+                                        <Border Style="{StaticResource pgBadge}" Background="{DynamicResource Sand}"
+                                                Visibility="{Binding HasFile, Converter={StaticResource pgNotBoolVis}}">
+                                            <TextBlock Text="no file yet" FontSize="11" FontWeight="Bold" />
+                                        </Border>
+                                        <Border Style="{StaticResource pgBadge}" Background="{DynamicResource Green}"
+                                                Visibility="{Binding Offline, Converter={StaticResource pgBoolVis}}">
+                                            <TextBlock Text="offline" FontSize="11" FontWeight="Bold" />
+                                        </Border>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </c:BrutalCard>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding ExpiringSoon}" Value="True">
+                                    <Setter TargetName="Expiry" Property="Background" Value="{DynamicResource Pink}" />
+                                    <Setter TargetName="Expiry" Property="BorderThickness" Value="2" />
+                                    <Setter TargetName="Expiry" Property="Padding" Value="7,1" />
+                                    <Setter TargetName="ExpiryText" Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Expired}" Value="True">
+                                    <Setter TargetName="Expiry" Property="Background" Value="{DynamicResource Ink}" />
+                                    <Setter TargetName="Expiry" Property="BorderThickness" Value="2" />
+                                    <Setter TargetName="Expiry" Property="Padding" Value="7,1" />
+                                    <Setter TargetName="ExpiryText" Property="Foreground" Value="{DynamicResource Pink}" />
+                                    <Setter TargetName="ExpiryText" Property="FontWeight" Value="Black" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Detail -->
+                <c:BrutalCard Grid.Column="2" Accent="{Binding Selected.Accent}">
+                    <Grid>
+                        <TextBlock Text="Select a document. Drop a scan or PDF on the page to add it: the kind is guessed from the file name (paspoort, visa, verzekering, ticket…)."
+                                   Style="{StaticResource pgEmptyHint}"
+                                   Visibility="{Binding HasSelection, Converter={StaticResource pgNotBoolVis}}" />
+                        <ScrollViewer Style="{StaticResource pgDetailScroll}" Visibility="{Binding HasSelection, Converter={StaticResource pgBoolVis}}">
+                            <StackPanel DataContext="{Binding Selected}" Margin="2,0,2,8">
+                                <TextBox Text="{Binding Title}" FontSize="22" FontWeight="Black" />
+                                <TextBlock Text="Kind" Style="{StaticResource pgLabel}" />
+                                <ComboBox ItemsSource="{x:Static sh:Lists.DocumentKinds}" SelectedItem="{Binding Kind}" />
+
+                                <TextBlock Text="Number" Style="{StaticResource pgLabel}" />
+                                <DockPanel>
+                                    <ToggleButton DockPanel.Dock="Right" Margin="8,0,0,0" Width="44" MinHeight="40" ToolTip="Show / hide the number"
+                                                  IsChecked="{Binding DataContext.ShowNumber, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Template="{DynamicResource BrutalButtonTemplate}" Background="{DynamicResource Paper}">
+                                        <TextBlock Text="&#xE890;" Style="{StaticResource pgGlyph}" />
+                                    </ToggleButton>
+                                    <Grid>
+                                        <TextBox Text="{Binding Number}"
+                                                 Visibility="{Binding DataContext.ShowNumber, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource pgBoolVis}}" />
+                                        <Border BorderBrush="{DynamicResource Ink}" BorderThickness="2.5" CornerRadius="7" Padding="10,8" MinHeight="44"
+                                                Background="{DynamicResource Paper}"
+                                                Visibility="{Binding DataContext.ShowNumber, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource pgNotBoolVis}}">
+                                            <TextBlock Text="{Binding MaskedNumber}" FontFamily="{StaticResource pgMono}" FontSize="15" VerticalAlignment="Center" />
+                                        </Border>
+                                    </Grid>
+                                </DockPanel>
+
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Issued" Style="{StaticResource pgLabel}" />
+                                        <DatePicker SelectedDate="{Binding IssuedDate}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Expires" Style="{StaticResource pgLabel}" />
+                                        <DatePicker SelectedDate="{Binding ExpiresDate}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding ExpiryText}" FontWeight="Bold" Margin="0,6,0,0" />
+
+                                <CheckBox Content="Keep an offline copy on every device" IsChecked="{Binding Offline}" Margin="0,14,0,0" />
+
+                                <TextBlock Text="File" Style="{StaticResource pgLabel}" />
+                                <TextBlock Text="{Binding FileText}" Style="{DynamicResource Body}" TextWrapping="Wrap" />
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Style="{DynamicResource PrimaryButton}" Content="Open" Click="Open_Click" Margin="0,0,8,8"
+                                            IsEnabled="{Binding HasFile}" />
+                                    <Button Content="Replace file…" Click="Replace_Click" Margin="0,0,8,8" />
+                                    <Button Content="Show in folder" Click="ShowInFolder_Click" Margin="0,0,8,8" IsEnabled="{Binding HasFile}" />
+                                </WrapPanel>
+
+                                <TextBlock Text="Notes" Style="{StaticResource pgLabel}" />
+                                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged, Delay=800}" AcceptsReturn="True" TextWrapping="Wrap"
+                                         MinHeight="90" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" />
+
+                                <TextBlock Text="Linked" Style="{StaticResource pgSectionTitle}" Margin="0,18,0,6" />
+                                <c:LinkChips Entity="{Binding Model}" />
+
+                                <Button Style="{DynamicResource DangerButton}" Content="Delete document" Click="Delete_Click" HorizontalAlignment="Left" Margin="0,22,0,0" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </c:BrutalCard>
+            </Grid>
+        </Grid>
+
+        <!-- Shown while files are dragged over the page -->
+        <Border x:Name="DropOverlay" Visibility="Collapsed" Background="#CCFFD21F" BorderBrush="{DynamicResource Ink}" BorderThickness="4"
+                CornerRadius="16" Margin="20" IsHitTestVisible="False">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="&#xE896;" Style="{StaticResource pgGlyph}" FontSize="56" HorizontalAlignment="Center" />
+                <TextBlock Text="Drop to store in the vault" Style="{DynamicResource H1}" Margin="0,12,0,0" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

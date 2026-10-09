@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Missie.Core/Missie.Core.csproj" />
+    <Project Path="src/Missie.Desktop/Missie.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Missie.Core.Tests/Missie.Core.Tests.csproj" />
+  </Folder>
+</Solution>

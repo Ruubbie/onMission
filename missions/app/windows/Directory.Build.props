@@ -1,0 +1,13 @@
+<Project>
+  <!-- Build output goes outside the shared folder when MISSIE_BUILD_DIR is set (used in the cloud build). -->
+  <PropertyGroup Condition="'$(MISSIE_BUILD_DIR)' != ''">
+    <BaseOutputPath>$(MISSIE_BUILD_DIR)/$(MSBuildProjectName)/bin/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MISSIE_BUILD_DIR)/$(MSBuildProjectName)/obj/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>

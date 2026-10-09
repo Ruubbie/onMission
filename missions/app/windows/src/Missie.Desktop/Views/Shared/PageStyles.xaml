@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared">
+    <!-- Small helpers shared by the "bigger PC work" pages. Everything colour-related comes from the app theme. -->
+    <BooleanToVisibilityConverter x:Key="pgBoolVis" />
+    <sh:InverseBoolToVisibility x:Key="pgNotBoolVis" />
+    <sh:EmptyToCollapsed x:Key="pgEmptyCollapsed" />
+
+    <FontFamily x:Key="pgIcons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <FontFamily x:Key="pgMono">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+    <Style x:Key="pgLabel" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Margin" Value="0,12,0,4" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+    </Style>
+
+    <Style x:Key="pgSectionTitle" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="Black" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="Margin" Value="0,8,0,10" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+    </Style>
+
+    <Style x:Key="pgGlyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource pgIcons}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+    </Style>
+
+    <!-- A small outlined badge, e.g. "no file yet". -->
+    <Style x:Key="pgBadge" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource Ink}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="7,1" />
+        <Setter Property="Margin" Value="0,0,6,4" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Background" Value="{DynamicResource Paper}" />
+    </Style>
+
+    <!-- The detail panel on the right of a grid. -->
+    <Style x:Key="pgDetailScroll" TargetType="ScrollViewer">
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Padding" Value="0,0,8,0" />
+    </Style>
+
+    <!-- Empty-state hint shown in a detail panel when nothing is selected. -->
+    <Style x:Key="pgEmptyHint" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="4,24" />
+        <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+    </Style>
+</ResourceDictionary>

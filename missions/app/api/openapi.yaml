@@ -1,0 +1,779 @@
+openapi: 3.1.0
+info:
+  title: Mission App API
+  version: 1.0.0
+  summary: Sync and file storage for Ruben's mission-prep apps (iPhone + Windows helper).
+  description: |
+    One backend for the iPhone app and the Windows desktop helper. Everything the apps
+    store (tasks, checklists, support partners, budget, sell list, packing, notes, documents,
+    settings) is a **record** in a **collection**. Files (passport scans, tickets, photos)
+    are uploaded separately and referenced from a `documents` record (or any record's `fileIds`).
+
+    ## Offline-first sync, in short
+    1. Clients keep a local database (SQLite / Core Data / SwiftData) and work fully offline.
+    2. Every record has a client-generated lowercase UUID `id`, and the client sets
+       `updatedAt` (ISO 8601 UTC, ms) on every local change. Deleting = set `deletedAt`
+       (and bump `updatedAt`); never hard-delete locally until the server has the tombstone.
+    3. To sync, call `POST /v1/sync` with your unsent local changes and the `cursor` you got
+       last time (omit it the first time). The server applies your changes, then returns
+       everything that changed on the server since your cursor (including your own accepted
+       changes, so you can store `seq`), plus a new `cursor`. Repeat while `hasMore` is true.
+    4. Conflicts: **last writer wins per record**, decided by `updatedAt`. If the server copy is
+       newer, your change is listed in `rejected` with the server's current record; replace your
+       local copy with it. A `updatedAt` more than 5 minutes in the future is clamped to server time.
+    5. Tombstones (`deletedAt` set) are kept for 180 days, so a device that has not synced
+       for longer must do a full resync (drop the cursor). The server signals this with
+       `resetRequired: true`.
+
+    ## Linking ("smart links")
+    Any record's `data` may contain `links: [{collection, id}]` to point at other records,
+    e.g. a task "Scan passport" links to the `documents` record of the passport, a partner
+    links to the notes of your last conversation. Links are not enforced by the server; clients
+    should show a link to a deleted/missing record as "removed".
+
+    ## Auth
+    Bearer token per device. Get one with `POST /v1/auth/login`. Store it in the Keychain
+    (iOS) or Windows Credential Manager. Tokens do not expire; revoke a lost device with
+    `DELETE /v1/devices/{id}`. The very first account is created once with
+    `POST /v1/auth/setup` using the server's setup secret.
+
+    ## Conventions
+    - All JSON. Times are ISO 8601 UTC strings with milliseconds, e.g. `2026-10-08T19:00:00.000Z`.
+      Dates without time (due dates) are `YYYY-MM-DD`.
+    - Money is an integer in **cents** plus an ISO 4217 `currency` (`EUR` or `NZD` mostly).
+    - Unknown fields inside `data` are stored and returned untouched, so newer app versions
+      can add fields without a server change. Clients must ignore fields they don't know.
+    - Errors: `{ "error": { "code": "string", "message": "human readable" } }`.
+servers:
+  - url: https://api.rubenonmission.nl
+    description: Production (Cloudflare Workers, EU data)
+  - url: http://localhost:8787
+    description: Local dev (`npx wrangler dev`)
+security:
+  - bearer: []
+tags:
+  - name: auth
+  - name: sync
+  - name: records
+  - name: files
+  - name: misc
+
+paths:
+  /v1/health:
+    get:
+      tags: [misc]
+      security: []
+      summary: Liveness check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, version, time]
+                properties:
+                  ok: { type: boolean }
+                  version: { type: string, example: "1.0.0" }
+                  time: { $ref: "#/components/schemas/Timestamp" }
+
+  /v1/auth/setup:
+    post:
+      tags: [auth]
+      security: []
+      summary: Create the first (owner) account. Only works while no account exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [setupSecret, email, password, name]
+              properties:
+                setupSecret: { type: string, description: "The SETUP_SECRET configured on the server" }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                name: { type: string }
+                device: { $ref: "#/components/schemas/DeviceInfo" }
+      responses:
+        "201": { $ref: "#/components/responses/Session" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { description: An account already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      security: []
+      summary: Log in on a device and get a device token
+      description: Max 10 failed attempts per email per 15 minutes, then 429.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                device: { $ref: "#/components/schemas/DeviceInfo" }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "401": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the token used for this request
+      responses:
+        "204": { description: Logged out }
+
+  /v1/auth/password:
+    post:
+      tags: [auth]
+      summary: Change password. Other devices stay logged in unless revokeOthers is true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 10 }
+                revokeOthers: { type: boolean, default: false }
+      responses:
+        "204": { description: Changed }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /v1/me:
+    get:
+      tags: [auth]
+      summary: Current user, space and device
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, space, device]
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  space: { $ref: "#/components/schemas/Space" }
+                  device: { $ref: "#/components/schemas/Device" }
+
+  /v1/devices:
+    get:
+      tags: [auth]
+      summary: List logged-in devices
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [devices]
+                properties:
+                  devices: { type: array, items: { $ref: "#/components/schemas/Device" } }
+
+  /v1/devices/{deviceId}:
+    delete:
+      tags: [auth]
+      summary: Revoke a device (lost phone, old laptop)
+      parameters:
+        - { name: deviceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Revoked }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/sync:
+    post:
+      tags: [sync]
+      summary: Push local changes and pull server changes in one call
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SyncRequest" }
+            example:
+              cursor: "1042"
+              changes:
+                - id: "6f1c2b3a-9d7e-4c1a-8b2f-0a1b2c3d4e5f"
+                  collection: tasks
+                  updatedAt: "2026-10-08T19:00:00.000Z"
+                  deletedAt: null
+                  data: { title: "Apply for Working Holiday Visa", area: visa, status: todo, dueDate: "2026-10-20" }
+      responses:
+        "200":
+          description: Applied and pulled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SyncResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+
+  /v1/records/{collection}:
+    get:
+      tags: [records]
+      summary: List live records of one collection (no sync bookkeeping; handy for scripts)
+      parameters:
+        - { name: collection, in: path, required: true, schema: { $ref: "#/components/schemas/Collection" } }
+        - { name: includeDeleted, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [records]
+                properties:
+                  records: { type: array, items: { $ref: "#/components/schemas/Record" } }
+
+  /v1/records/{collection}/{id}:
+    parameters:
+      - { name: collection, in: path, required: true, schema: { $ref: "#/components/schemas/Collection" } }
+      - { name: id, in: path, required: true, schema: { $ref: "#/components/schemas/Uuid" } }
+    get:
+      tags: [records]
+      summary: Get one record (also returns tombstones)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Record" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [records]
+      summary: Create or replace one record (same last-writer-wins rule as sync)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                updatedAt: { $ref: "#/components/schemas/Timestamp" }
+                deletedAt: { oneOf: [{ $ref: "#/components/schemas/Timestamp" }, { type: "null" }] }
+                data: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Stored, content: { application/json: { schema: { $ref: "#/components/schemas/Record" } } } }
+        "409": { description: Server copy is newer; body is the server copy, content: { application/json: { schema: { $ref: "#/components/schemas/Record" } } } }
+    delete:
+      tags: [records]
+      summary: Soft-delete (writes a tombstone)
+      responses:
+        "200": { description: Tombstone, content: { application/json: { schema: { $ref: "#/components/schemas/Record" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/files/{fileId}:
+    parameters:
+      - { name: fileId, in: path, required: true, schema: { $ref: "#/components/schemas/Uuid" } }
+    put:
+      tags: [files]
+      summary: Upload a file (raw bytes as the body). Idempotent; re-upload replaces.
+      description: |
+        Max 50 MB. Send the real `Content-Type`. The optional `X-File-Name` header is stored
+        (percent-encode non-ASCII). Upload the file first, then sync a `documents` record with
+        this `fileId`. The client generates `fileId` (UUID), so it can create the record offline
+        and upload later.
+      parameters:
+        - { name: X-File-Name, in: header, schema: { type: string } }
+        - { name: X-Sha256, in: header, description: "Optional hex SHA-256 of the body; server rejects on mismatch", schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: { schema: { type: string, format: binary } }
+          "*/*": { schema: { type: string, format: binary } }
+      responses:
+        "201": { description: Stored, content: { application/json: { schema: { $ref: "#/components/schemas/FileInfo" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+    get:
+      tags: [files]
+      summary: Download a file
+      responses:
+        "200":
+          description: The bytes, with Content-Type, ETag (sha256) and Content-Disposition
+          content:
+            "*/*": { schema: { type: string, format: binary } }
+        "304": { description: Not modified (If-None-Match matched) }
+        "404": { $ref: "#/components/responses/Error" }
+    head:
+      tags: [files]
+      summary: Check whether a file exists (to decide if an upload is still needed)
+      responses:
+        "200": { description: Exists; headers as GET }
+        "404": { description: Not uploaded }
+    delete:
+      tags: [files]
+      summary: Delete a file permanently
+      responses:
+        "204": { description: Deleted }
+
+  /v1/files:
+    get:
+      tags: [files]
+      summary: List uploaded files (metadata only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [files]
+                properties:
+                  files: { type: array, items: { $ref: "#/components/schemas/FileInfo" } }
+
+  /v1/summary:
+    get:
+      tags: [misc]
+      summary: Dashboard numbers computed on the server (for widgets and the desktop home screen)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+
+  /v1/export:
+    get:
+      tags: [misc]
+      summary: Full JSON backup of all records (files listed by metadata, not inlined)
+      responses:
+        "200":
+          description: Backup
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [exportedAt, records, files]
+                properties:
+                  exportedAt: { $ref: "#/components/schemas/Timestamp" }
+                  records: { type: array, items: { $ref: "#/components/schemas/Record" } }
+                  files: { type: array, items: { $ref: "#/components/schemas/FileInfo" } }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: Device token from /v1/auth/login
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Session:
+      description: Logged in
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [token, user, space, device]
+            properties:
+              token: { type: string, description: "Bearer token. Shown once; store it securely." }
+              user: { $ref: "#/components/schemas/User" }
+              space: { $ref: "#/components/schemas/Space" }
+              device: { $ref: "#/components/schemas/Device" }
+
+  schemas:
+    Uuid:
+      type: string
+      pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      description: Lowercase UUID, generated by the client
+    Timestamp:
+      type: string
+      format: date-time
+      example: "2026-10-08T19:00:00.000Z"
+    Date:
+      type: string
+      format: date
+      example: "2027-01-05"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: unauthorized }
+            message: { type: string }
+
+    DeviceInfo:
+      type: object
+      properties:
+        name: { type: string, example: "Ruben's iPhone" }
+        platform: { type: string, enum: [ios, windows, web, other] }
+        appVersion: { type: string }
+    Device:
+      type: object
+      required: [id, name, platform, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        platform: { type: string }
+        appVersion: { type: [string, "null"] }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        lastSeenAt: { type: [string, "null"], format: date-time }
+        current: { type: boolean, description: "True for the device making the request" }
+    User:
+      type: object
+      required: [id, email, name]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+    Space:
+      type: object
+      description: |
+        The shared container all records and files live in. Today every user has one space.
+        Later a space can be shared (e.g. with a mentor or parent); the sync API will not change.
+      required: [id, name, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [owner, editor, viewer] }
+
+    Collection:
+      type: string
+      enum: [tasks, checklists, partners, gifts, budget, sellItems, packing, notes, documents, contacts, newsletters, settings]
+
+    Record:
+      type: object
+      description: Envelope for every stored object. `data` holds the collection-specific fields.
+      required: [id, collection, updatedAt, data]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        collection: { $ref: "#/components/schemas/Collection" }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+        deletedAt: { oneOf: [{ $ref: "#/components/schemas/Timestamp" }, { type: "null" }] }
+        seq: { type: integer, description: "Server-assigned change number (read-only)" }
+        updatedBy: { type: [string, "null"], description: "Device id that wrote it last (read-only)" }
+        data:
+          description: One of the collection schemas below; max 256 KB as JSON.
+          oneOf:
+            - $ref: "#/components/schemas/Task"
+            - $ref: "#/components/schemas/Checklist"
+            - $ref: "#/components/schemas/Partner"
+            - $ref: "#/components/schemas/BudgetEntry"
+            - $ref: "#/components/schemas/SellItem"
+            - $ref: "#/components/schemas/PackingItem"
+            - $ref: "#/components/schemas/Note"
+            - $ref: "#/components/schemas/Document"
+            - $ref: "#/components/schemas/Contact"
+            - $ref: "#/components/schemas/Gift"
+            - $ref: "#/components/schemas/Newsletter"
+            - $ref: "#/components/schemas/Setting"
+
+    Link:
+      type: object
+      required: [collection, id]
+      properties:
+        collection: { $ref: "#/components/schemas/Collection" }
+        id: { $ref: "#/components/schemas/Uuid" }
+        label: { type: string, description: Optional text shown on the link chip }
+    Common:
+      type: object
+      description: Optional fields every collection may use
+      properties:
+        links: { type: array, items: { $ref: "#/components/schemas/Link" } }
+        tags: { type: array, items: { type: string } }
+        fileIds: { type: array, items: { $ref: "#/components/schemas/Uuid" }, description: "Attached files (photos, scans)" }
+        order: { type: number, description: "Manual sort position within a list" }
+    Area:
+      type: string
+      description: Life area used to group tasks, notes and checklists
+      enum: [visa, admin, finance, support, newsletter, selling, packing, housing, health, insurance, church, travel, ywam, personal, other]
+
+    Task:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [title, status]
+          properties:
+            title: { type: string }
+            notes: { type: string, description: Markdown }
+            status: { type: string, enum: [todo, doing, waiting, done, skipped] }
+            area: { $ref: "#/components/schemas/Area" }
+            priority: { type: string, enum: [low, normal, high], default: normal }
+            dueDate: { $ref: "#/components/schemas/Date" }
+            remindAt: { $ref: "#/components/schemas/Timestamp" }
+            completedAt: { $ref: "#/components/schemas/Timestamp" }
+            checklistId: { $ref: "#/components/schemas/Uuid", description: "Checklist this task belongs to" }
+            parentTaskId: { $ref: "#/components/schemas/Uuid", description: "For subtasks" }
+            waitingOn: { type: string, description: "Who/what you're waiting on when status = waiting" }
+            sourceUrl: { type: string, description: "Official page to re-check before acting" }
+    Checklist:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [title]
+          properties:
+            title: { type: string }
+            description: { type: string }
+            area: { $ref: "#/components/schemas/Area" }
+            phase: { type: string, enum: [now, before-departure, departure-week, arrival, ongoing], description: "When in the timeline it applies" }
+            archived: { type: boolean }
+    Partner:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [name, stage]
+          properties:
+            name: { type: string }
+            contactId: { $ref: "#/components/schemas/Uuid" }
+            email: { type: string }
+            phone: { type: string }
+            church: { type: string }
+            stage: { type: string, enum: [idea, to-ask, asked, thinking, committed, giving, declined, paused] }
+            monthlyCents: { type: integer, description: "Committed monthly gift" }
+            oneOffCents: { type: integer }
+            currency: { type: string, default: EUR }
+            startDate: { $ref: "#/components/schemas/Date" }
+            prayer: { type: boolean, description: "Prays regularly" }
+            newsletter: { type: boolean, description: "Signed up for the newsletter" }
+            lastContactAt: { $ref: "#/components/schemas/Date" }
+            nextFollowUp: { $ref: "#/components/schemas/Date" }
+            thankedAt: { $ref: "#/components/schemas/Date" }
+            notes: { type: string }
+    BudgetEntry:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [kind, label, amountCents, currency]
+          properties:
+            kind: { type: string, enum: [income, expense, saving] }
+            label: { type: string }
+            category: { type: string, example: "staff fee" }
+            amountCents: { type: integer }
+            currency: { type: string, example: NZD }
+            recurrence: { type: string, enum: [once, monthly, yearly], default: once }
+            date: { $ref: "#/components/schemas/Date" }
+            phase: { type: string, enum: [setup, monthly], description: "One-off setup cost before leaving vs. monthly running cost" }
+            paid: { type: boolean }
+            notes: { type: string }
+    SellItem:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [name, status]
+          properties:
+            name: { type: string }
+            status: { type: string, enum: [decide, to-list, listed, reserved, sold, given-away, keep, store] }
+            askingCents: { type: integer }
+            soldCents: { type: integer }
+            currency: { type: string, default: EUR }
+            platform: { type: string, example: Marktplaats }
+            listingUrl: { type: string }
+            buyer: { type: string }
+            pickupDate: { $ref: "#/components/schemas/Date" }
+            location: { type: string, description: "Where it is now (room, parents' attic)" }
+            notes: { type: string }
+    PackingItem:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [name]
+          properties:
+            name: { type: string }
+            bag: { type: string, enum: [checked, carry-on, personal, ship, buy-there, leave], default: checked }
+            category: { type: string, example: clothes }
+            quantity: { type: integer, default: 1 }
+            packed: { type: boolean, default: false }
+            weightGrams: { type: integer }
+            notes: { type: string }
+    Note:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [title]
+          properties:
+            title: { type: string }
+            body: { type: string, description: Markdown }
+            area: { $ref: "#/components/schemas/Area" }
+            pinned: { type: boolean }
+            kind: { type: string, enum: [note, prayer, journal, meeting, idea], default: note }
+            answeredAt: { $ref: "#/components/schemas/Date", description: "For prayer notes" }
+    Document:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          description: An important document you must not lose. The file itself lives at /v1/files/{fileId}.
+          required: [title, kind]
+          properties:
+            title: { type: string, example: "Passport" }
+            kind: { type: string, enum: [passport, visa, insurance, ticket, id, bank, medical, diploma, reference, contract, receipt, letter, other] }
+            fileId: { $ref: "#/components/schemas/Uuid" }
+            fileName: { type: string }
+            mimeType: { type: string }
+            sizeBytes: { type: integer }
+            sha256: { type: string }
+            number: { type: string, description: "Document number (sensitive)" }
+            issuedAt: { $ref: "#/components/schemas/Date" }
+            expiresAt: { $ref: "#/components/schemas/Date" }
+            offline: { type: boolean, description: "Keep a copy on every device (for no-signal moments at the border)" }
+            notes: { type: string }
+    Contact:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [name]
+          properties:
+            name: { type: string }
+            role: { type: string, example: "YWAM Queenstown staff coordinator" }
+            organisation: { type: string }
+            email: { type: string }
+            phone: { type: string }
+            address: { type: string }
+            notes: { type: string }
+    Gift:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          description: A gift actually received (for thank-yous and the real monthly total)
+          required: [amountCents, currency, date]
+          properties:
+            partnerId: { $ref: "#/components/schemas/Uuid" }
+            amountCents: { type: integer }
+            currency: { type: string, default: EUR }
+            date: { $ref: "#/components/schemas/Date" }
+            recurring: { type: boolean }
+            via: { type: string, example: "ANBI / bank transfer" }
+            thankedAt: { $ref: "#/components/schemas/Date" }
+            notes: { type: string }
+    Newsletter:
+      allOf:
+        - $ref: "#/components/schemas/Common"
+        - type: object
+          required: [title, status]
+          properties:
+            title: { type: string }
+            number: { type: integer }
+            status: { type: string, enum: [idea, draft, ready, sent] }
+            plannedDate: { $ref: "#/components/schemas/Date" }
+            sentAt: { $ref: "#/components/schemas/Timestamp" }
+            body: { type: string, description: Markdown draft }
+            webUrl: { type: string }
+            notes: { type: string }
+    Setting:
+      type: object
+      description: |
+        Key/value settings shared across devices. Use a fixed id per key so all devices write the same record
+        (the `main` settings record uses id 60a98c2f-4004-58e7-bcc2-c88a62377933; see server README).
+      required: [key]
+      properties:
+        key: { type: string, example: main }
+        departureDate: { $ref: "#/components/schemas/Date" }
+        supportTargetMonthlyCents: { type: integer, example: 100000 }
+        supportMinimumMonthlyCents: { type: integer, example: 75000 }
+        currency: { type: string, example: EUR }
+        nzdPerEur: { type: number, example: 1.85 }
+        value: { description: "Free value for other keys" }
+
+    SyncRequest:
+      type: object
+      required: [changes]
+      properties:
+        cursor: { type: [string, "null"], description: "From the previous SyncResponse; omit/null for a full download" }
+        changes:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required: [id, collection, updatedAt, data]
+            properties:
+              id: { $ref: "#/components/schemas/Uuid" }
+              collection: { $ref: "#/components/schemas/Collection" }
+              updatedAt: { $ref: "#/components/schemas/Timestamp" }
+              deletedAt: { oneOf: [{ $ref: "#/components/schemas/Timestamp" }, { type: "null" }] }
+              data: { type: object, additionalProperties: true }
+        limit: { type: integer, default: 500, maximum: 1000, description: "Max records to pull in this response" }
+    SyncResponse:
+      type: object
+      required: [cursor, hasMore, changes, accepted, rejected, serverTime, resetRequired]
+      properties:
+        cursor: { type: string, description: "Store it; send it next time" }
+        hasMore: { type: boolean, description: "Call again (with no changes) to pull the rest" }
+        resetRequired: { type: boolean, description: "Your cursor is too old; drop it and resync from scratch" }
+        serverTime: { $ref: "#/components/schemas/Timestamp" }
+        changes: { type: array, items: { $ref: "#/components/schemas/Record" }, description: "Server records changed after your cursor, oldest first" }
+        accepted:
+          type: array
+          description: Your changes that were stored, with their new seq
+          items:
+            type: object
+            required: [id, seq]
+            properties:
+              id: { $ref: "#/components/schemas/Uuid" }
+              seq: { type: integer }
+        rejected:
+          type: array
+          description: Your changes the server did not store
+          items:
+            type: object
+            required: [id, reason]
+            properties:
+              id: { type: string }
+              reason: { type: string, enum: [stale, invalid, forbidden] }
+              message: { type: string }
+              current: { $ref: "#/components/schemas/Record", description: "Server copy (for stale)" }
+
+    FileInfo:
+      type: object
+      required: [id, sizeBytes, mimeType, sha256, uploadedAt]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        fileName: { type: [string, "null"] }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+        sha256: { type: string }
+        uploadedAt: { $ref: "#/components/schemas/Timestamp" }
+
+    Summary:
+      type: object
+      required: [today, tasks, support, selling, packing, documents]
+      properties:
+        today: { $ref: "#/components/schemas/Date" }
+        departureDate: { type: [string, "null"], format: date }
+        daysToDeparture: { type: [integer, "null"] }
+        tasks:
+          type: object
+          properties:
+            open: { type: integer }
+            overdue: { type: integer }
+            dueThisWeek: { type: integer }
+            done: { type: integer }
+            byArea: { type: object, additionalProperties: { type: integer }, description: "Open tasks per area" }
+        support:
+          type: object
+          properties:
+            committedMonthlyCents: { type: integer, description: "Partners in stage committed or giving (EUR)" }
+            targetMonthlyCents: { type: [integer, "null"] }
+            minimumMonthlyCents: { type: [integer, "null"] }
+            percentOfTarget: { type: [number, "null"] }
+            partners: { type: integer }
+            followUpsDue: { type: integer }
+        selling:
+          type: object
+          properties:
+            itemsLeft: { type: integer }
+            soldCents: { type: integer }
+        packing:
+          type: object
+          properties:
+            total: { type: integer }
+            packed: { type: integer }
+        documents:
+          type: object
+          properties:
+            total: { type: integer }
+            missingFile: { type: integer }
+            expiringWithin180Days: { type: integer }

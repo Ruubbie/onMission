@@ -1,0 +1,80 @@
+<UserControl x:Class="Missie.Desktop.Views.BudgetPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls"
+             xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Missie;component/Views/Shared/PageStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="0,8,0,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Text="Budget" Style="{DynamicResource H1}" />
+            <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource MutedText}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Big numbers -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,6">
+            <sh:StatTile Label="Before leaving (setup)" Value="{Binding SetupTotal}" Sub="{Binding SetupSub}" Accent="{DynamicResource Yellow}" Width="230" />
+            <sh:StatTile Label="Monthly in NZ" Value="{Binding MonthlyTotal}" Sub="{Binding MonthlySub}" Accent="{DynamicResource Purple}" Width="230" />
+            <sh:StatTile Label="Committed support" Value="{Binding CommittedText}" Sub="per month (partners committed + giving)" Accent="{DynamicResource Lime}" Width="230" />
+            <sh:StatTile x:Name="GapTile" Label="Monthly gap" Value="{Binding GapText}" Sub="{Binding GapSub}" Accent="{DynamicResource Green}" Width="230" />
+            <sh:StatTile Label="Other income" Value="{Binding IncomeTotal}" Sub="{Binding IncomeSub}" Accent="{DynamicResource Sand}" Width="230" />
+        </WrapPanel>
+
+        <DockPanel Grid.Row="2" Margin="0,0,0,14" LastChildFill="False">
+            <TextBox DockPanel.Dock="Left" Width="320" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     c:Brutal.Glyph="&#xE721;" c:Brutal.Placeholder="Search…" ToolTip="Search label, category, notes" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource PrimaryButton}" Content="+  New line" Click="New_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Export CSV…" Click="Export_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Import CSV…" Click="Import_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource DangerButton}" Content="Delete line" Click="Delete_Click" Margin="10,0,0,0"
+                    Visibility="{Binding HasSelection, Converter={StaticResource pgBoolVis}}" />
+        </DockPanel>
+
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="120" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="120" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="0.7*" MinHeight="100" />
+            </Grid.RowDefinitions>
+
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="+ Add" Tag="setup" Click="AddIn_Click" VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource pgSectionTitle}">
+                    <Run Text="Before leaving (setup)" /> <Run Text="{Binding SetupTotal, Mode=OneWay}" Foreground="{DynamicResource Muted}" FontWeight="Bold" />
+                </TextBlock>
+            </DockPanel>
+            <DataGrid Grid.Row="1" x:Name="SetupGrid" ItemsSource="{Binding SetupView}" />
+
+            <DockPanel Grid.Row="2" Margin="0,14,0,0">
+                <Button DockPanel.Dock="Right" Content="+ Add" Tag="monthly" Click="AddIn_Click" VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource pgSectionTitle}">
+                    <Run Text="Monthly in NZ" /> <Run Text="{Binding MonthlyTotal, Mode=OneWay}" Foreground="{DynamicResource Muted}" FontWeight="Bold" />
+                    <Run Text="/ month" Foreground="{DynamicResource Muted}" FontWeight="Bold" />
+                </TextBlock>
+            </DockPanel>
+            <DataGrid Grid.Row="3" x:Name="MonthlyGrid" ItemsSource="{Binding MonthlyView}" />
+
+            <DockPanel Grid.Row="4" Margin="0,14,0,0">
+                <Button DockPanel.Dock="Right" Content="+ Add" Tag="income" Click="AddIn_Click" VerticalAlignment="Center" />
+                <TextBlock Text="Income" Style="{StaticResource pgSectionTitle}" />
+            </DockPanel>
+            <DataGrid Grid.Row="5" x:Name="IncomeGrid" ItemsSource="{Binding IncomeView}" />
+        </Grid>
+    </Grid>
+</UserControl>

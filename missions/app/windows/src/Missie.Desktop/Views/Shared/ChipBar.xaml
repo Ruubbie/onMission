@@ -1,0 +1,41 @@
+<UserControl x:Class="Missie.Desktop.Views.Shared.ChipBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <!-- A row of chunky filter chips. Clicking one raises ChipClicked. -->
+    <ItemsControl ItemsSource="{Binding ItemsSource, ElementName=Root}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <WrapPanel />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Button Click="Chip_Click" Cursor="Hand" Margin="0,0,10,10" Focusable="False" ToolTip="Click to filter">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Shadow" Background="{DynamicResource Ink}" CornerRadius="8" Margin="3,3,-3,-3" />
+                                <Border x:Name="Face" Background="{Binding Fill}" BorderBrush="{DynamicResource Ink}"
+                                        BorderThickness="2" CornerRadius="8" Padding="12,5">
+                                    <TextBlock x:Name="Label" Text="{Binding Text}" FontWeight="Bold" FontSize="13"
+                                               Foreground="{DynamicResource Ink}" />
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter TargetName="Face" Property="Margin" Value="3,3,-3,-3" />
+                                    <Setter TargetName="Face" Property="BorderThickness" Value="3" />
+                                    <Setter TargetName="Label" Property="TextDecorations" Value="Underline" />
+                                </DataTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Face" Property="Margin" Value="1,1,-1,-1" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

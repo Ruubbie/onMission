@@ -1,0 +1,40 @@
+<UserControl x:Class="Missie.Desktop.Controls.LinkChips"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls">
+    <ItemsControl x:Name="ChipList">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type c:LinkChipItem}">
+                <Grid>
+                    <!-- "+ Link" button -->
+                    <Button Style="{StaticResource ChipButton}" Background="{StaticResource Sand}" Click="OnAddClick"
+                            Visibility="{Binding IsAddButton, Converter={StaticResource BoolToVisibility}}" ToolTip="Link this to something else">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="10" VerticalAlignment="Center" Margin="0,1,6,0" />
+                            <TextBlock Text="Link" />
+                        </StackPanel>
+                    </Button>
+                    <!-- a linked entity -->
+                    <Button Style="{StaticResource ChipButton}" Click="OnChipClick" ToolTip="{Binding Tooltip}"
+                            Visibility="{Binding IsAddButton, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="18" Height="18" CornerRadius="9" Background="{Binding Accent}" BorderBrush="{StaticResource Ink}" BorderThickness="1.5" Margin="-4,0,6,0">
+                                <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource IconFont}" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="{Binding Title}" MaxWidth="220" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <Button Style="{StaticResource FlatButton}" Padding="3,0" Margin="6,0,-6,0" Click="OnUnlinkClick" ToolTip="Remove link"
+                                    Visibility="{Binding CanUnlink, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="9" />
+                            </Button>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

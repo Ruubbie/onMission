@@ -1,0 +1,93 @@
+# Builds the iPhone app on GitHub's Macs. Copy this file to .github/workflows/ios.yml in your repo.
+#
+# Every push: compiles the app for the iPhone simulator (no Apple account needed). This is how you
+# find out the code builds without owning a Mac.
+# Manual run ("Run workflow" in the Actions tab) with the secrets below: signs the app and uploads it
+# to TestFlight, so it appears in the TestFlight app on your iPhone.
+#
+# Secrets (repo Settings > Secrets and variables > Actions), from App Store Connect > Users and Access >
+# Integrations > App Store Connect API (role: App Manager):
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (the full text of the .p8 file), APPLE_TEAM_ID
+name: iOS app
+
+on:
+  push:
+    paths: ["missions/app/ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "Upload to TestFlight"
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    working-directory: missions/app/ios   # change if the ios folder sits elsewhere in your repo
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project OnMission.xcodeproj -scheme OnMission \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && ok=0 || ok=$?
+          grep -E "error:|warning: .*(Sendable|actor)" build.log | sort -u | head -n 300 || true
+          tail -n 60 build.log
+          exit $ok
+
+  testflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+      - name: App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      - name: Archive (signed automatically with your developer account)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild -project OnMission.xcodeproj -scheme OnMission -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/OnMission.xcarchive \
+            DEVELOPMENT_TEAM="$TEAM" CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            archive
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > export.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM}</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/OnMission.xcarchive -exportOptionsPlist export.plist \
+            -exportPath build/export -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"

@@ -1,0 +1,215 @@
+<UserControl x:Class="Missie.Desktop.Views.HomePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls"
+             xmlns:vm="clr-namespace:Missie.Desktop.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:HomePageViewModel}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,6,24">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="28" />
+                <ColumnDefinition Width="370" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== Left column ===== -->
+            <StackPanel>
+                <TextBlock Text="{Binding Headline}" Style="{StaticResource H1}" FontSize="54" LineHeight="58" Margin="0,4,0,0" />
+                <TextBlock Text="{Binding SubHeadline}" Style="{StaticResource MutedText}" FontSize="15" Margin="2,8,0,0" />
+
+                <!-- Quick add -->
+                <Grid Margin="0,24,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="QuickBox" Text="{Binding QuickText, UpdateSourceTrigger=PropertyChanged}" MinHeight="58" FontSize="16"
+                             c:Brutal.Glyph="#" c:Brutal.Placeholder="Add a task…   try: call bank fri !">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding AddTaskCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <Button Grid.Column="1" Style="{StaticResource PlusButton}" Margin="14,0,0,0" Command="{Binding AddTaskCommand}" ToolTip="Add task (Enter)" />
+                </Grid>
+                <TextBlock Style="{StaticResource MutedText}" FontSize="12" Margin="4,8,0,0"
+                           Text="!  = important     #visa  = area     today, tomorrow, fri, 12/11  = due date" />
+
+                <!-- Today -->
+                <DockPanel Margin="0,30,0,12">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Content="All tasks →" Command="{Binding GoCommand}" CommandParameter="checklists" />
+                    <TextBlock Text="Today" Style="{StaticResource H2}" />
+                    <TextBlock Text="{Binding TodayCount}" Style="{StaticResource MutedText}" VerticalAlignment="Bottom" Margin="12,0,0,4" />
+                </DockPanel>
+                <c:BrutalCard Padding="10,8">
+                    <Grid>
+                        <TextBlock Text="Nothing due in the next 7 days. Nice." Style="{StaticResource MutedText}" Margin="10,14"
+                                   Visibility="{Binding TodayTasks.Count, Converter={StaticResource NullToVisible}}" />
+                        <ItemsControl ItemsSource="{Binding TodayTasks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:HomeTaskRow}">
+                                    <Border x:Name="Row" Padding="8,8" CornerRadius="8" Background="Transparent">
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsDone}" VerticalAlignment="Center" ToolTip="Done" />
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource Chip}" Margin="8,0,0,0" x:Name="DueChip"
+                                                    Background="{StaticResource Sand}" Visibility="{Binding DueText, Converter={StaticResource NullToCollapsed}}">
+                                                <TextBlock Text="{Binding DueText}" />
+                                            </Border>
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource Chip}" Margin="8,0,0,0"
+                                                    Background="{Binding Area, Converter={StaticResource AccentFromKey}}"
+                                                    Visibility="{Binding Area, Converter={StaticResource NullToCollapsed}}">
+                                                <TextBlock Text="{Binding Area}" />
+                                            </Border>
+                                            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#xE7C1;" FontFamily="{StaticResource IconFont}" Foreground="{StaticResource Pink}" FontSize="13"
+                                                               Margin="0,1,6,0" VerticalAlignment="Center" ToolTip="Important"
+                                                               Visibility="{Binding IsHigh, Converter={StaticResource BoolToVisibility}}" />
+                                                    <Button Style="{StaticResource FlatButton}" Padding="0" Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding Id}" HorizontalContentAlignment="Left">
+                                                        <TextBlock x:Name="TitleText" Text="{Binding Title}" FontSize="15" TextTrimming="CharacterEllipsis" />
+                                                    </Button>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding ChecklistTitle}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                    <TextBlock Text="{Binding WaitingOn}" Style="{StaticResource MutedText}" FontSize="12" Margin="8,0,0,0" Foreground="{StaticResource Purple}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                                            <Setter TargetName="DueChip" Property="Background" Value="{StaticResource Pink}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                            <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough" />
+                                            <Setter TargetName="Row" Property="Opacity" Value="0.55" />
+                                        </DataTrigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Row" Property="Background" Value="{StaticResource SoftYellow}" />
+                                        </Trigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </c:BrutalCard>
+
+                <!-- Checklists as folder cards -->
+                <DockPanel Margin="0,34,0,14">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Content="Manage →" Command="{Binding GoCommand}" CommandParameter="checklists" />
+                    <TextBlock Text="My checklists" Style="{StaticResource H2}" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding Checklists}" Margin="0,0,-16,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ChecklistCard}">
+                            <c:FolderCard Title="{Binding Title}" Subtitle="{Binding Subtitle}" Detail="{Binding Detail}" Glyph="{Binding Glyph}"
+                                          Accent="{Binding Accent}" Progress="{Binding Progress}" Badge="{Binding Badge}"
+                                          Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          CommandParameter="{Binding Id}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- ===== Right column ===== -->
+            <StackPanel Grid.Column="2" Margin="0,8,0,0">
+                <!-- Support meter -->
+                <c:BrutalCard Accent="{StaticResource Pink}" FolderTab="True" Padding="20" Cursor="Hand"
+                              MouseLeftButtonUp="OnSupportClick" ToolTip="Open partners">
+                    <StackPanel>
+                        <DockPanel>
+                            <Border DockPanel.Dock="Left" Width="40" Height="40" CornerRadius="7" Background="{StaticResource Pink}" BorderBrush="{StaticResource Ink}" BorderThickness="2.5">
+                                <TextBlock Text="&#xEB51;" Style="{StaticResource Glyph}" FontSize="17" />
+                            </Border>
+                            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Monthly support" Style="{StaticResource H3}" />
+                                <TextBlock Text="{Binding PartnersText}" Style="{StaticResource MutedText}" FontSize="12" />
+                            </StackPanel>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                            <TextBlock Text="{Binding CommittedText}" Style="{StaticResource H1}" FontSize="40" LineHeight="44" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding TargetText}" Style="{StaticResource MutedText}" />
+                        <!-- Meter: green fill = committed, ink tick = minimum, full width = target -->
+                        <Grid Height="30" Margin="0,14,0,0">
+                            <Border Background="{StaticResource Ink}" CornerRadius="7" Margin="3,3,0,0" />
+                            <Border Background="{StaticResource Bg}" BorderBrush="{StaticResource Ink}" BorderThickness="2.5" CornerRadius="7" Margin="0,0,3,3" ClipToBounds="True">
+                                <Grid>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="{Binding CommittedStar}" />
+                                            <ColumnDefinition Width="{Binding RestStar}" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Background="{Binding SupportBrush}" CornerRadius="4,0,0,4" />
+                                    </Grid>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="{Binding MinStar}" />
+                                            <ColumnDefinition Width="{Binding AfterMinStar}" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="1" BorderBrush="{StaticResource Ink}" BorderThickness="3,0,0,0" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding MinimumText}" Style="{StaticResource MutedText}" FontSize="12" />
+                            <TextBlock Text="{Binding SupportStatus}" FontWeight="Bold" FontSize="12.5" />
+                        </DockPanel>
+                    </StackPanel>
+                </c:BrutalCard>
+
+                <!-- Stat tiles -->
+                <c:FolderCard Margin="0,22,0,0" MinHeight="0" Title="Selling" Subtitle="{Binding SellingText}" Detail="{Binding SellingDetail}"
+                              Glyph="&#xE8EC;" Accent="{StaticResource Sand}" Command="{Binding GoCommand}" CommandParameter="selling" />
+                <c:FolderCard Margin="0,16,0,0" MinHeight="0" Title="Packing" Subtitle="{Binding PackingText}" Progress="{Binding PackingProgress}"
+                              Glyph="&#xE7B8;" Accent="{StaticResource Lime}" Command="{Binding GoCommand}" CommandParameter="packing" />
+                <c:FolderCard Margin="0,16,0,0" MinHeight="0" Title="Documents" Subtitle="{Binding DocumentsText}" Detail="{Binding DocumentsDetail}"
+                              Badge="{Binding DocumentsBadge}" Glyph="&#xE8A5;" Accent="{StaticResource Purple}" Command="{Binding GoCommand}" CommandParameter="documents" />
+
+                <!-- Follow up -->
+                <c:BrutalCard Margin="0,22,0,0" Accent="{StaticResource Pink}" Padding="18,14">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Content="Partners →" Command="{Binding GoCommand}" CommandParameter="partners" />
+                            <TextBlock Text="Follow up" Style="{StaticResource H3}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock Text="No follow-ups due this week." Style="{StaticResource MutedText}" Margin="0,2,0,4"
+                                   Visibility="{Binding FollowUps.Count, Converter={StaticResource NullToVisible}}" />
+                        <ItemsControl ItemsSource="{Binding FollowUps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:FollowUpRow}">
+                                    <Button Style="{StaticResource FlatButton}" HorizontalContentAlignment="Stretch" Padding="6,6" Margin="-6,0"
+                                            Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}">
+                                        <DockPanel>
+                                            <Border x:Name="When" DockPanel.Dock="Right" Style="{StaticResource Chip}" Margin="0" Background="{StaticResource Sand}">
+                                                <TextBlock Text="{Binding WhenText}" />
+                                            </Border>
+                                            <TextBlock Text="&#xE716;" FontFamily="{StaticResource IconFont}" FontWeight="Normal" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Stage}" FontWeight="Normal" FontSize="11.5" Foreground="{StaticResource Muted}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Button>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsLate}" Value="True">
+                                            <Setter TargetName="When" Property="Background" Value="{StaticResource Pink}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </c:BrutalCard>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

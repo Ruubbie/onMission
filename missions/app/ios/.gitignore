@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.xcodeproj/
+DerivedData/
+.DS_Store

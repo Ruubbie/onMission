@@ -1,0 +1,133 @@
+<UserControl x:Class="Missie.Desktop.Views.PackingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sh="clr-namespace:Missie.Desktop.Views.Shared"
+             xmlns:c="clr-namespace:Missie.Desktop.Controls">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Missie;component/Views/Shared/PageStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="0,8,0,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Text="Packing" Style="{DynamicResource H1}" />
+            <TextBlock Text="{Binding Subtitle}" Style="{DynamicResource MutedText}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="1" Margin="0,0,0,14" LastChildFill="False">
+            <TextBox DockPanel.Dock="Left" Width="320" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     c:Brutal.Glyph="&#xE721;" c:Brutal.Placeholder="Search…" ToolTip="Search item, category, notes" />
+            <CheckBox DockPanel.Dock="Left" Content="Hide packed" IsChecked="{Binding HidePacked}" VerticalAlignment="Center" Margin="16,0,0,0" />
+            <Button DockPanel.Dock="Right" Style="{DynamicResource PrimaryButton}" Content="+  New item" Click="New_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Export CSV…" Click="Export_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Import CSV…" Click="Import_Click" Margin="10,0,0,0" />
+            <Button DockPanel.Dock="Right" Content="Reset packed" Click="Reset_Click" Margin="10,0,0,0"
+                    ToolTip="Untick every item (for the next trip or a re-pack)" />
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Groups}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <c:BrutalCard Accent="{Binding Accent}" FolderTab="True" Width="470" Margin="0,0,24,24" VerticalAlignment="Top">
+                            <StackPanel>
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                                                ToolTip="Weight limit in kg (empty = no limit)">
+                                        <TextBlock Text="limit" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <TextBox Text="{Binding LimitText}" Width="56" MinHeight="32" Padding="6,2" HorizontalContentAlignment="Right" />
+                                        <TextBlock Text="kg" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Title}" Style="{DynamicResource H2}" />
+                                </DockPanel>
+                                <TextBlock Text="{Binding Summary}" FontWeight="Bold" Margin="0,4,0,8" Foreground="{DynamicResource Ink}" />
+                                <sh:MeterBar Value="{Binding TotalKg}" Maximum="{Binding MeterMax}" Marker1="{Binding MeterLimit}"
+                                             Marker1Label="{Binding LimitLabel}" Limit="{Binding MeterLimit}" BarHeight="20"
+                                             Fill="{DynamicResource Green}" OverFill="{DynamicResource Pink}" Margin="0,0,0,10"
+                                             Visibility="{Binding HasLimit, Converter={StaticResource pgBoolVis}}" />
+
+                                <!-- Column hints -->
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="44" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="44" />
+                                        <ColumnDefinition Width="62" />
+                                        <ColumnDefinition Width="96" />
+                                        <ColumnDefinition Width="40" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="1" Text="item" Style="{DynamicResource MutedText}" />
+                                    <TextBlock Grid.Column="2" Text="qty" Style="{DynamicResource MutedText}" />
+                                    <TextBlock Grid.Column="3" Text="grams" Style="{DynamicResource MutedText}" />
+                                    <TextBlock Grid.Column="4" Text="bag" Style="{DynamicResource MutedText}" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid x:Name="Line" Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="44" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="44" />
+                                                    <ColumnDefinition Width="62" />
+                                                    <ColumnDefinition Width="96" />
+                                                    <ColumnDefinition Width="40" />
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox IsChecked="{Binding Packed, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"
+                                                          ToolTip="Packed">
+                                                    <CheckBox.LayoutTransform>
+                                                        <ScaleTransform ScaleX="1.35" ScaleY="1.35" />
+                                                    </CheckBox.LayoutTransform>
+                                                </CheckBox>
+                                                <TextBox x:Name="NameBox" Grid.Column="1" Text="{Binding Name}" Style="{DynamicResource InlineTextBox}"
+                                                         FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <TextBox Grid.Column="2" Text="{Binding QuantityText}" Style="{DynamicResource InlineTextBox}"
+                                                         HorizontalContentAlignment="Right" VerticalAlignment="Center" Margin="4,0" />
+                                                <TextBox Grid.Column="3" Text="{Binding WeightText}" Style="{DynamicResource InlineTextBox}"
+                                                         HorizontalContentAlignment="Right" VerticalAlignment="Center" Margin="4,0"
+                                                         ToolTip="Weight per piece: 350, 350 g or 1,2 kg" />
+                                                <ComboBox Grid.Column="4" ItemsSource="{x:Static sh:Lists.Bags}" SelectedItem="{Binding Bag}"
+                                                          MinHeight="30" Padding="6,2" FontSize="12" VerticalAlignment="Center" ToolTip="Move to another bag" />
+                                                <Button Grid.Column="5" Style="{DynamicResource SmallIconButton}" Content="&#xE74D;" ToolTip="Delete item"
+                                                        Click="DeleteItem_Click" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Packed}" Value="True">
+                                                    <Setter TargetName="Line" Property="Opacity" Value="0.55" />
+                                                    <Setter TargetName="NameBox" Property="TextDecorations" Value="Strikethrough" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Quick add: type and press Enter -->
+                                <DockPanel Margin="0,6,0,0">
+                                    <Button DockPanel.Dock="Right" Style="{DynamicResource IconButton}" Content="&#xE710;" Click="QuickAdd_Click"
+                                            ToolTip="Add" Margin="8,0,0,0" />
+                                    <TextBox Text="{Binding QuickAdd, UpdateSourceTrigger=PropertyChanged}" Tag="{Binding Key}"
+                                             c:Brutal.Placeholder="Add an item and press Enter" KeyDown="QuickAdd_KeyDown" />
+                                </DockPanel>
+                            </StackPanel>
+                        </c:BrutalCard>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
