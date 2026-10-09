@@ -34,7 +34,7 @@ struct ContactsView: View {
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .searchable(text: $search)
+        .brutalSearch(text: $search)
         .navigationTitle("Contacts")
         .addButton(newContact)
         .navigationDestination(item: $opened) { ContactDetail(contact: $0) }

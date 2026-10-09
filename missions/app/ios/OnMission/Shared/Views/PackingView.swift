@@ -57,8 +57,9 @@ struct PackingView: View {
                     Toggle("Hide packed items", isOn: $hidePacked)
                     Button("Unpack everything") { for i in items { i.packed = false } }
                 } label: {
-                    Image(systemName: "ellipsis.circle").foregroundStyle(Palette.ink)
+                    IconTile(symbol: "ellipsis", size: 36)
                 }
+                .toggleStyle(.automatic)
             }
         }
         .addButton(newItem)
@@ -172,10 +173,10 @@ struct PackingDetail: View {
                     .font(Typeface.body(16, weight: .semibold))
             }
             Section {
-                Picker("Bag", selection: Binding(get: { item.bagValue }, set: { item.bagValue = $0 })) {
+                BrutalSelect("Bag", selection: Binding(get: { item.bagValue }, set: { item.bagValue = $0 })) {
                     ForEach(Bag.allCases) { Text($0.title).tag($0) }
                 }
-                Stepper("Quantity: \(item.quantity)", value: $item.quantity, in: 1...99)
+                BrutalStepper("Quantity: \(item.quantity)", value: $item.quantity, in: 1...99)
                 LabeledContent("Weight (grams, each)") {
                     TextField("0", value: $item.weightGrams, format: .number)
                         .multilineTextAlignment(.trailing)

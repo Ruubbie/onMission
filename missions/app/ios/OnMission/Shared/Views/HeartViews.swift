@@ -109,7 +109,7 @@ struct PrayerDetail: View {
                     .lineLimit(3...12)
             } header: { FormHeader("Answer") }
             LinksSection(record: .note(note))
-            Section { DeleteRecordButton(item: note) }
+            Section { DeleteRecordButton(item: note, compact: true) }
         }
         .brutalForm()
         .navigationTitle("Prayer point")
@@ -167,7 +167,7 @@ struct NotesView: View {
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .searchable(text: $search)
+        .brutalSearch(text: $search)
         .navigationTitle("Notes")
         .addMenu {
             ForEach(NoteKind.allCases) { k in
@@ -239,14 +239,14 @@ struct NoteDetail: View {
                 .foregroundStyle(Palette.ink)
             HStack(spacing: Metrics.s) {
                 Menu {
-                    Picker("Kind", selection: Binding(get: { note.kindValue }, set: { note.kindValue = $0 })) {
+                    BrutalSelect("Kind", selection: Binding(get: { note.kindValue }, set: { note.kindValue = $0 })) {
                         ForEach(NoteKind.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
                     }
                 } label: {
                     Chip(text: note.kindValue.title, accent: .sand, symbol: note.kindValue.symbol)
                 }
                 Menu {
-                    Picker("Area", selection: Binding(get: { note.areaValue }, set: { note.areaValue = $0 })) {
+                    BrutalSelect("Area", selection: Binding(get: { note.areaValue }, set: { note.areaValue = $0 })) {
                         ForEach(Area.allCases) { Text($0.title).tag($0) }
                     }
                 } label: {
@@ -276,7 +276,7 @@ struct NoteDetail: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                DeleteRecordButton(item: note)
+                DeleteRecordButton(item: note, compact: true)
             }
         }
     }

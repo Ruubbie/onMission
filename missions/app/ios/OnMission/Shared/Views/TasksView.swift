@@ -99,7 +99,7 @@ struct TasksView: View {
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .searchable(text: $search)
+        .brutalSearch(text: $search)
         .navigationTitle("Tasks")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { areaMenu }
@@ -112,10 +112,8 @@ struct TasksView: View {
     private var controls: some View {
         QuickAddField(prompt: "New task (try \"Book GP friday #health\")", text: $quick, onSubmit: add)
             .brutalRow(top: 8, bottom: 6)
-        Picker("Show", selection: $grouping) {
-            ForEach(Grouping.allCases) { Text($0.rawValue).tag($0) }
-        }
-        .pickerStyle(.segmented)
+        BrutalSegmented(options: Grouping.allCases.map { ($0, $0.rawValue) }, selection: $grouping)
+            .padding(.trailing, Metrics.shadowSmall)
         .brutalRow(top: 6, bottom: 4)
         if let a = areaFilter {
             HStack {
@@ -135,8 +133,7 @@ struct TasksView: View {
                 }
             }
         } label: {
-            Image(systemName: areaFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                .foregroundStyle(Palette.ink)
+            IconTile(symbol: "line.3.horizontal.decrease", accent: areaFilter == nil ? nil : .yellow, size: 36)
         }
     }
 
@@ -305,16 +302,16 @@ struct TaskDetail: View {
             }
 
             Section {
-                Picker("Status", selection: statusBinding) {
+                BrutalSelect("Status", selection: statusBinding) {
                     ForEach(TaskStatus.allCases) { Text($0.title).tag($0) }
                 }
                 if task.statusValue == .waiting {
                     TextField("Waiting on (person, office…)", text: $task.waitingOn)
                 }
-                Picker("Area", selection: Binding(get: { task.areaValue }, set: { task.areaValue = $0 })) {
+                BrutalSelect("Area", selection: Binding(get: { task.areaValue }, set: { task.areaValue = $0 })) {
                     ForEach(Area.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
                 }
-                Picker("Priority", selection: Binding(get: { task.priorityValue }, set: { task.priorityValue = $0 })) {
+                BrutalSelect("Priority", selection: Binding(get: { task.priorityValue }, set: { task.priorityValue = $0 })) {
                     ForEach(Priority.allCases) { Text($0.title).tag($0) }
                 }
                 OptionalDatePicker(title: "Due date", date: $task.dueDate)
@@ -326,7 +323,7 @@ struct TaskDetail: View {
                     set: { task.remindAt = $0 ? (task.remindAt ?? defaultReminder) : nil }
                 ))
                 if let remind = task.remindAt {
-                    DatePicker("At", selection: Binding(get: { remind }, set: { task.remindAt = $0 }))
+                    BrutalDateRow(title: "At", date: Binding(get: { remind }, set: { task.remindAt = $0 }), components: [.date, .hourAndMinute])
                 }
             } header: { FormHeader("Reminder") }
 

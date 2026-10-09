@@ -124,7 +124,7 @@ struct SyncBadge: View {
     @MainActor @ViewBuilder
     private var statusIcon: some View {
         if sync.isSyncing {
-            ProgressView().controlSize(.small).tint(Palette.ink)
+            BrutalSpinner(size: 16)
         } else if !sync.isLoggedIn {
             Image(systemName: "icloud.slash").foregroundStyle(Palette.muted)
         } else if sync.lastError != nil {
@@ -267,12 +267,10 @@ struct LinkPicker: View {
                 }
             }
             .brutalList()
-            .searchable(text: $query, prompt: "Find a task, partner, document…")
+            .brutalSearch(text: $query, prompt: "Find a task, partner, document…")
             .navigationTitle("Link to")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-            }
+            .brutalSheetToolbar(cancel: { dismiss() })
         }
         .tint(Palette.ink)
     }

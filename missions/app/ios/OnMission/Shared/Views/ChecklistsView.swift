@@ -44,9 +44,8 @@ struct ChecklistsView: View {
         .navigationTitle("Checklists")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Toggle(isOn: $showArchived) { Image(systemName: "archivebox") }
-                    .toggleStyle(.button)
-                    .tint(Palette.ink)
+                IconButton(symbol: "archivebox", accent: showArchived ? .lime : nil, size: 36,
+                           label: showArchived ? "Hide archived" : "Show archived") { showArchived.toggle() }
             }
         }
         .addButton(newList)
@@ -143,16 +142,16 @@ struct ChecklistDetail: View {
                     Button { showLinks = true } label: { Label("Links", systemImage: "link") }
                     Button("Delete checklist", role: .destructive) { confirmDelete = true }
                 } label: {
-                    Image(systemName: "ellipsis.circle").foregroundStyle(Palette.ink)
+                    IconTile(symbol: "ellipsis", size: 36)
                 }
+                .toggleStyle(.automatic)
             }
         }
         .navigationDestination(isPresented: $showLinks) {
             LinksScreen(record: .checklist(list), title: list.displayTitle)
         }
-        .confirmationDialog("Delete \(list.displayTitle) and its items?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive, action: deleteList)
-        }
+        .brutalDialog("Delete \(list.displayTitle) and its items?", isPresented: $confirmDelete,
+                      confirm: "Delete", action: deleteList)
     }
 
     private var header: some View {
@@ -176,11 +175,11 @@ struct ChecklistDetail: View {
             TextField("Title", text: $list.title).textFieldStyle(.brutal)
             TextField("Description", text: $list.desc, axis: .vertical).textFieldStyle(.brutal)
             HStack {
-                Picker("Phase", selection: Binding(get: { list.phaseValue }, set: { list.phaseValue = $0 })) {
+                BrutalSelect("Phase", selection: Binding(get: { list.phaseValue }, set: { list.phaseValue = $0 })) {
                     ForEach(ChecklistPhase.allCases) { Text($0.title).tag($0) }
                 }
                 Spacer()
-                Picker("Area", selection: Binding(get: { list.areaValue }, set: { list.areaValue = $0 })) {
+                BrutalSelect("Area", selection: Binding(get: { list.areaValue }, set: { list.areaValue = $0 })) {
                     ForEach(Area.allCases) { Text($0.title).tag($0) }
                 }
             }
