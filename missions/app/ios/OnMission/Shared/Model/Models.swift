@@ -80,7 +80,7 @@ extension Syncable {
     /// Links stored on this record (`data.links`). Use `Links` to read both directions.
     var links: [RecordLink] {
         get { (Fingerprint.decode(rawData)["links"]?.arrayValue ?? []).compactMap(RecordLink.init) }
-        nonmutating set {
+        set {
             var d = Fingerprint.decode(rawData)
             d["links"] = newValue.isEmpty ? nil : .array(newValue.map(\.json))
             rawData = Fingerprint.encode(d)

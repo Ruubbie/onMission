@@ -221,7 +221,7 @@ enum NoteKind: String, CaseIterable, Identifiable {
     }
 }
 
-enum DocumentKind: String, CaseIterable, Identifiable {
+enum DocumentKind: String, CaseIterable {
     case passport, visa, insurance, ticket, id, bank, medical, diploma, reference, contract, receipt, letter, other
     var title: String {
         switch self {

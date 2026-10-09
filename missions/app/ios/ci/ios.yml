@@ -37,7 +37,7 @@ jobs:
         run: |
           xcodebuild -project OnMission.xcodeproj -scheme OnMission \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && ok=0 || ok=$?
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && ok=0 || ok=$?
           grep -E "error:|warning: .*(Sendable|actor)" build.log | sort -u | head -n 300 || true
           tail -n 60 build.log
           exit $ok
