@@ -42,6 +42,43 @@ jobs:
           tail -n 60 build.log
           exit $ok
 
+  ipa:
+    # Unsigned .ipa for sideloading (Sideloadly / AltStore sign it with your own Apple ID).
+    # Every push to main replaces the "latest" release with a fresh OnMission.ipa.
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+      - name: Build for iPhone (unsigned)
+        run: |
+          xcodebuild -project OnMission.xcodeproj -scheme OnMission -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > ipa.log 2>&1 && ok=0 || ok=$?
+          grep -E "error:" ipa.log | sort -u | head -n 100 || true
+          tail -n 20 ipa.log
+          exit $ok
+      - name: Package OnMission.ipa
+        run: |
+          rm -rf Payload && mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/OnMission.app Payload/
+          zip -qry OnMission.ipa Payload
+          ls -lh OnMission.ipa
+      - name: Publish the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest OnMission.ipa --title "On Mission (build ${{ github.run_number }})" \
+            --notes "Unsigned iPhone app for sideloading with Sideloadly or AltStore. Built from ${GITHUB_SHA::7}." --latest
+
   testflight:
     if: github.event_name == 'workflow_dispatch' && inputs.testflight
     needs: build
