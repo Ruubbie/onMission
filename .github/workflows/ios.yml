@@ -69,7 +69,13 @@ jobs:
         run: |
           rm -rf Payload && mkdir Payload
           cp -R build/Build/Products/Release-iphoneos/OnMission.app Payload/
-          zip -qry OnMission.ipa Payload
+          # Ad-hoc signature so sideloading tools (Impactor, Sideloadly, AltStore) see a normal app;
+          # they re-sign it with your Apple ID anyway.
+          codesign --force --sign - --timestamp=none Payload/OnMission.app
+          codesign -dv Payload/OnMission.app 2>&1 | head -n 5
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIcons' Payload/OnMission.app/Info.plist || true
+          ls Payload/OnMission.app
+          zip -qry -X OnMission.ipa Payload
           ls -lh OnMission.ipa
       - name: Publish the "latest" release
         env:
