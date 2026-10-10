@@ -129,7 +129,9 @@ struct RootView: View {
                     .accessibilityHidden(tab != t)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // The bar floats over the stacks. The safe area doesn't reach into a NavigationStack, so screens
+        // learn the bar's height from the environment (the + button) and from content margins (scrolling).
+        .overlay(alignment: .bottom) {
             if !keyboardShown {
                 FloatingTabBar(selection: tab) { picked in
                     if picked == tab {
@@ -142,6 +144,8 @@ struct RootView: View {
                 .padding(.bottom, 8)
             }
         }
+        .environment(\.floatingBarInset, keyboardShown ? 0 : FloatingTabBar.inset)
+        .contentMargins(.bottom, keyboardShown ? 0 : FloatingTabBar.inset, for: .scrollContent)
         .toggleStyle(.brutal)
         .tint(Palette.ink)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -208,6 +212,9 @@ enum RootTab: String, CaseIterable, Identifiable {
 
 /// A paper pill floating above the content. The selected tab gets a rounded accent fill that slides.
 struct FloatingTabBar: View {
+    /// Room screens leave at the bottom for the bar: its height, its gap and its shadow.
+    static let inset: CGFloat = 64 + 8 + Metrics.shadow
+
     let selection: RootTab
     let onSelect: (RootTab) -> Void
     @Namespace private var fill
@@ -245,4 +252,9 @@ struct FloatingTabBar: View {
         .brutalBox(radius: 22)
         .padding(.trailing, Metrics.shadow)
     }
+}
+
+extension EnvironmentValues {
+    /// How much of the bottom edge the floating tab bar covers (0 when it's hidden).
+    @Entry var floatingBarInset: CGFloat = 0
 }
