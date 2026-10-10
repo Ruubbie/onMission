@@ -62,7 +62,7 @@ struct VaultView: View {
             for url in urls { addFile(url) }
             return !urls.isEmpty
         } isTargeted: { dropTargeted = $0 }
-        .searchable(text: $search)
+        .brutalSearch(text: $search)
         .navigationTitle("Vault")
         .addMenu {
             Button { newDocument() } label: { Label("New item (text or number)", systemImage: "square.and.pencil") }
@@ -198,7 +198,7 @@ struct DocumentDetail: View {
             fileSection
 
             Section {
-                Picker("Kind", selection: Binding(get: { doc.kindValue }, set: { doc.kindValue = $0 })) {
+                BrutalSelect("Kind", selection: Binding(get: { doc.kindValue }, set: { doc.kindValue = $0 })) {
                     ForEach(DocumentKind.allCases, id: \.self) { Label($0.title, systemImage: $0.symbol).tag($0) }
                 }
                 TextField("Number (passport no., policy no.…)", text: $doc.number)
@@ -246,9 +246,8 @@ struct DocumentDetail: View {
             }
             .ignoresSafeArea()
         }
-        .alert("Something went wrong", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("OK") { error = nil }
-        } message: { Text(error ?? "") }
+        .brutalDialog("Something went wrong", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } }),
+                      message: error ?? "")
     }
 
     @MainActor @ViewBuilder
@@ -266,7 +265,7 @@ struct DocumentDetail: View {
                     } label: {
                         HStack {
                             Label("Download to this iPhone", systemImage: "icloud.and.arrow.down")
-                            if downloading { Spacer(); ProgressView() }
+                            if downloading { Spacer(); BrutalSpinner(size: 16) }
                         }
                     }
                     .disabled(downloading)

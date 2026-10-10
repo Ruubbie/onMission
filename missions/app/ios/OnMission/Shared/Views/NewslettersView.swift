@@ -111,10 +111,10 @@ struct NewsletterDetail: View {
                 }
             }
             Section {
-                Picker("Status", selection: Binding(get: { letter.statusValue }, set: { Self.setStatus(letter, $0) })) {
+                BrutalSelect("Status", selection: Binding(get: { letter.statusValue }, set: { Self.setStatus(letter, $0) })) {
                     ForEach(NewsletterStatus.allCases) { Text($0.title).tag($0) }
                 }
-                Stepper("Number \(letter.number)", value: $letter.number, in: 0...999)
+                BrutalStepper("Number \(letter.number)", value: $letter.number, in: 0...999)
                 OptionalDatePicker(title: "Planned for", date: $letter.plannedDate)
                 if let sent = letter.sentAt {
                     LabeledContent("Sent", value: longDate(sent))

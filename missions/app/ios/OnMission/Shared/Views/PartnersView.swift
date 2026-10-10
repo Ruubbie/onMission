@@ -56,7 +56,7 @@ struct PartnersView: View {
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .searchable(text: $search, prompt: "Find a name")
+        .brutalSearch(text: $search, prompt: "Find a name")
         .navigationTitle("Partners")
         .addMenu {
             Button { newPartner() } label: { Label("New partner", systemImage: "person.badge.plus") }
@@ -72,11 +72,8 @@ struct PartnersView: View {
         }
         .fileExporter(isPresented: $exporting, document: DataFile(data: Backup.partnersCSV(partners)),
                       contentType: .commaSeparatedText, defaultFilename: "partners.csv") { _ in }
-        .alert("Import", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
-            Button("OK") { message = nil }
-        } message: {
-            Text(message ?? "")
-        }
+        .brutalDialog("Import", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } }),
+                      message: message ?? "")
     }
 
     private func newPartner() {
@@ -207,10 +204,10 @@ struct PartnerDetail: View {
             }
 
             Section {
-                Picker("Stage", selection: stageBinding) {
+                BrutalSelect("Stage", selection: stageBinding) {
                     ForEach(PartnerStage.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
                 }
-                Picker("Category", selection: Binding(get: { partner.categoryValue }, set: { partner.categoryValue = $0 })) {
+                BrutalSelect("Category", selection: Binding(get: { partner.categoryValue }, set: { partner.categoryValue = $0 })) {
                     ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
                 }
             } header: {
@@ -277,7 +274,7 @@ struct PartnerDetail: View {
         Section {
             MoneyField(title: "Monthly", cents: $partner.monthlyCents, currency: partner.currency)
             MoneyField(title: "One-off", cents: $partner.oneOffCents, currency: partner.currency)
-            Picker("Currency", selection: $partner.currency) {
+            BrutalSelect("Currency", selection: $partner.currency) {
                 Text("Euro").tag("EUR")
                 Text("NZ dollar").tag("NZD")
             }
@@ -381,11 +378,11 @@ struct GiftDetail: View {
         Form {
             Section {
                 MoneyField(title: "Amount", cents: $gift.amountCents, currency: gift.currency)
-                Picker("Currency", selection: $gift.currency) {
+                BrutalSelect("Currency", selection: $gift.currency) {
                     Text("Euro").tag("EUR")
                     Text("NZ dollar").tag("NZD")
                 }
-                DatePicker("Date", selection: $gift.date, displayedComponents: .date)
+                BrutalDateRow(title: "Date", date: $gift.date)
                 Toggle("Part of a monthly gift", isOn: $gift.recurring).tint(Accent.green.color)
                 TextField("Via (bank, YWAM, cash…)", text: $gift.via)
                 OptionalDatePicker(title: "Thanked", date: $gift.thankedAt, defaultDate: .now)
@@ -432,15 +429,9 @@ private struct RecordGiftSheet: View {
             .brutalForm()
             .navigationTitle("Record a gift")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        Automations.recordGift(for: partner, cents: cents, recurring: recurring, ctx)
-                        dismiss()
-                    }
-                    .disabled(cents <= 0)
-                }
+            .brutalSheetToolbar(cancel: { dismiss() }, save: "Save", saveDisabled: cents <= 0) {
+                Automations.recordGift(for: partner, cents: cents, recurring: recurring, ctx)
+                dismiss()
             }
         }
         .onAppear {
@@ -468,7 +459,7 @@ struct BulkAddPartners: View {
                     Text("Family, church, friends, school, work, sport, neighbours, YWAM, your phone contacts. Write everyone down; you don't decide for someone else whether they'll give.")
                 }
                 Section {
-                    Picker("Category for all", selection: $category) {
+                    BrutalSelect("Category for all", selection: $category) {
                         ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
                     }
                 }
@@ -476,10 +467,7 @@ struct BulkAddPartners: View {
             .brutalForm()
             .navigationTitle("Add names")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Add", action: add) }
-            }
+            .brutalSheetToolbar(cancel: { dismiss() }, save: "Add", onSave: add)
         }
     }
 

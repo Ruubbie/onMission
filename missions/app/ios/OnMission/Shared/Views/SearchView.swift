@@ -41,7 +41,7 @@ struct SearchView: View {
             }
         }
         .brutalList()
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Passport, Anna, insurance…")
+        .brutalSearch(text: $query, prompt: "Passport, Anna, insurance…")
         .navigationTitle("Search")
     }
 }

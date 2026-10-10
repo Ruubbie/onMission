@@ -43,6 +43,9 @@ extension View {
         self
             .brutalBackground()
             .tint(Palette.ink)
+            .listRowBackground(Palette.paper)
+            .listRowSeparatorTint(Palette.hairline)
+            .listSectionSpacing(Metrics.xl)
     }
 
     /// A plain List whose rows are brutal cards.
@@ -128,21 +131,38 @@ struct FolderTabCard: View {
 private struct FolderTab: View {
     let title: String
     let accent: Accent
-
-    private var shape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(topLeadingRadius: Metrics.radiusSmall, bottomLeadingRadius: 0,
-                               bottomTrailingRadius: 0, topTrailingRadius: Metrics.radiusSmall, style: .continuous)
-    }
+    private let height: CGFloat = 20 + 6 * 2
 
     var body: some View {
         Text(title)
             .font(Typeface.heading(14))
             .foregroundStyle(accent.onColor)
             .lineLimit(1)
-            .padding(.horizontal, 12)
+            .padding(.leading, 12)
+            .padding(.trailing, 12 + height * 0.6)
             .padding(.top, 6)
             .padding(.bottom, 6 + Metrics.border)
-            .brutalBox(shape: shape, fill: accent.color, shadow: Metrics.shadow)
+            .brutalBox(shape: FolderTabShape(), fill: accent.color, shadow: Metrics.shadow)
+    }
+}
+
+/// A folder tab: straight left side, flat top, right side slanting outward going down.
+/// The slant is 0.6 x the tab height, like the desktop card.
+struct FolderTabShape: Shape {
+    func path(in r: CGRect) -> Path {
+        let slant = r.height * 0.6
+        let tl = Metrics.radiusSmall
+        let tr: CGFloat = 4
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.minY + tl))
+        p.addQuadCurve(to: CGPoint(x: r.minX + tl, y: r.minY), control: CGPoint(x: r.minX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX - slant - tr, y: r.minY))
+        p.addQuadCurve(to: CGPoint(x: r.maxX - slant + tr * 0.5, y: r.minY + tr),
+                       control: CGPoint(x: r.maxX - slant, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.closeSubpath()
+        return p
     }
 }
 
@@ -546,20 +566,29 @@ func longDate(_ d: Date) -> String {
 /// Euros, whole numbers when possible.
 func euros(_ cents: Int) -> String { Money.text(cents, "EUR") }
 
-/// A date in a Form that can also be empty.
+/// A date in a Form that can also be empty: the date field with a × to clear it, or an "Add date" button.
 struct OptionalDatePicker: View {
     let title: String
     @Binding var date: Date?
     var defaultDate: Date = Calendar.current.startOfDay(for: .now)
 
     var body: some View {
-        Toggle(title, isOn: Binding(
-            get: { date != nil },
-            set: { date = $0 ? (date ?? defaultDate) : nil }
-        ))
-        if let current = date {
-            DatePicker("Date", selection: Binding(get: { current }, set: { date = $0 }), displayedComponents: .date)
+        LabeledContent {
+            if let current = date {
+                HStack(spacing: Metrics.s) {
+                    BrutalDateField(date: Binding(get: { current }, set: { date = $0 }))
+                    IconButton(symbol: "xmark", size: 30, label: "Clear \(title)") { date = nil }
+                        .padding(.trailing, Metrics.shadowSmall)
+                }
+            } else {
+                Button("Add date") { date = defaultDate }
+                    .buttonStyle(.brutalCompact)
+                    .padding(.trailing, Metrics.shadowSmall)
+            }
+        } label: {
+            Text(title).font(Typeface.body(16)).foregroundStyle(Palette.ink)
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -609,24 +638,32 @@ struct DeleteRecordButton<T: Syncable>: View {
     @Environment(\.dismiss) private var dismiss
     let item: T
     var extra: (() -> Void)? = nil
+    /// An icon button (for toolbars) instead of the full-width danger button.
+    var compact: Bool = false
     @State private var confirming = false
 
     var body: some View {
-        Button(role: .destructive) {
-            confirming = true
-        } label: {
-            Label("Delete", systemImage: "trash").foregroundStyle(Palette.danger)
-        }
-        .confirmationDialog("Delete \(item.displayTitle)?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
-                let doomed = item
-                let context = ctx
-                let more = extra
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    more?()
-                    Store.delete(doomed, in: context)
+        Group {
+            if compact {
+                IconButton(symbol: "trash", accent: .pink, size: 36, label: "Delete") { confirming = true }
+            } else {
+                Button { confirming = true } label: {
+                    Label("Delete", systemImage: "trash").frame(maxWidth: .infinity)
                 }
+                .buttonStyle(BrutalButtonStyle(kind: .danger))
+                .padding(.trailing, Metrics.shadow)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+            }
+        }
+        .brutalDialog("Delete \(item.displayTitle)?", isPresented: $confirming, confirm: "Delete") {
+            let doomed = item
+            let context = ctx
+            let more = extra
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                more?()
+                Store.delete(doomed, in: context)
             }
         }
     }

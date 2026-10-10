@@ -90,7 +90,7 @@ private struct MissionSection: View {
 
     var body: some View {
         Section {
-            DatePicker("Departure", selection: $settings.departureDate, displayedComponents: .date)
+            BrutalDateRow(title: "Departure", date: $settings.departureDate)
             MoneyField(title: "Monthly minimum", cents: $settings.supportMinimumMonthlyCents)
             MoneyField(title: "Monthly goal", cents: $settings.supportTargetMonthlyCents)
             MoneyField(title: "Average monthly gift", cents: $settings.averageGiftCents)
@@ -153,7 +153,7 @@ private struct AccountSection: View {
             } label: {
                 HStack {
                     Text("Sign in")
-                    if busy { ProgressView().padding(.leading, 6) }
+                    if busy { BrutalSpinner(size: 16).padding(.leading, 6) }
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -183,7 +183,7 @@ private struct AccountSection: View {
                 } label: {
                     HStack {
                         Text(sync.isSyncing ? "Syncing…" : "Sync now")
-                        if sync.isSyncing { ProgressView() }
+                        if sync.isSyncing { BrutalSpinner(size: 16) }
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -293,9 +293,7 @@ private struct DeviceRow: View {
                     .buttonStyle(BrutalButtonStyle(kind: .danger, compact: true))
             }
         }
-        .confirmationDialog("Sign out \(device.name)?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("Sign out", role: .destructive, action: onRevoke)
-        }
+        .brutalDialog("Sign out \(device.name)?", isPresented: $confirming, confirm: "Sign out", action: onRevoke)
     }
 
     private var symbol: String {

@@ -72,7 +72,7 @@ struct GuideReader: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: text) { Image(systemName: "square.and.arrow.up").foregroundStyle(Palette.ink) }
+                ShareLink(item: text) { IconTile(symbol: "square.and.arrow.up", size: 36) }
             }
         }
     }

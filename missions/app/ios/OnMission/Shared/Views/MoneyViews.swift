@@ -178,17 +178,17 @@ struct BudgetEntryDetail: View {
             }
             Section {
                 MoneyField(title: "Amount", cents: $entry.amountCents, currency: entry.currency)
-                Picker("Currency", selection: $entry.currency) {
+                BrutalSelect("Currency", selection: $entry.currency) {
                     Text("Euro").tag("EUR")
                     Text("NZ dollar").tag("NZD")
                 }
-                Picker("Kind", selection: Binding(get: { entry.kindValue }, set: { entry.kindValue = $0 })) {
+                BrutalSelect("Kind", selection: Binding(get: { entry.kindValue }, set: { entry.kindValue = $0 })) {
                     ForEach(BudgetKind.allCases) { Text($0.title).tag($0) }
                 }
-                Picker("When", selection: Binding(get: { entry.phaseValue }, set: { entry.phaseValue = $0 })) {
+                BrutalSelect("When", selection: Binding(get: { entry.phaseValue }, set: { entry.phaseValue = $0 })) {
                     ForEach(BudgetPhase.allCases) { Text($0.title).tag($0) }
                 }
-                Picker("Repeats", selection: Binding(get: { entry.recurrenceValue }, set: { entry.recurrenceValue = $0 })) {
+                BrutalSelect("Repeats", selection: Binding(get: { entry.recurrenceValue }, set: { entry.recurrenceValue = $0 })) {
                     ForEach(Recurrence.allCases) { Text($0.title).tag($0) }
                 }
                 if entry.phaseValue == .setup {
@@ -345,7 +345,7 @@ struct SellDetail: View {
                 Chip(text: item.statusValue.title, accent: item.statusValue.accent)
             }
             Section {
-                Picker("Status", selection: Binding(get: { item.statusValue }, set: { Self.setStatus(item, $0) })) {
+                BrutalSelect("Status", selection: Binding(get: { item.statusValue }, set: { Self.setStatus(item, $0) })) {
                     ForEach(SellStatus.allCases) { Text($0.title).tag($0) }
                 }
                 MoneyField(title: "Asking", cents: $item.askingCents, currency: item.currency)
