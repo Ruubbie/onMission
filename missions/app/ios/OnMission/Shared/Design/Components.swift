@@ -67,16 +67,25 @@ extension View {
     /// The floating yellow + on list screens.
     func addButton(_ action: @escaping () -> Void) -> some View {
         overlay(alignment: .bottomTrailing) {
-            AddButton(action: action).padding(.trailing, 20).padding(.bottom, 20)
+            AboveTabBar { AddButton(action: action) }
         }
     }
 
     /// The floating yellow + that opens a menu.
     func addMenu<MenuContent: View>(@ViewBuilder _ content: @escaping () -> MenuContent) -> some View {
         overlay(alignment: .bottomTrailing) {
-            Menu(content: content) { AddButtonLabel() }
-                .padding(.trailing, 20).padding(.bottom, 20)
+            AboveTabBar { Menu(content: content) { AddButtonLabel() } }
         }
+    }
+}
+
+/// Places the + 20pt from the edges, above the floating tab bar.
+private struct AboveTabBar<Content: View>: View {
+    @Environment(\.floatingBarInset) private var barInset
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content.padding(.trailing, 20).padding(.bottom, 20 + barInset)
     }
 }
 
