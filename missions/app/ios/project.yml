@@ -29,7 +29,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         # The home-screen name. CI overrides APP_NAME with brand.appName from design/tokens.json.
-        APP_NAME: OnMission
+        APP_NAME: hesent.me
         INFOPLIST_KEY_CFBundleDisplayName: $(APP_NAME)
         INFOPLIST_KEY_NSCameraUsageDescription: Scan documents into your vault.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
