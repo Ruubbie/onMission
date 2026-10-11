@@ -2258,14 +2258,342 @@
     "key": "domain-name",
     "data": {
       "kind": "expense",
-      "label": "Domain name for website/newsletter",
+      "label": "Domain name hesent.me",
       "category": "newsletter",
-      "amountCents": 1000,
+      "amountCents": 2000,
       "currency": "EUR",
       "recurrence": "yearly",
       "phase": "monthly",
       "paid": false,
-      "notes": "About EUR 10 per year. Hosting (Cloudflare) and sending (Brevo, up to 300 mails/day) are free."
+      "notes": "Estimate. Yearly renewal at mijn.host; check the exact price on your invoice. Website, newsletter and app all run on your own server."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "visa-ivl",
+    "data": {
+      "kind": "expense",
+      "label": "Visitor levy (IVL) with the visa application",
+      "category": "visa",
+      "amountCents": 10000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). International Visitor Conservation and Tourism Levy, paid together with the Working Holiday Visa fee. Check the amount on the INZ page when you apply."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "flight-ams-zqn",
+    "data": {
+      "kind": "expense",
+      "label": "Flight to Queenstown (one way, checked bag)",
+      "category": "travel",
+      "amountCents": 110000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). January is high season in NZ. One-way Amsterdam to Queenstown usually lands between EUR 900 and 1,400; book early and include at least one checked bag."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "flight-extra-bag",
+    "data": {
+      "kind": "expense",
+      "label": "Extra checked bag or overweight",
+      "category": "travel",
+      "amountCents": 10000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Only if one bag is not enough. Often cheaper when added at booking than at the airport."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "ywam-application-deposit",
+    "data": {
+      "kind": "expense",
+      "label": "YWAM application fee and deposit",
+      "category": "ywam",
+      "amountCents": 60000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Placeholder until YWAM Queenstown confirms the real numbers (see the task to confirm role, start date and fees)."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "health-checkups",
+    "data": {
+      "kind": "expense",
+      "label": "Dentist, GP check and vaccinations before leaving",
+      "category": "health",
+      "amountCents": 15000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Use your Dutch insurance before it stops on 5 Jan. Ask about a spare prescription for any medication."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "passport-renewal",
+    "data": {
+      "kind": "expense",
+      "label": "New passport (only if needed)",
+      "category": "admin",
+      "amountCents": 8500,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Only if your passport expires within about 15 months of arrival. Delete this line if yours is fine."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "intl-driving-permit",
+    "data": {
+      "kind": "expense",
+      "label": "International driving permit (only if you'll drive)",
+      "category": "admin",
+      "amountCents": 2500,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). From the ANWB. NZ accepts a Dutch licence with an official translation or permit for the first 12 months."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "gear",
+    "data": {
+      "kind": "expense",
+      "label": "Gear: backpack, rain jacket, boots, warm layers",
+      "category": "gear",
+      "amountCents": 40000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Queenstown has cold winters (June to August) and changeable weather all year. Buy what you don't have; sell or skip what YWAM or the base can lend."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "adapters-esim",
+    "data": {
+      "kind": "expense",
+      "label": "Plug adapters (type I) and travel bits",
+      "category": "gear",
+      "amountCents": 4000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). NZ uses type I plugs at 230 V, so Dutch chargers work with an adapter."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "vision-evening",
+    "data": {
+      "kind": "expense",
+      "label": "Vision evening and farewell",
+      "category": "support",
+      "amountCents": 15000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Coffee, snacks and printing for the vision evening and send-off. Often shared or covered by church or family."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "arrival-start",
+    "data": {
+      "kind": "expense",
+      "label": "First week in Queenstown: SIM, bus card, groceries, bedding",
+      "category": "living",
+      "amountCents": 30000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Start-up costs in the first days, before the monthly rhythm kicks in."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "emergency-fund",
+    "data": {
+      "kind": "saving",
+      "label": "Emergency fund (at least a flight home)",
+      "category": "saving",
+      "amountCents": 150000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "notes": "Estimate (Oct 2026). Keep it untouched. It may overlap with the visa funds proof as long as the visa amount stays visible in your account."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "ywam-staff-fee",
+    "data": {
+      "kind": "expense",
+      "label": "YWAM fee (room and board)",
+      "category": "ywam",
+      "amountCents": 90000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Placeholder until YWAM confirms the fee for your role. Usually covers a bed on the base and most meals, so there is no separate rent line. If you end up living off base, add rent (Queenstown rooms often cost NZD 250 to 350 a week)."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "insurance-health-travel",
+    "data": {
+      "kind": "expense",
+      "label": "Health and travel insurance",
+      "category": "insurance",
+      "amountCents": 12000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Long-stay international cover with medical, repatriation and liability. Replace with the real premium once you've compared quotes."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "food-extra",
+    "data": {
+      "kind": "expense",
+      "label": "Extra food, coffee and eating out",
+      "category": "living",
+      "amountCents": 15000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). On top of the meals the YWAM fee covers."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "phone-nz",
+    "data": {
+      "kind": "expense",
+      "label": "NZ phone plan",
+      "category": "living",
+      "amountCents": 4000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Prepaid plan with data from a NZ provider."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "transport-nz",
+    "data": {
+      "kind": "expense",
+      "label": "Local transport (bus, occasional rides)",
+      "category": "living",
+      "amountCents": 6000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Queenstown buses are cheap with a Bee Card. More if you buy a bike or share a car."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "personal-care",
+    "data": {
+      "kind": "expense",
+      "label": "Toiletries, clothes and haircuts",
+      "category": "living",
+      "amountCents": 8000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Small personal costs that add up."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "days-off",
+    "data": {
+      "kind": "expense",
+      "label": "Days off and recreation",
+      "category": "living",
+      "amountCents": 6000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Hikes, a coffee with friends, the odd trip. Rest is part of staying healthy."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "giving",
+    "data": {
+      "kind": "expense",
+      "label": "Giving (tithe)",
+      "category": "giving",
+      "amountCents": 10000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). About 10% of a EUR 1,000 support goal. Adjust to what you decide."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "nl-bank",
+    "data": {
+      "kind": "expense",
+      "label": "Dutch bank account fees",
+      "category": "admin",
+      "amountCents": 500,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Keep your Dutch account open for support gifts and Dutch payments."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "buffer-saving",
+    "data": {
+      "kind": "saving",
+      "label": "Monthly buffer saving",
+      "category": "saving",
+      "amountCents": 5000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "notes": "Estimate (Oct 2026). For surprises: a broken phone, a doctor's visit, a trip home."
     }
   },
   {
