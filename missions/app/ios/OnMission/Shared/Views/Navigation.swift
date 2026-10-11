@@ -45,7 +45,7 @@ struct MoreView: View {
 
     /// The home-screen name (brand.appName in tokens.json, set by CI).
     static var appName: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "OnMission"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "hesent.me"
     }
 
     var body: some View {
