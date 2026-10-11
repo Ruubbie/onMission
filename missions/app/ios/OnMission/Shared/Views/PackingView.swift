@@ -113,9 +113,9 @@ private struct PackingSummary: View {
 
     var body: some View {
         let packed = items.filter(\.packed).count
-        BrutalCard(fill: Accent.lime.color) {
+        BrutalCard {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(packed)/\(items.count)").font(Typeface.heading(30)).foregroundStyle(Palette.ink)
+                Text("\(packed)/\(items.count)").font(Typeface.number(26)).foregroundStyle(Palette.ink)
                 Text("packed").font(Typeface.body(15, weight: .semibold)).foregroundStyle(Palette.ink)
             }
             BrutalProgress(value: items.isEmpty ? 0 : Double(packed) / Double(items.count), accent: .yellow)
@@ -132,11 +132,13 @@ private struct PackingRow: View {
                 withAnimation { item.packed.toggle() }
             } label: {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 13, weight: .black))
-                    .foregroundStyle(item.packed ? Palette.ink : Color.clear)
-                    .frame(width: 26, height: 26)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(item.packed ? Accent.lime.color : Palette.paper))
-                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Palette.ink, lineWidth: Metrics.border))
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(item.packed ? Palette.doneInk : Color.clear)
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(item.packed ? Accent.green.color : Color.clear))
+                    .overlay(Circle().strokeBorder(item.packed ? Accent.green.color : Palette.ring, lineWidth: 2))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(item.packed ? "Packed" : "Not packed")
@@ -165,7 +167,7 @@ struct PackingDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Accent.lime.color) {
+            FormHeroRow {
                 TextField("What", text: $item.name)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)

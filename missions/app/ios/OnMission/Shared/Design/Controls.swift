@@ -15,23 +15,18 @@ struct BrutalToggleStyle: ToggleStyle {
         } label: {
             HStack(spacing: Metrics.m) {
                 configuration.label
-                    .font(Typeface.body(16))
+                    .font(Typeface.body(15))
                     .foregroundStyle(Palette.ink)
                 Spacer(minLength: 0)
                 ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Capsule().fill(configuration.isOn ? on : Palette.paper)
+                    Capsule().fill(configuration.isOn ? on : Palette.chip)
                     Circle()
-                        .fill(Palette.ink)
-                        .frame(width: 22, height: 22)
-                        .offset(x: 2, y: 2)
-                        .overlay {
-                            Circle().fill(Palette.paper)
-                                .overlay(Circle().strokeBorder(Palette.ink, lineWidth: Metrics.border))
-                        }
+                        .fill(Cream.fill)
+                        .frame(width: 24, height: 24)
+                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
                         .padding(.horizontal, 3)
                 }
-                .frame(width: 52, height: 30)
-                .overlay(Capsule().strokeBorder(Palette.ink, lineWidth: Metrics.border))
+                .frame(width: 50, height: 30)
                 .animation(.easeOut(duration: 0.12), value: configuration.isOn)
             }
             .contentShape(Rectangle())
@@ -52,25 +47,23 @@ struct BrutalSegmented<V: Hashable>: View {
     var accent: Accent = .yellow
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(options.enumerated()), id: \.offset) { i, option in
+        HStack(spacing: 6) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, option in
                 let selected = option.value == selection
-                if i > 0 { Rectangle().fill(Palette.ink).frame(width: Metrics.border) }
                 Button { selection = option.value } label: {
                     Text(option.label)
-                        .font(selected ? Typeface.heading(14) : Typeface.body(14))
-                        .foregroundStyle(selected ? accent.onColor : Palette.ink)
+                        .font(Typeface.body(12, weight: .semibold))
+                        .foregroundStyle(selected ? Palette.onAccent : Palette.muted)
                         .lineLimit(1)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(selected ? accent.color : Palette.paper)
-                        .contentShape(Rectangle())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(selected ? Accent.yellow.color : Palette.chip))
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }
+            Spacer(minLength: 0)
         }
-        .clipShape(RoundedRectangle(cornerRadius: Metrics.radiusSmall, style: .continuous))
-        .brutalBox(fill: Palette.paper, radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
     }
 }
 
@@ -95,13 +88,13 @@ struct BrutalSelect<V: Hashable, Content: View>: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
                 .tint(Palette.ink)
-                .font(Typeface.body(16, weight: .semibold))
-                .padding(.horizontal, 2)
-                .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+                .font(Typeface.body(15, weight: .semibold))
+                .padding(.horizontal, 4)
+                .brutalBox(fill: Palette.chip, radius: Metrics.radiusSmall)
                 .padding(.trailing, Metrics.shadowSmall)
                 .padding(.vertical, 2)
         } label: {
-            Text(title).font(Typeface.body(16)).foregroundStyle(Palette.ink)
+            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
         }
     }
 }
@@ -125,7 +118,7 @@ struct BrutalDateField: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+        .brutalBox(fill: Palette.chip, radius: Metrics.radiusSmall)
         // The real (invisible) picker on top takes the tap and opens the calendar.
         .overlay {
             DatePicker("", selection: $date, displayedComponents: components)
@@ -152,7 +145,7 @@ struct BrutalDateRow: View {
         LabeledContent {
             BrutalDateField(date: $date, components: components)
         } label: {
-            Text(title).font(Typeface.body(16)).foregroundStyle(Palette.ink)
+            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
         }
     }
 }
@@ -172,11 +165,11 @@ struct BrutalStepper: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(title).font(Typeface.body(16)).foregroundStyle(Palette.ink)
+            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
             Spacer(minLength: 0)
             step("minus", enabled: value > range.lowerBound) { value -= 1 }
             Text("\(value)")
-                .font(Typeface.heading(17))
+                .font(Typeface.body(15, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(Palette.ink)
                 .frame(minWidth: 28)
@@ -193,7 +186,7 @@ struct BrutalStepper: View {
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(BrutalSquarePressStyle(shadow: enabled ? Metrics.shadowSmall : 0))
+        .buttonStyle(BrutalSquarePressStyle())
         .disabled(!enabled)
     }
 }
@@ -209,8 +202,8 @@ struct BrutalSearchField: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Palette.ink)
-            TextField(prompt, text: $text)
-                .font(Typeface.body(16))
+            TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Palette.muted))
+                .font(Typeface.body(15))
                 .foregroundStyle(Palette.ink)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -220,8 +213,7 @@ struct BrutalSearchField: View {
                         .font(.system(size: 11, weight: .black))
                         .foregroundStyle(Palette.ink)
                         .frame(width: 22, height: 22)
-                        .background(Circle().fill(Palette.paper))
-                        .overlay(Circle().strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
+                        .background(Circle().fill(Palette.chip))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear")
@@ -229,7 +221,7 @@ struct BrutalSearchField: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+        .brutalBox(radius: Metrics.radiusSmall)
     }
 }
 
@@ -242,27 +234,22 @@ extension View {
                 .padding(.trailing, Metrics.l + Metrics.shadowSmall)
                 .padding(.top, 4)
                 .padding(.bottom, Metrics.m)
-                .background(Palette.background)
+                .background(Palette.backgroundTop)
         }
     }
 }
 
 // MARK: - Spinner
 
-/// A yellow square that turns in hard steps every 150 ms (a square turned a full 90° would look still).
+/// A small sage spinner.
 struct BrutalSpinner: View {
     var size: CGFloat = 20
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.15)) { context in
-            let step = Int(context.date.timeIntervalSinceReferenceDate / 0.15) % 4
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Accent.yellow.color)
-                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Palette.ink, lineWidth: Metrics.border))
-                .frame(width: size, height: size)
-                .rotationEffect(.degrees(Double(step) * 22.5))
-        }
-        .accessibilityLabel("Loading")
+        ProgressView()
+            .tint(Accent.yellow.color)
+            .frame(width: size, height: size)
+            .accessibilityLabel("Loading")
     }
 }
 
@@ -279,11 +266,11 @@ struct BrutalDialog: View {
 
     var body: some View {
         ZStack {
-            Palette.ink.opacity(0.4).ignoresSafeArea()
+            Color.black.opacity(0.45).ignoresSafeArea()
                 .onTapGesture(perform: onClose)
             VStack(alignment: .leading, spacing: Metrics.m) {
                 Text(title)
-                    .font(Typeface.heading(20))
+                    .font(Typeface.heading(18))
                     .foregroundStyle(Palette.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 if !message.isEmpty {
@@ -304,10 +291,9 @@ struct BrutalDialog: View {
                         .buttonStyle(.brutalSecondary)
                 }
                 .padding(.top, 4)
-                .padding(.trailing, Metrics.shadow)
             }
             .padding(Metrics.xl)
-            .brutalBox()
+            .brutalBox(fill: Palette.paper, radius: 24)
             .padding(.horizontal, 32)
         }
     }
@@ -358,7 +344,8 @@ extension View {
                 }
             }
         }
-        .toolbarBackground(Palette.background, for: .navigationBar)
+        .toolbarBackground(Palette.backgroundTop, for: .navigationBar)
         .presentationDragIndicator(.visible)
+        .presentationBackground(Palette.gradient)
     }
 }

@@ -15,7 +15,7 @@ struct OnMissionApp: App {
     }()
 
     init() {
-        // Fonts first: Typeface checks once whether Familjen Grotesk is available.
+        // Fonts first: Typeface checks once whether DM Sans and Lora are available.
         FontLoader.registerBundledFonts()
         BarAppearance.apply()
     }
@@ -23,13 +23,13 @@ struct OnMissionApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .preferredColorScheme(.light)
+                .preferredColorScheme(.dark)
         }
         .modelContainer(container)
     }
 }
 
-/// Registers every .ttf in the app bundle, so `Font.custom("FamiljenGrotesk-Bold")` works
+/// Registers every .ttf in the app bundle, so `Font.custom("DMSans-Bold")` works
 /// without listing the fonts in Info.plist.
 enum FontLoader {
     static func registerBundledFonts() {
@@ -41,20 +41,18 @@ enum FontLoader {
     }
 }
 
-/// The navigation bar in the app's colours and font: no blur, an ink line once content scrolls
-/// under it, and a boxed arrow as the back button. The tab bar is our own `FloatingTabBar`.
+/// The navigation bar in the app's colours and font: see-through over the mocha gradient,
+/// a mocha fill once content scrolls under it, and a soft round back button.
 enum BarAppearance {
     static func apply() {
         let ink = UIColor(Palette.ink)
-        let cream = UIColor(Palette.background)
 
         let nav = UINavigationBarAppearance()
         nav.configureWithOpaqueBackground()
-        nav.backgroundColor = cream
-        nav.shadowColor = ink
-        nav.shadowImage = line(ink)
-        nav.largeTitleTextAttributes = [.font: font(bold: true, size: 34), .foregroundColor: ink]
-        nav.titleTextAttributes = [.font: font(bold: true, size: 17), .foregroundColor: ink]
+        nav.backgroundColor = UIColor(Palette.backgroundTop)
+        nav.shadowColor = .clear
+        nav.largeTitleTextAttributes = [.font: font(size: 26), .foregroundColor: ink]
+        nav.titleTextAttributes = [.font: font(size: 17), .foregroundColor: ink]
         let back = backImage()
         nav.setBackIndicatorImage(back, transitionMaskImage: back)
         let hidden: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.clear, .font: UIFont.systemFont(ofSize: 0.1)]
@@ -62,8 +60,11 @@ enum BarAppearance {
         nav.backButtonAppearance.highlighted.titleTextAttributes = hidden
 
         let top = nav.copy()
-        top.shadowColor = .clear
-        top.shadowImage = nil
+        top.configureWithTransparentBackground()
+        top.largeTitleTextAttributes = nav.largeTitleTextAttributes
+        top.titleTextAttributes = nav.titleTextAttributes
+        top.setBackIndicatorImage(back, transitionMaskImage: back)
+        top.backButtonAppearance = nav.backButtonAppearance
 
         UINavigationBar.appearance().standardAppearance = nav
         UINavigationBar.appearance().compactAppearance = nav
@@ -71,45 +72,29 @@ enum BarAppearance {
         UINavigationBar.appearance().tintColor = ink
     }
 
-    /// The 2.5pt ink line under the bar.
-    private static func line(_ ink: UIColor) -> UIImage {
-        UIGraphicsImageRenderer(size: CGSize(width: 1, height: Metrics.border)).image { ctx in
-            ink.setFill()
-            ctx.fill(CGRect(x: 0, y: 0, width: 1, height: Metrics.border))
-        }
-    }
-
-    /// A 36pt paper square with an ink outline, hard shadow and a bold left arrow.
+    /// A 34pt soft circle with a left chevron.
     private static func backImage() -> UIImage {
-        let size: CGFloat = 36, shadow = Metrics.shadowSmall, border = Metrics.border
-        let ink = UIColor(Palette.ink), paper = UIColor(Palette.paper)
-        let image = UIGraphicsImageRenderer(size: CGSize(width: size + shadow, height: size + shadow)).image { _ in
-            let rect = CGRect(x: border / 2, y: border / 2, width: size - border, height: size - border)
-            ink.setFill()
-            UIBezierPath(roundedRect: rect.offsetBy(dx: shadow, dy: shadow), cornerRadius: Metrics.radiusSmall).fill()
-            let box = UIBezierPath(roundedRect: rect, cornerRadius: Metrics.radiusSmall)
-            paper.setFill()
-            box.fill()
-            ink.setStroke()
-            box.lineWidth = border
-            box.stroke()
-            let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .bold)
-            if let arrow = UIImage(systemName: "arrow.left", withConfiguration: config)?
+        let size: CGFloat = 34
+        let ink = UIColor(Palette.ink)
+        let image = UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { _ in
+            UIColor(Palette.chip).setFill()
+            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: size, height: size)).fill()
+            let config = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+            if let arrow = UIImage(systemName: "chevron.left", withConfiguration: config)?
                 .withTintColor(ink, renderingMode: .alwaysOriginal) {
-                arrow.draw(at: CGPoint(x: (size - arrow.size.width) / 2, y: (size - arrow.size.height) / 2))
+                arrow.draw(at: CGPoint(x: (size - arrow.size.width) / 2 - 1, y: (size - arrow.size.height) / 2))
             }
         }
         return image.withRenderingMode(.alwaysOriginal)
-            .withAlignmentRectInsets(UIEdgeInsets(top: 0, left: -8, bottom: -shadow, right: 0))
+            .withAlignmentRectInsets(UIEdgeInsets(top: 0, left: -8, bottom: 0, right: 0))
     }
 
-    private static func font(bold: Bool, size: CGFloat) -> UIFont {
-        let name = bold ? "FamiljenGrotesk-Bold" : "FamiljenGrotesk-Regular"
-        return UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: bold ? .black : .regular)
+    private static func font(size: CGFloat) -> UIFont {
+        UIFont(name: "DMSans-Bold", size: size) ?? UIFont.systemFont(ofSize: size, weight: .bold)
     }
 }
 
-/// Five tabs (Today, Tasks, Partners, Vault, More), each its own navigation stack kept alive,
+/// Five tabs (Today, Tasks, Support, Prayer, More), each its own navigation stack kept alive,
 /// under our floating tab bar.
 struct RootView: View {
     @Environment(\.modelContext) private var ctx
@@ -140,14 +125,14 @@ struct RootView: View {
                         withAnimation(.easeOut(duration: 0.18)) { tab = picked }
                     }
                 }
-                .padding(.horizontal, Metrics.l)
+                .padding(.horizontal, 14)
                 .padding(.bottom, 8)
             }
         }
         .environment(\.floatingBarInset, keyboardShown ? 0 : FloatingTabBar.inset)
         .contentMargins(.bottom, keyboardShown ? 0 : FloatingTabBar.inset, for: .scrollContent)
         .toggleStyle(.brutal)
-        .tint(Palette.ink)
+        .tint(Accent.yellow.color)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             keyboardShown = true
         }
@@ -174,27 +159,18 @@ struct RootView: View {
 }
 
 enum RootTab: String, CaseIterable, Identifiable {
-    case today, tasks, partners, vault, more
+    case today, tasks, support, prayer, more
     var id: String { rawValue }
 
-    var title: String { self == .vault ? "Vault" : rawValue.capitalized }
+    var title: String { rawValue.capitalized }
 
     var symbol: String {
         switch self {
-        case .today: AppSection.today.symbol
-        case .tasks: AppSection.tasks.symbol
-        case .partners: AppSection.partners.symbol
-        case .vault: AppSection.documents.symbol
-        case .more: "square.grid.2x2.fill"
-        }
-    }
-
-    var accent: Accent {
-        switch self {
-        case .today, .tasks: .yellow
-        case .partners: .pink
-        case .vault: .purple
-        case .more: .sand
+        case .today: "sun.max"
+        case .tasks: "checkmark.square"
+        case .support: "heart"
+        case .prayer: "hands.and.sparkles"
+        case .more: "ellipsis"
         }
     }
 
@@ -203,54 +179,49 @@ enum RootTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: TodayView()
         case .tasks: TasksView()
-        case .partners: PartnersView()
-        case .vault: VaultView()
+        case .support: PartnersView()
+        case .prayer: PrayerView()
         case .more: MoreView()
         }
     }
 }
 
-/// A paper pill floating above the content. The selected tab gets a rounded accent fill that slides.
+/// A dark mocha pill floating above the content. The selected tab gets a sage circle that slides.
 struct FloatingTabBar: View {
-    /// Room screens leave at the bottom for the bar: its height, its gap and its shadow.
-    static let inset: CGFloat = 64 + 8 + Metrics.shadow
+    /// Room screens leave at the bottom for the bar: its height and its gap.
+    static let inset: CGFloat = 54 + 8
 
     let selection: RootTab
     let onSelect: (RootTab) -> Void
     @Namespace private var fill
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             ForEach(RootTab.allCases) { t in
                 let selected = t == selection
                 Button { onSelect(t) } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: t.symbol).font(.system(size: 20, weight: .bold))
-                        Text(t.title).font(Typeface.heading(10)).lineLimit(1)
-                    }
-                    .foregroundStyle(selected ? t.accent.onColor : Palette.muted)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background {
-                        if selected {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(t.accent.color)
-                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
-                                .matchedGeometryEffect(id: "fill", in: fill)
+                    Image(systemName: t.symbol)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(selected ? Palette.onAccent : Palette.tabIcon)
+                        .frame(width: 40, height: 40)
+                        .background {
+                            if selected {
+                                Circle().fill(Accent.yellow.color)
+                                    .matchedGeometryEffect(id: "fill", in: fill)
+                            }
                         }
-                    }
-                    .contentShape(Rectangle())
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(t.title)
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: 64)
-        .brutalBox(radius: 22)
-        .padding(.trailing, Metrics.shadow)
+        .padding(.horizontal, 6)
+        .frame(height: 54)
+        .background(Capsule().fill(Palette.tabBar).shadow(color: .black.opacity(0.3), radius: 12, y: 6))
     }
 }
 

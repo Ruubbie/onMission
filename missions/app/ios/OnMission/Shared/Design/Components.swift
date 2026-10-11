@@ -1,27 +1,17 @@
 import SwiftUI
 import SwiftData
 
-// The neo-brutalist building blocks: cream page, paper cards, thick ink outlines and hard
-// (never blurred) ink shadows. Every screen is made from these.
+// The building blocks of the Mocha & Ollie look: a mocha gradient page, soft mocha cards
+// without outlines, pill buttons in Ollie's sage, and one cream focal card per screen.
+// (The "brutal" names stay from the first design so every screen keeps compiling.)
 
-// MARK: - The basic box: fill, ink outline, hard shadow
+// MARK: - The basic box: a filled shape
 
 extension View {
-    /// Paper (or any) fill, ink outline and a solid ink shadow offset to the bottom right.
+    /// A filled shape behind the content. `shadow` and `border` are kept for old call sites and ignored.
     func brutalBox<S: Shape>(shape: S, fill: Color = Palette.paper, shadow: CGFloat = Metrics.shadow,
                              border: CGFloat = Metrics.border) -> some View {
-        self
-            .background {
-                ZStack {
-                    shape.fill(Palette.ink).offset(x: shadow, y: shadow)
-                    shape.fill(fill)
-                }
-            }
-            .overlay {
-                shape.stroke(Palette.ink, lineWidth: border)
-                    .padding(border / 2)
-                    .allowsHitTesting(false)
-            }
+        self.background { shape.fill(fill) }
     }
 
     /// The same, with a rounded rectangle.
@@ -30,25 +20,36 @@ extension View {
         brutalBox(shape: RoundedRectangle(cornerRadius: radius, style: .continuous), fill: fill, shadow: shadow, border: border)
     }
 
-    /// The cream page behind a screen (also behind Lists and Forms).
+    /// The dashed stitch just inside a card's edge (focal cards and the thanks card).
+    func stitched(_ color: Color = Palette.stitch, radius: CGFloat = Metrics.radius) -> some View {
+        overlay {
+            RoundedRectangle(cornerRadius: max(radius - 6, 4), style: .continuous)
+                .strokeBorder(color, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .padding(6)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// The mocha gradient behind a screen (also behind Lists and Forms).
     func brutalBackground() -> some View {
         self
             .scrollContentBackground(.hidden)
-            .background(Palette.background.ignoresSafeArea())
-            .toolbarBackground(Palette.background, for: .navigationBar)
+            .background(Palette.gradient.ignoresSafeArea())
+            .toolbarBackground(.hidden, for: .navigationBar)
     }
 
-    /// A Form in the app's style: cream page, ink tint.
+    /// A Form in the app's style: mocha page, mocha rows, sage tint.
     func brutalForm() -> some View {
         self
             .brutalBackground()
-            .tint(Palette.ink)
+            .tint(Accent.yellow.color)
             .listRowBackground(Palette.paper)
             .listRowSeparatorTint(Palette.hairline)
             .listSectionSpacing(Metrics.xl)
+            .foregroundStyle(Palette.ink)
     }
 
-    /// A plain List whose rows are brutal cards.
+    /// A plain List whose rows are cards.
     func brutalList() -> some View {
         self
             .listStyle(.plain)
@@ -56,7 +57,7 @@ extension View {
             .environment(\.defaultMinListRowHeight, 1)
     }
 
-    /// A row inside `brutalList()`: no separator, no grey background, room for the shadow.
+    /// A row inside `brutalList()`: no separator, no grey background.
     func brutalRow(top: CGFloat = 6, bottom: CGFloat = 8) -> some View {
         self
             .listRowBackground(Color.clear)
@@ -64,14 +65,14 @@ extension View {
             .listRowInsets(EdgeInsets(top: top, leading: Metrics.l, bottom: bottom, trailing: Metrics.l))
     }
 
-    /// The floating yellow + on list screens.
+    /// The floating sage + on list screens.
     func addButton(_ action: @escaping () -> Void) -> some View {
         overlay(alignment: .bottomTrailing) {
             AboveTabBar { AddButton(action: action) }
         }
     }
 
-    /// The floating yellow + that opens a menu.
+    /// The floating sage + that opens a menu.
     func addMenu<MenuContent: View>(@ViewBuilder _ content: @escaping () -> MenuContent) -> some View {
         overlay(alignment: .bottomTrailing) {
             AboveTabBar { Menu(content: content) { AddButtonLabel() } }
@@ -91,7 +92,7 @@ private struct AboveTabBar<Content: View>: View {
 
 // MARK: - Cards
 
-/// A paper card with an ink outline and a hard shadow.
+/// A soft mocha card.
 struct BrutalCard<Content: View>: View {
     var fill: Color = Palette.paper
     var padding: CGFloat = Metrics.l
@@ -104,11 +105,41 @@ struct BrutalCard<Content: View>: View {
         }
         .padding(padding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .brutalBox(fill: fill, shadow: shadow)
+        .brutalBox(fill: fill)
     }
 }
 
-/// A card with a coloured folder tab on top carrying the title. Used on Today and More.
+/// The one cream card on a screen, with its stitch. Text inside uses `Cream.ink` / `Cream.sub`.
+struct FocalCard<Content: View>: View {
+    var padding: CGFloat = Metrics.l
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            content
+        }
+        .padding(padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(Cream.ink)
+        .brutalBox(fill: Cream.fill)
+        .stitched(Cream.stitch)
+    }
+}
+
+/// Small uppercase label ("START WITH THANKS").
+struct Cap: View {
+    let text: String
+    var color: Color = Palette.muted
+    init(_ text: String, color: Color = Palette.muted) { self.text = text; self.color = color }
+    var body: some View {
+        Text(text.uppercased())
+            .font(Typeface.cap)
+            .kerning(0.7)
+            .foregroundStyle(color)
+    }
+}
+
+/// A soft tile with an accent dot, a title and one live line. Used on More.
 struct FolderTabCard: View {
     let title: String
     let accent: Accent
@@ -129,89 +160,26 @@ struct FolderTabCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: -Metrics.border) {
-            FolderTab(title: title, accent: accent)
-            FolderBody(accent: accent, symbol: symbol, count: count, subtitle: subtitle)
+        VStack(alignment: .leading, spacing: 2) {
+            Circle().fill(accent.color).frame(width: 10, height: 10).padding(.bottom, 6)
+            Text(title)
+                .font(Typeface.body(14, weight: .bold))
+                .foregroundStyle(Palette.ink)
+                .lineLimit(1)
+            Text([count, subtitle].filter { !$0.isEmpty }.joined(separator: " "))
+                .font(Typeface.body(12, weight: .semibold))
+                .foregroundStyle(Palette.muted)
+                .lineLimit(1)
         }
+        .padding(Metrics.m)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .brutalBox(radius: 16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct FolderTab: View {
-    let title: String
-    let accent: Accent
-    private let height: CGFloat = 20 + 6 * 2
-
-    var body: some View {
-        Text(title)
-            .font(Typeface.heading(14))
-            .foregroundStyle(accent.onColor)
-            .lineLimit(1)
-            .padding(.leading, 12)
-            .padding(.trailing, 12 + height * 0.6)
-            .padding(.top, 6)
-            .padding(.bottom, 6 + Metrics.border)
-            .brutalBox(shape: FolderTabShape(), fill: accent.color, shadow: Metrics.shadow)
-    }
-}
-
-/// A folder tab: straight left side, flat top, right side slanting outward going down.
-/// The slant is 0.6 x the tab height, like the desktop card.
-struct FolderTabShape: Shape {
-    func path(in r: CGRect) -> Path {
-        let slant = r.height * 0.6
-        let tl = Metrics.radiusSmall
-        let tr: CGFloat = 4
-        var p = Path()
-        p.move(to: CGPoint(x: r.minX, y: r.maxY))
-        p.addLine(to: CGPoint(x: r.minX, y: r.minY + tl))
-        p.addQuadCurve(to: CGPoint(x: r.minX + tl, y: r.minY), control: CGPoint(x: r.minX, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX - slant - tr, y: r.minY))
-        p.addQuadCurve(to: CGPoint(x: r.maxX - slant + tr * 0.5, y: r.minY + tr),
-                       control: CGPoint(x: r.maxX - slant, y: r.minY))
-        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
-        p.closeSubpath()
-        return p
-    }
-}
-
-private struct FolderBody: View {
-    let accent: Accent
-    let symbol: String
-    let count: String
-    let subtitle: String
-
-    private var shape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: Metrics.radius,
-                               bottomTrailingRadius: Metrics.radius, topTrailingRadius: Metrics.radius, style: .continuous)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center) {
-                AccentSquareIcon(symbol: symbol, accent: accent)
-                Spacer(minLength: 4)
-                Text(count)
-                    .font(Typeface.heading(30))
-                    .foregroundStyle(Palette.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-            }
-            if !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(Typeface.body(13, weight: .medium))
-                    .foregroundStyle(Palette.muted)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(Metrics.m)
-        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-        .brutalBox(shape: shape)
-    }
-}
-
-/// An icon in a small accent-filled outlined square.
+/// An icon in a small accent circle.
 struct AccentSquareIcon: View {
     let symbol: String
     var accent: Accent = .yellow
@@ -219,20 +187,45 @@ struct AccentSquareIcon: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: size * 0.45, weight: .bold))
+            .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(accent.onColor)
             .frame(width: size, height: size)
-            .background(RoundedRectangle(cornerRadius: Metrics.radiusSmall, style: .continuous).fill(accent.color))
-            .overlay(
-                RoundedRectangle(cornerRadius: Metrics.radiusSmall, style: .continuous)
-                    .strokeBorder(Palette.ink, lineWidth: Metrics.borderThin)
-            )
+            .background(Circle().fill(accent.color))
+    }
+}
+
+/// Initials in a soft circle (Support list).
+struct Avatar: View {
+    let name: String
+    var size: CGFloat = 30
+    var body: some View {
+        let letters = name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0) }.joined().uppercased()
+        Text(letters.isEmpty ? "?" : letters)
+            .font(Typeface.body(11, weight: .bold))
+            .foregroundStyle(Palette.ink)
+            .frame(width: size, height: size)
+            .background(Circle().fill(Palette.chip))
+    }
+}
+
+/// A small tinted status pill (Partner, Thinking, Answered).
+struct Pill: View {
+    let text: String
+    var accent: Accent = .yellow
+    var body: some View {
+        Text(text)
+            .font(Typeface.body(10.5, weight: .bold))
+            .lineLimit(1)
+            .foregroundStyle(accent.color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(accent.color.opacity(0.22)))
     }
 }
 
 // MARK: - Buttons
 
-/// Bold label in a filled, outlined box with a hard shadow. Pressing moves it into its shadow.
+/// A pill button. Primary is sage, secondary a soft chip, danger coral.
 struct BrutalButtonStyle: ButtonStyle {
     enum Kind { case primary, secondary, danger }
     var kind: Kind = .primary
@@ -244,25 +237,23 @@ struct BrutalButtonStyle: ButtonStyle {
         if let fill { return fill }
         switch kind {
         case .primary: return Accent.yellow.color
-        case .secondary: return Palette.paper
+        case .secondary: return Palette.chip
         case .danger: return Palette.danger
         }
     }
 
+    private var foreground: Color { kind == .secondary && fill == nil ? Palette.ink : Palette.onAccent }
+
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let shadow = compact ? Metrics.shadowSmall : Metrics.shadow
-        let shape = RoundedRectangle(cornerRadius: Metrics.radiusSmall, style: .continuous)
-        return configuration.label
-            .font(Typeface.heading(compact ? 14 : 16))
-            .foregroundStyle(kind == .danger ? Color.white : Palette.ink)
-            .padding(.horizontal, compact ? 10 : 16)
+        configuration.label
+            .font(Typeface.body(compact ? 13 : 15, weight: .bold))
+            .foregroundStyle(foreground)
+            .padding(.horizontal, compact ? 12 : 18)
             .padding(.vertical, compact ? 6 : 10)
-            .background(shape.fill(background))
-            .overlay(shape.strokeBorder(Palette.ink, lineWidth: Metrics.border))
-            .background(shape.fill(Palette.ink).offset(x: pressed ? 0 : shadow, y: pressed ? 0 : shadow))
-            .offset(x: pressed ? shadow : 0, y: pressed ? shadow : 0)
-            .animation(.easeOut(duration: 0.08), value: pressed)
+            .background(Capsule().fill(background))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
@@ -272,25 +263,21 @@ extension ButtonStyle where Self == BrutalButtonStyle {
     static var brutalCompact: BrutalButtonStyle { BrutalButtonStyle(kind: .secondary, compact: true) }
 }
 
-/// Square press style used by the icon and add buttons.
+/// Soft press for round icon and add buttons.
 struct BrutalSquarePressStyle: ButtonStyle {
-    var fill: Color = Palette.paper
+    var fill: Color = Palette.chip
     var shadow: CGFloat = Metrics.shadowSmall
-    var radius: CGFloat = Metrics.radiusSmall
+    var radius: CGFloat = 999
 
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        return configuration.label
-            .background(shape.fill(fill))
-            .overlay(shape.strokeBorder(Palette.ink, lineWidth: Metrics.border))
-            .background(shape.fill(Palette.ink).offset(x: pressed ? 0 : shadow, y: pressed ? 0 : shadow))
-            .offset(x: pressed ? shadow : 0, y: pressed ? shadow : 0)
-            .animation(.easeOut(duration: 0.08), value: pressed)
+        configuration.label
+            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill))
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
-/// A square outlined icon button with a small hard shadow.
+/// A round icon button.
 struct IconButton: View {
     let symbol: String
     var accent: Accent? = nil
@@ -301,12 +288,12 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: size * 0.42, weight: .bold))
+                .font(.system(size: size * 0.4, weight: .semibold))
                 .foregroundStyle(accent?.onColor ?? Palette.ink)
                 .frame(width: size, height: size)
-                .contentShape(Rectangle())
+                .contentShape(Circle())
         }
-        .buttonStyle(BrutalSquarePressStyle(fill: accent?.color ?? Palette.paper))
+        .buttonStyle(BrutalSquarePressStyle(fill: accent?.color ?? Palette.chip))
         .accessibilityLabel(label.isEmpty ? symbol : label)
     }
 }
@@ -319,62 +306,59 @@ struct IconTile: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: size * 0.42, weight: .bold))
+            .font(.system(size: size * 0.4, weight: .semibold))
             .foregroundStyle(accent?.onColor ?? Palette.ink)
             .frame(width: size, height: size)
-            .brutalBox(fill: accent?.color ?? Palette.paper, radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+            .background(Circle().fill(accent?.color ?? Palette.chip))
     }
 }
 
-/// The big yellow + button.
+/// The round sage + button.
 struct AddButton: View {
     var label: String = "Add"
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 28, weight: .black))
-                .foregroundStyle(Palette.ink)
-                .frame(width: 62, height: 62)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(BrutalSquarePressStyle(fill: Accent.yellow.color, shadow: Metrics.shadow, radius: Metrics.radius))
-        .accessibilityLabel(label)
+        Button(action: action) { AddButtonLabel(label: label) }
+            .buttonStyle(.plain)
     }
 }
 
-/// The + look, used as a Menu label.
+/// The + look, also used as a Menu label.
 struct AddButtonLabel: View {
+    var label: String = "Add"
     var body: some View {
         Image(systemName: "plus")
-            .font(.system(size: 28, weight: .black))
-            .foregroundStyle(Palette.ink)
-            .frame(width: 62, height: 62)
-            .brutalBox(fill: Accent.yellow.color, radius: Metrics.radius)
-            .accessibilityLabel("Add")
+            .font(.system(size: 24, weight: .medium))
+            .foregroundStyle(Palette.onAccent)
+            .frame(width: 52, height: 52)
+            .background(Circle().fill(Accent.yellow.color))
+            .shadow(color: .black.opacity(0.35), radius: 9, y: 6)
+            .contentShape(Circle())
+            .accessibilityLabel(label)
     }
 }
 
 // MARK: - Chips, headers, progress
 
-/// A pill with an accent fill, thin ink outline and bold caption.
+/// A pill: soft chip fill, or the accent tint when `selected`.
 struct Chip: View {
     let text: String
     var accent: Accent = .yellow
     var symbol: String? = nil
     var selected: Bool = true
+    /// Full accent fill with dark text (selected filters, segments).
+    var strong: Bool = false
 
     var body: some View {
         HStack(spacing: 4) {
-            if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .bold)) }
-            Text(text).font(Typeface.body(12, weight: .bold)).lineLimit(1)
+            if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .semibold)) }
+            Text(text).font(Typeface.body(12, weight: .semibold)).lineLimit(1)
         }
-        .foregroundStyle(selected ? accent.onColor : Palette.ink)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(selected ? accent.color : Palette.paper))
-        .overlay(Capsule().strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
+        .foregroundStyle(strong ? accent.onColor : (selected ? Palette.ink : Palette.muted))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(strong ? accent.color : (selected ? accent.color.opacity(0.26) : Palette.chip)))
     }
 }
 
@@ -388,13 +372,13 @@ struct FilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Chip(text: text, accent: accent, symbol: symbol, selected: selected)
+            Chip(text: text, accent: .yellow, symbol: symbol, selected: false, strong: selected)
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Bold section title, with an optional count on the right.
+/// Section title, with an optional count on the right.
 struct SectionHeader: View {
     let title: String
     var count: Int? = nil
@@ -408,19 +392,11 @@ struct SectionHeader: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            if let accent {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(accent.color)
-                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
-                    .frame(width: 12, height: 12)
-            }
-            Text(title)
-                .font(Typeface.heading(20))
-                .foregroundStyle(Palette.ink)
+            Cap(title)
             Spacer()
             if let count {
                 Text("\(count)")
-                    .font(Typeface.heading(15))
+                    .font(Typeface.body(12, weight: .semibold))
                     .foregroundStyle(Palette.muted)
             }
         }
@@ -429,40 +405,37 @@ struct SectionHeader: View {
     }
 }
 
-/// Bold header for a Form section.
+/// Header for a Form section.
 struct FormHeader: View {
     let title: String
     init(_ title: String) { self.title = title }
     var body: some View {
-        Text(title)
-            .font(Typeface.heading(15))
-            .foregroundStyle(Palette.ink)
-            .textCase(nil)
+        Cap(title).textCase(nil)
     }
 }
 
-/// An outlined progress bar with a flat accent fill.
+/// A soft rounded progress bar. `goal` adds a thin green marker (0...1).
 struct BrutalProgress: View {
     let value: Double
     var accent: Accent = .yellow
-    var height: CGFloat = 16
+    var height: CGFloat = 10
+    var goal: Double? = nil
 
     var body: some View {
         let v = min(max(value.isFinite ? value : 0, 0), 1)
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Rectangle().fill(Palette.paper)
-                Rectangle()
-                    .fill(accent.color)
-                    .frame(width: geo.size.width * v)
-                    .overlay(alignment: .trailing) {
-                        if v > 0 && v < 1 { Rectangle().fill(Palette.ink).frame(width: Metrics.borderThin) }
-                    }
+                Capsule().fill(Palette.chip)
+                Capsule().fill(accent.color).frame(width: max(v > 0 ? height : 0, geo.size.width * v))
+                if let goal {
+                    Rectangle().fill(Accent.green.color)
+                        .frame(width: 2, height: height + 8)
+                        .offset(x: geo.size.width * min(max(goal, 0), 1) - 1)
+                }
             }
+            .frame(maxHeight: .infinity)
         }
-        .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Palette.ink, lineWidth: Metrics.border))
+        .frame(height: height + (goal == nil ? 0 : 8))
         .accessibilityElement()
         .accessibilityValue("\(Int(v * 100)) percent")
     }
@@ -476,10 +449,10 @@ struct StatLine: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(label).font(Typeface.body(15)).foregroundStyle(Palette.ink)
+            Text(label).font(Typeface.body(14)).foregroundStyle(Palette.ink)
             Spacer(minLength: 8)
             Text(value)
-                .font(bold ? Typeface.heading(17) : Typeface.body(15, weight: .semibold))
+                .font(Typeface.body(bold ? 16 : 14, weight: bold ? .bold : .semibold))
                 .foregroundStyle(Palette.ink)
                 .monospacedDigit()
         }
@@ -488,15 +461,15 @@ struct StatLine: View {
 
 // MARK: - Text fields
 
-/// Paper field with an ink outline.
+/// Soft field on a slightly lighter surface.
 struct BrutalTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
-            .font(Typeface.body(16))
+            .font(Typeface.body(15))
             .foregroundStyle(Palette.ink)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .padding(.vertical, 11)
-            .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+            .brutalBox(radius: Metrics.radiusSmall)
     }
 }
 
@@ -504,7 +477,7 @@ extension TextFieldStyle where Self == BrutalTextFieldStyle {
     static var brutal: BrutalTextFieldStyle { BrutalTextFieldStyle() }
 }
 
-/// A one-line "add" field: type, press return. Used on Today, Tasks, Selling, Packing, Prayer.
+/// A one-line "add" field: type, press return. Used on Tasks, Selling, Packing, Prayer.
 struct QuickAddField: View {
     let prompt: String
     @Binding var text: String
@@ -513,20 +486,19 @@ struct QuickAddField: View {
     var body: some View {
         HStack(spacing: Metrics.s) {
             Image(systemName: "plus")
-                .font(.system(size: 15, weight: .black))
-                .foregroundStyle(Palette.ink)
-                .frame(width: 26, height: 26)
-                .background(RoundedRectangle(cornerRadius: 5).fill(Accent.yellow.color))
-                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
-            TextField(prompt, text: $text)
-                .font(Typeface.body(16))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Palette.onAccent)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(Accent.yellow.color))
+            TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Palette.muted))
+                .font(Typeface.body(15))
                 .foregroundStyle(Palette.ink)
                 .submitLabel(.done)
                 .onSubmit(onSubmit)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .brutalBox(radius: Metrics.radiusSmall)
     }
 }
 
@@ -537,17 +509,23 @@ struct BrutalEmptyState: View {
     let title: String
     var message: String = ""
     var accent: Accent = .yellow
+    /// Ollie instead of the icon.
+    var ollie: OlliePose? = nil
 
     var body: some View {
         VStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: symbol, accent: accent, size: 64)
+            if let ollie {
+                Ollie(pose: ollie, height: 90)
+            } else {
+                AccentSquareIcon(symbol: symbol, accent: accent, size: 56)
+            }
             Text(title)
-                .font(Typeface.heading(20))
+                .font(Typeface.heading(17))
                 .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
             if !message.isEmpty {
                 Text(message)
-                    .font(Typeface.body(15))
+                    .font(Typeface.body(14))
                     .foregroundStyle(Palette.muted)
                     .multilineTextAlignment(.center)
             }
@@ -595,7 +573,7 @@ struct OptionalDatePicker: View {
                     .padding(.trailing, Metrics.shadowSmall)
             }
         } label: {
-            Text(title).font(Typeface.body(16)).foregroundStyle(Palette.ink)
+            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
         }
         .buttonStyle(.plain)
     }

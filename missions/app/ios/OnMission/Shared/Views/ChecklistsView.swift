@@ -156,17 +156,25 @@ struct ChecklistDetail: View {
 
     private var header: some View {
         let done = items.filter(\.isDone).count
-        return BrutalCard(fill: list.areaValue.accent.color.opacity(0.35)) {
-            HStack {
-                Chip(text: list.phaseValue.title, accent: .lime)
-                Chip(text: list.areaValue.title, accent: list.areaValue.accent, symbol: list.areaValue.symbol)
-                Spacer()
-                Text("\(done)/\(items.count)").font(Typeface.heading(22)).foregroundStyle(Palette.ink)
+        let progress = items.isEmpty ? 0 : Double(done) / Double(items.count)
+        return HStack(spacing: Metrics.m) {
+            ZStack {
+                Circle().stroke(Palette.chip, lineWidth: 7)
+                Circle().trim(from: 0, to: progress)
+                    .stroke(Accent.green.color, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
             }
-            if !list.desc.isEmpty && !editing {
-                Text(list.desc).font(Typeface.body(15)).foregroundStyle(Palette.ink)
+            .frame(width: 52, height: 52)
+            .padding(4)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(list.displayTitle).font(Typeface.body(16, weight: .bold)).foregroundStyle(Palette.ink)
+                Text("\(done) of \(items.count) done · \(list.phaseValue.title.lowercased())")
+                    .font(Typeface.body(12)).foregroundStyle(Palette.muted)
+                if !list.desc.isEmpty && !editing {
+                    Text(list.desc).font(Typeface.body(13)).foregroundStyle(Palette.muted).padding(.top, 2)
+                }
             }
-            BrutalProgress(value: items.isEmpty ? 0 : Double(done) / Double(items.count), accent: .lime)
+            Spacer(minLength: 0)
         }
     }
 

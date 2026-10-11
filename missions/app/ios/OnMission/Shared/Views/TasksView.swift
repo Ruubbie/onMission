@@ -3,7 +3,7 @@ import SwiftData
 
 struct TasksView: View {
     enum Grouping: String, CaseIterable, Identifiable {
-        case week = "By week", area = "By area", done = "Done"
+        case week = "This week", area = "By area", done = "Done"
         var id: String { rawValue }
     }
 
@@ -76,11 +76,14 @@ struct TasksView: View {
         List {
             controls
             ForEach(groups) { group in
-                SectionHeader(group.title, count: group.tasks.count, accent: group.title == "Overdue" ? .pink : .yellow)
-                    .brutalRow(top: 14, bottom: 2)
+                SectionHeader(group.title, count: group.tasks.count)
+                    .brutalRow(top: 12, bottom: 0)
                 ForEach(group.tasks) { t in
-                    TaskCardRow(task: t, showArea: grouping != .area)
-                        .brutalRow()
+                    TaskCardRow(task: t, showArea: grouping != .area, first: t.id == group.tasks.first?.id,
+                                last: t.id == group.tasks.last?.id)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: Metrics.l, bottom: 0, trailing: Metrics.l))
                         .swipeActions(edge: .leading) {
                             Button(t.isDone ? "Undo" : "Done") { toggle(t) }.tint(Palette.ok)
                         }
@@ -93,28 +96,33 @@ struct TasksView: View {
             }
             if groups.isEmpty {
                 BrutalEmptyState(symbol: "checkmark", title: grouping == .done ? "Nothing done yet" : "All clear",
-                                 message: grouping == .done ? "Ticked tasks show up here." : "No open tasks match.")
+                                 message: grouping == .done ? "Ticked tasks show up here." : "Ollie naps when the week is done.",
+                                 ollie: grouping == .done ? nil : .sleep)
                     .brutalRow()
             }
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .brutalSearch(text: $search)
-        .navigationTitle("Tasks")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { areaMenu }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .addButton(newTask)
         .navigationDestination(item: $opened) { TaskDetail(task: $0) }
     }
 
     @ViewBuilder
     private var controls: some View {
-        QuickAddField(prompt: "New task (try \"Book GP friday #health\")", text: $quick, onSubmit: add)
-            .brutalRow(top: 8, bottom: 6)
+        HStack {
+            Text("Tasks").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+            Spacer()
+            Cap("\(tasks.filter { !$0.isDone && ($0.checklistID.isEmpty || $0.dueDate != nil) }.count) open")
+            areaMenu
+        }
+        .brutalRow(top: 8, bottom: 4)
         BrutalSegmented(options: Grouping.allCases.map { ($0, $0.rawValue) }, selection: $grouping)
-            .padding(.trailing, Metrics.shadowSmall)
-        .brutalRow(top: 6, bottom: 4)
+            .brutalRow(top: 2, bottom: 4)
+        BrutalSearchField(text: $search, prompt: "Search tasks")
+            .brutalRow(top: 2, bottom: 4)
+        QuickAddField(prompt: "New task (try \"Book GP friday #health\")", text: $quick, onSubmit: add)
+            .brutalRow(top: 2, bottom: 4)
         if let a = areaFilter {
             HStack {
                 FilterChip(text: a.title, accent: a.accent, symbol: "xmark", selected: true) { areaFilter = nil }
@@ -133,7 +141,7 @@ struct TasksView: View {
                 }
             }
         } label: {
-            IconTile(symbol: "line.3.horizontal.decrease", accent: areaFilter == nil ? nil : .yellow, size: 36)
+            IconTile(symbol: "line.3.horizontal.decrease", accent: areaFilter == nil ? nil : .yellow, size: 32)
         }
     }
 
@@ -199,11 +207,12 @@ struct TaskCheckbox: View {
             }
         } label: {
             Image(systemName: "checkmark")
-                .font(.system(size: 14, weight: .black))
-                .foregroundStyle(task.isDone ? Palette.ink : Color.clear)
-                .frame(width: 26, height: 26)
-                .background(RoundedRectangle(cornerRadius: 5).fill(task.isDone ? Accent.green.color : Palette.paper))
-                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Palette.ink, lineWidth: Metrics.border))
+                .font(.system(size: 10, weight: .black))
+                .foregroundStyle(task.isDone ? Palette.doneInk : Color.clear)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(task.isDone ? Accent.green.color : Color.clear))
+                .overlay(Circle().strokeBorder(task.isDone ? Accent.green.color : Palette.ring, lineWidth: 2))
+                .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -211,14 +220,14 @@ struct TaskCheckbox: View {
     }
 }
 
-/// Checkbox, title and chips. With `opensDetail` the text opens the task (for use outside Lists).
+/// Checkbox, area tag, title and the day on the right. With `opensDetail` the text opens the task (for use outside Lists).
 struct TaskRow: View {
     let task: Todo
     var showArea: Bool = true
     var opensDetail: Bool = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: Metrics.m) {
+        HStack(alignment: .center, spacing: 10) {
             TaskCheckbox(task: task)
             if opensDetail {
                 NavigationLink { TaskDetail(task: task) } label: { text }
@@ -230,51 +239,61 @@ struct TaskRow: View {
     }
 
     private var text: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(task.displayTitle)
-                .font(Typeface.body(16, weight: .semibold))
-                .foregroundStyle(task.isDone ? Palette.muted : Palette.ink)
-                .strikethrough(task.isDone)
-                .multilineTextAlignment(.leading)
-            TaskMeta(task: task, showArea: showArea)
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                if showArea || task.priorityValue == .high || task.statusValue == .waiting || task.statusValue == .doing {
+                    Text(tag)
+                        .font(Typeface.body(11.5, weight: .semibold))
+                        .foregroundStyle(Palette.tag)
+                        .lineLimit(1)
+                }
+                Text(task.displayTitle)
+                    .font(Typeface.body(14, weight: .semibold))
+                    .foregroundStyle(task.isDone ? Palette.muted : Palette.ink)
+                    .strikethrough(task.isDone, color: Palette.ring)
+                    .multilineTextAlignment(.leading)
+            }
+            Spacer(minLength: 4)
+            if let due = task.dueDate {
+                Text(shortDate(due))
+                    .font(Typeface.body(11.5, weight: .semibold))
+                    .foregroundStyle(task.isOverdue ? Palette.danger : Palette.muted)
+                    .lineLimit(1)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
-}
 
-private struct TaskMeta: View {
-    let task: Todo
-    let showArea: Bool
-
-    var body: some View {
-        HStack(spacing: 6) {
-            if showArea { Chip(text: task.areaValue.title, accent: task.areaValue.accent, symbol: task.areaValue.symbol) }
-            if task.statusValue == .doing || task.statusValue == .waiting {
-                Chip(text: task.statusValue.title, accent: .sand)
-            }
-            if task.priorityValue == .high { Chip(text: "High", accent: .pink, symbol: "exclamationmark") }
-            if let due = task.dueDate {
-                Text(shortDate(due))
-                    .font(Typeface.body(13, weight: .semibold))
-                    .foregroundStyle(task.isOverdue ? Palette.danger : Palette.muted)
-            }
-        }
+    private var tag: String {
+        var parts: [String] = []
+        if showArea { parts.append(task.areaValue.title) }
+        if task.statusValue == .doing || task.statusValue == .waiting { parts.append(task.statusValue.title) }
+        if task.priorityValue == .high { parts.append("High") }
+        return parts.joined(separator: " · ")
     }
 }
 
-/// A task as a card in the Tasks list.
+/// A task as a line in one soft card per group (rounded at the group's top and bottom).
 struct TaskCardRow: View {
     let task: Todo
     var showArea: Bool = true
+    var first: Bool = true
+    var last: Bool = true
 
     var body: some View {
         CardLink {
             TaskDetail(task: task)
         } label: {
-            TaskRow(task: task, showArea: showArea)
-                .padding(Metrics.m)
-                .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+            VStack(spacing: 0) {
+                TaskRow(task: task, showArea: showArea)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                if !last { Rectangle().fill(Palette.hairline).frame(height: 1).padding(.horizontal, 12) }
+            }
+            .background(UnevenRoundedRectangle(topLeadingRadius: first ? 18 : 0, bottomLeadingRadius: last ? 18 : 0,
+                                               bottomTrailingRadius: last ? 18 : 0, topTrailingRadius: first ? 18 : 0,
+                                               style: .continuous).fill(Palette.paper))
         }
     }
 }
@@ -288,7 +307,7 @@ struct TaskDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: task.areaValue.accent == .purple ? Palette.softPink : Palette.softYellow) {
+            FormHeroRow {
                 TextField("Task", text: $task.title, axis: .vertical)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)

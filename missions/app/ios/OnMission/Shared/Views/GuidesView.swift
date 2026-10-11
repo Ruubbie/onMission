@@ -162,10 +162,11 @@ private struct MarkdownBlockView: View {
                 .foregroundStyle(Palette.ink)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Palette.softYellow)
-                .overlay(alignment: .leading) { Rectangle().fill(Palette.ink).frame(width: 4) }
+                .font(Typeface.serif(15))
+                .background(Palette.paper)
+                .overlay(alignment: .leading) { Rectangle().fill(Accent.yellow.color).frame(width: 3) }
         case .rule:
-            Rectangle().fill(Palette.ink).frame(height: Metrics.borderThin).padding(.vertical, 6)
+            Rectangle().fill(Palette.hairline).frame(height: 1).padding(.vertical, 6)
         case .table(let rows):
             MarkdownTable(rows: rows)
         }

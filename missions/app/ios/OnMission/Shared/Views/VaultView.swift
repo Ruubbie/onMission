@@ -183,7 +183,7 @@ struct DocumentDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Palette.softPink) {
+            FormHeroRow {
                 TextField("Title", text: $doc.title)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)
