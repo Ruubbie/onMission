@@ -1,92 +1,166 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Prayer (notes with kind "prayer")
+// MARK: - Thanks (journal notes marked #thanks, so the sync contract stays the same)
+
+extension Note {
+    static let thanksMarker = "#thanks"
+    var isThanks: Bool { kindValue == .journal && body.hasPrefix(Note.thanksMarker) }
+
+    @discardableResult
+    static func addThanks(_ text: String, _ ctx: ModelContext) -> Note {
+        let n = Note()
+        n.kindValue = .journal
+        n.title = text
+        n.body = thanksMarker
+        n.areaValue = .personal
+        ctx.insert(n)
+        return n
+    }
+}
+
+// MARK: - Prayer & thanks (notes with kind "prayer", and thanks)
 
 struct PrayerView: View {
+    enum Mode: Hashable { case praying, answered, thanks }
+
     @Environment(\.modelContext) private var ctx
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
     @State private var newText = ""
+    @State private var mode: Mode = .praying
 
     private var prayers: [Note] { notes.filter { $0.kindValue == .prayer } }
+    private var thanks: [Note] { notes.filter(\.isThanks) }
+
+    private var shown: [Note] {
+        switch mode {
+        case .praying: prayers.filter { $0.answeredAt == nil }
+        case .answered: prayers.filter { $0.answeredAt != nil }
+        case .thanks: thanks
+        }
+    }
+
+    private var thanksThisWeek: Int {
+        let start = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
+        return thanks.filter { $0.createdAt >= start }.count
+    }
 
     var body: some View {
-        let open = prayers.filter { $0.answeredAt == nil }
-        let answered = prayers.filter { $0.answeredAt != nil }
         List {
-            VStack(alignment: .leading, spacing: Metrics.s) {
-                QuickAddField(prompt: "Something to pray about", text: $newText, onSubmit: add)
-                Text("Share open points in your newsletter; move answered ones to \"Answered\" with a swipe.")
-                    .font(Typeface.body(13))
-                    .foregroundStyle(Palette.muted)
+            VStack(alignment: .leading, spacing: Metrics.m) {
+                HStack {
+                    Text("Prayer & thanks").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+                    Spacer()
+                    Cap("\(prayers.filter { $0.answeredAt == nil }.count) open")
+                }
+                BrutalSegmented(options: [(value: Mode.praying, label: "Praying"), (value: Mode.answered, label: "Answered"), (value: Mode.thanks, label: "Thanks")],
+                                selection: $mode)
+                if mode != .answered {
+                    QuickAddField(prompt: mode == .thanks ? "Something you're thankful for" : "Something to pray about",
+                                  text: $newText, onSubmit: add)
+                }
             }
-            .brutalRow(top: 10, bottom: 6)
+            .brutalRow(top: 8, bottom: 6)
 
-            SectionHeader("Praying for", count: open.count, accent: .purple).brutalRow(top: 14, bottom: 2)
-            ForEach(open) { p in
-                CardLink { PrayerDetail(note: p) } label: { PrayerRow(note: p) }
+            if shown.isEmpty {
+                BrutalEmptyState(symbol: "hands.and.sparkles", title: emptyTitle, ollie: .stand)
+                    .brutalRow()
+            }
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, p in
+                CardLink { PrayerDetail(note: p) } label: { PrayerRow(note: p, focal: index == 0 && mode == .praying) }
                     .brutalRow(top: 3, bottom: 5)
                     .swipeActions(edge: .leading) {
-                        Button("Answered") { p.answeredAt = .now }.tint(Palette.ok)
+                        if p.kindValue == .prayer && p.answeredAt == nil {
+                            Button("Answered") { p.answeredAt = .now }.tint(Palette.ok)
+                        }
                     }
                     .swipeActions {
                         Button("Delete", role: .destructive) { Store.delete(p, in: ctx) }
                     }
             }
-            if !answered.isEmpty {
-                SectionHeader("Answered", count: answered.count, accent: .green).brutalRow(top: 14, bottom: 2)
-                ForEach(answered) { p in
-                    CardLink { PrayerDetail(note: p) } label: { PrayerRow(note: p) }
-                        .brutalRow(top: 3, bottom: 5)
-                        .swipeActions {
-                            Button("Delete", role: .destructive) { Store.delete(p, in: ctx) }
-                        }
-                }
+
+            HStack(spacing: 8) {
+                Ollie(pose: .stand, height: 58)
+                Text(thanksThisWeek == 0 ? "Write down one thing you're thankful for today."
+                     : "You wrote down \(thanksThisWeek) thanks this week.")
+                    .font(Typeface.body(12.5, weight: .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 4,
+                                                       bottomTrailingRadius: 16, topTrailingRadius: 16).fill(Palette.paper))
             }
-            Color.clear.frame(height: 40).brutalRow()
+            .brutalRow(top: 10, bottom: 40)
         }
         .brutalList()
-        .navigationTitle("Prayer")
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var emptyTitle: String {
+        switch mode {
+        case .praying: "Nothing on your list yet"
+        case .answered: "Answered prayers show up here"
+        case .thanks: "Start with one thank-you"
+        }
     }
 
     private func add() {
         let text = newText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        let p = Note()
-        p.kindValue = .prayer
-        p.title = text
-        p.areaValue = .personal
-        ctx.insert(p)
+        if mode == .thanks {
+            Note.addThanks(text, ctx)
+        } else {
+            let p = Note()
+            p.kindValue = .prayer
+            p.title = text
+            p.areaValue = .personal
+            ctx.insert(p)
+        }
         newText = ""
     }
 }
 
 private struct PrayerRow: View {
     let note: Note
+    var focal: Bool = false
+
+    private var label: String {
+        if note.isThanks { return "Thankful · \(longDate(note.createdAt))" }
+        return "Since \(longDate(note.createdAt))"
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: Metrics.m) {
-            AccentSquareIcon(symbol: note.answeredAt == nil ? "hands.and.sparkles.fill" : "checkmark.seal.fill",
-                             accent: note.answeredAt == nil ? .purple : .green, size: 32)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(note.displayTitle)
-                    .font(Typeface.body(16, weight: .semibold))
-                    .foregroundStyle(Palette.ink)
-                if let answered = note.answeredAt {
-                    Text("Answered \(longDate(answered))\(note.body.isEmpty ? "" : " · \(note.body)")")
-                        .font(Typeface.body(13))
-                        .foregroundStyle(Palette.muted)
-                        .lineLimit(2)
-                } else {
-                    Text("Since \(longDate(note.createdAt))")
-                        .font(Typeface.body(13))
-                        .foregroundStyle(Palette.muted)
+        let inkColor = focal ? Cream.ink : Palette.ink
+        let sub = focal ? Cream.sub : Palette.muted
+        VStack(alignment: .leading, spacing: 6) {
+            Cap(label, color: focal ? Cream.tag : Palette.tag)
+            Text(note.displayTitle)
+                .font(Typeface.serif(15))
+                .foregroundStyle(inkColor)
+                .multilineTextAlignment(.leading)
+            if note.kindValue == .prayer {
+                HStack {
+                    if let answered = note.answeredAt {
+                        Text("Written down \(longDate(answered))").font(Typeface.body(11.5, weight: .semibold)).foregroundStyle(sub)
+                        Spacer()
+                        Pill(text: "Answered", accent: .green)
+                    } else {
+                        Text(note.body.isEmpty ? "Swipe right when answered" : note.body)
+                            .font(Typeface.body(11.5, weight: .semibold)).foregroundStyle(sub).lineLimit(1)
+                        Spacer()
+                        Text("Praying")
+                            .font(Typeface.body(10.5, weight: .bold))
+                            .foregroundStyle(sub)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Capsule().fill(focal ? Color(hex: 0xEFE3D8) : Palette.chip))
+                    }
                 }
             }
-            Spacer(minLength: 0)
         }
-        .padding(Metrics.m)
-        .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .brutalBox(fill: focal ? Cream.fill : Palette.paper, radius: 18)
+        .stitched(focal ? Cream.stitch : .clear, radius: 18)
     }
 }
 
@@ -95,24 +169,26 @@ struct PrayerDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Palette.softYellow) {
-                TextField("Prayer point", text: $note.title, axis: .vertical)
-                    .font(Typeface.heading(22))
+            FormHeroRow {
+                TextField(note.isThanks ? "Thankful for" : "Prayer point", text: $note.title, axis: .vertical)
+                    .font(Typeface.serif(18))
                     .foregroundStyle(Palette.ink)
                 Text("Added \(longDate(note.createdAt))")
                     .font(Typeface.body(13))
                     .foregroundStyle(Palette.muted)
             }
+            if !note.isThanks {
             Section {
                 OptionalDatePicker(title: "Answered", date: $note.answeredAt, defaultDate: .now)
                 TextField(note.answeredAt == nil ? "More about it" : "How it was answered", text: $note.body, axis: .vertical)
                     .lineLimit(3...12)
             } header: { FormHeader("Answer") }
+            }
             LinksSection(record: .note(note))
             Section { DeleteRecordButton(item: note, compact: true) }
         }
         .brutalForm()
-        .navigationTitle("Prayer point")
+        .navigationTitle(note.isThanks ? "Thanks" : "Prayer point")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -129,7 +205,7 @@ struct NotesView: View {
     /// Prayer points have their own screen; they show here only when you pick the Prayer filter.
     private var visible: [Note] {
         let filtered = notes.filter { n in
-            (kind == nil ? n.kindValue != .prayer : n.kindValue == kind)
+            !n.isThanks && (kind == nil ? n.kindValue != .prayer : n.kindValue == kind)
                 && (search.isEmpty || n.title.localizedCaseInsensitiveContains(search) || n.body.localizedCaseInsensitiveContains(search))
         }
         return filtered.filter(\.pinned) + filtered.filter { !$0.pinned }

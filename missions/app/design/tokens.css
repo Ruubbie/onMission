@@ -1,51 +1,68 @@
-/* Generated from tokens.json. Spec: design-system.md */
+/* Generated from tokens.json. Look: app-sketch.html */
 :root {
-  --background: #FBF6EA;
-  --paper: #FFFDF7;
-  --ink: #111111;
-  --muted: #6E6A60;
-  --hairline: #E4DCC8;
-  --altRow: #FFF9EC;
-  --accent-yellow: #FFD21F;
-  --accent-pink: #FF4F7B;
-  --accent-green: #2DBE4E;
-  --accent-lime: #A4E22F;
-  --accent-purple: #7B61FF;
-  --accent-sand: #FFE08A;
-  --accent-grey: #9A9A9A;
-  --soft-yellow: #FFF3C4;
-  --soft-pink: #FFE1E8;
-  --danger: #FF4F7B;
-  --ok: #2DBE4E;
-  --warning: #FFD21F;
-  --border: 2.5px;
-  --border-thin: 1.5px;
-  --shadow: 5px;
-  --shadow-small: 3px;
-  --radius-card: 10px;
-  --radius-small: 7px;
+  --bg: linear-gradient(180deg, #65493D 0%, #53403A 100%);
+  --background: #5C443B;
+  --paper: #735648;
+  --ink: #FCEEE2;
+  --muted: #D9BFAC;
+  --hairline: rgba(255,244,232,0.10);
+  --altRow: #6B5043;
+  --chip: rgba(255,244,232,0.14);
+  --ring: rgba(255,244,232,0.35);
+  --stitch: rgba(205,225,214,0.38);
+  --onAccent: #24302C;
+  --tag: #B3C9BD;
+  --tabBar: #4E392F;
+  --tabIcon: #BFA390;
+  --cream: #FFF4E8;
+  --cream-ink: #4A3329;
+  --cream-sub: #8A6C5C;
+  --cream-tag: #2F7D74;
+  --cream-button: #F3E3D3;
+  --cream-stitch: rgba(74,51,41,0.22);
+  --accent-yellow: #B3C9BD;
+  --accent-pink: #EDB3AE;
+  --accent-green: #AFBC6A;
+  --accent-lime: #C9D19A;
+  --accent-purple: #C7B8DD;
+  --accent-sand: #F3D9A0;
+  --accent-grey: #BFA390;
+  --soft-yellow: #7A5E4E;
+  --soft-pink: #7D5450;
+  --danger: #E8907F;
+  --ok: #AFBC6A;
+  --warning: #F3D9A0;
+  --ollie-fur: #A9BCB0;
+  --ollie-furDark: #7E968A;
+  --ollie-ear: #ECDCBB;
+  --ollie-dots: #93AAA0;
+  --ollie-toes: #98A35F;
+  --radius-card: 20px;
+  --radius-small: 14px;
   --radius-pill: 999px;
-  --radius-tabBar: 22px;
-  --radius-sheet: 16px;
+  --radius-tabBar: 27px;
+  --radius-sheet: 24px;
   --space-xs: 4px;
   --space-s: 8px;
   --space-m: 12px;
   --space-l: 16px;
   --space-xl: 24px;
   --space-xxl: 32px;
-  --text-h1: 46px;
-  --text-h2: 26px;
-  --text-h3: 19px;
-  --text-body: 16px;
-  --text-caption: 13px;
-  --font: 'Familjen Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --text-h1: 28px;
+  --text-h2: 20px;
+  --text-h3: 18px;
+  --text-body: 15px;
+  --text-caption: 12px;
+  --text-number: 26px;
+  --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Lora', Georgia, serif;
   --motion-press: 80ms;
   --motion: 180ms;
 }
 
-/* The box: fill, ink outline, hard shadow. Press = move into the shadow. */
-.box { background: var(--paper); border: var(--border) solid var(--ink); border-radius: var(--radius-card);
-  box-shadow: var(--shadow) var(--shadow) 0 var(--ink); transition: transform var(--motion-press) ease-out, box-shadow var(--motion-press) ease-out; }
-.box.small { border-radius: var(--radius-small); box-shadow: var(--shadow-small) var(--shadow-small) 0 var(--ink); }
-.pressable:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--shadow) + 1px) calc(var(--shadow) + 1px) 0 var(--ink); }
-.pressable:active { transform: translate(var(--shadow), var(--shadow)); box-shadow: none; }
+/* Cards: mocha, no outline. One focal card per screen is cream with a stitch. */
+.box { background: var(--paper); color: var(--ink); border-radius: var(--radius-card); }
+.box.small { border-radius: var(--radius-small); }
+.focal { background: var(--cream); color: var(--cream-ink); }
+.stitch { outline: 1.5px dashed var(--stitch); outline-offset: -6px; }
+.focal.stitch { outline-color: var(--cream-stitch); }

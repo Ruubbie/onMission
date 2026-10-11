@@ -26,15 +26,41 @@ struct PartnersView: View {
 
     var body: some View {
         List {
+            HStack {
+                Text("Support").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+                Spacer()
+                Cap("\(partners.filter { $0.stageValue.countsAsSupport }.count) partners")
+            }
+            .brutalRow(top: 8, bottom: 2)
             PartnersSummary(partners: partners, settings: settings, stageFilter: $stageFilter)
-                .brutalRow(top: 10, bottom: 10)
+                .brutalRow(top: 4, bottom: 6)
+            BrutalSearchField(text: $search, prompt: "Find a name")
+                .brutalRow(top: 2, bottom: 8)
+            if let p = partners.first(where: { $0.stageValue.countsAsSupport && $0.thankedAt == nil }) {
+                CardLink { PartnerDetail(partner: p) } label: {
+                    HStack(spacing: 10) {
+                        Ollie(pose: .hug, height: 50)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Say thanks to \(p.displayTitle)").font(Typeface.body(13, weight: .bold))
+                            Text("\(p.stageValue.title), not thanked yet.").font(Typeface.body(12.5))
+                        }
+                        .foregroundStyle(Palette.ink)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .brutalBox(radius: 18)
+                }
+                .brutalRow(top: 0, bottom: 8)
+            }
             ForEach(visible) { p in
                 CardLink {
                     PartnerDetail(partner: p)
                 } label: {
-                    PartnerRow(partner: p)
+                    PartnerRow(partner: p, first: p.id == visible.first?.id, last: p.id == visible.last?.id)
                 }
-                .brutalRow(top: 4, bottom: 6)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: Metrics.l, bottom: 0, trailing: Metrics.l))
                 .swipeActions {
                     Button("Delete", role: .destructive) { Store.delete(p, in: ctx) }
                 }
@@ -50,14 +76,13 @@ struct PartnersView: View {
             if visible.isEmpty {
                 BrutalEmptyState(symbol: "person.2.fill", title: partners.isEmpty ? "No names yet" : "No one here",
                                  message: partners.isEmpty ? "Tap + and choose \"Add many names\" to write down everyone you know." : "Nobody matches this filter.",
-                                 accent: .pink)
+                                 accent: .pink, ollie: partners.isEmpty ? .hug : nil)
                     .brutalRow()
             }
             Color.clear.frame(height: 80).brutalRow()
         }
         .brutalList()
-        .brutalSearch(text: $search, prompt: "Find a name")
-        .navigationTitle("Partners")
+        .toolbar(.hidden, for: .navigationBar)
         .addMenu {
             Button { newPartner() } label: { Label("New partner", systemImage: "person.badge.plus") }
             Button { bulkAdd = true } label: { Label("Add many names", systemImage: "list.bullet") }
@@ -110,14 +135,26 @@ private struct PartnersSummary: View {
     }
 
     var body: some View {
-        BrutalCard(fill: Palette.softPink) {
+        let stretch = max(settings.supportTargetMonthlyCents, 1)
+        VStack(alignment: .leading, spacing: 4) {
+            Cap("Monthly support")
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(euros(committed)).font(Typeface.heading(30)).foregroundStyle(Palette.ink)
-                Text("of \(euros(settings.supportTargetMonthlyCents)) a month")
-                    .font(Typeface.body(15)).foregroundStyle(Palette.ink)
+                Text(euros(committed)).font(Typeface.number(26)).foregroundStyle(Palette.ink)
+                Text("per month committed").font(Typeface.body(13, weight: .semibold)).foregroundStyle(Palette.muted)
             }
-            BrutalProgress(value: settings.supportTargetMonthlyCents > 0 ? Double(committed) / Double(settings.supportTargetMonthlyCents) : 0,
-                           accent: committed >= settings.supportMinimumMonthlyCents ? .green : .pink)
+            BrutalProgress(value: Double(committed) / Double(stretch), accent: .yellow,
+                           goal: Double(settings.supportMinimumMonthlyCents) / Double(stretch))
+                .padding(.top, 8)
+            HStack {
+                Text("€0")
+                Spacer()
+                Text("goal \(euros(settings.supportMinimumMonthlyCents))")
+                Spacer()
+                Text(euros(settings.supportTargetMonthlyCents))
+            }
+            .font(Typeface.body(10.5))
+            .foregroundStyle(Palette.muted)
+            .monospacedDigit()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(PartnerStage.allCases) { s in
@@ -129,43 +166,54 @@ private struct PartnersSummary: View {
                 }
                 .padding(.vertical, 2)
             }
-            Text("\(partners.count) names on your list. Aim for 150+; about one in two or three personal meetings becomes a monthly partner.")
-                .font(Typeface.body(13))
-                .foregroundStyle(Palette.ink)
+            .padding(.top, 8)
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .brutalBox()
+        .stitched()
     }
 }
 
+/// A partner as a line: initials, name, amount or next step, and a stage pill.
 struct PartnerRow: View {
     let partner: Partner
+    var first: Bool = true
+    var last: Bool = true
 
     var body: some View {
-        HStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: partner.stageValue.symbol, accent: partner.stageValue.accent, size: 36)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Avatar(name: partner.displayTitle)
+                VStack(alignment: .leading, spacing: 1) {
                     Text(partner.displayTitle)
-                        .font(Typeface.body(16, weight: .bold))
+                        .font(Typeface.body(14, weight: .semibold))
                         .foregroundStyle(Palette.ink)
                         .lineLimit(1)
-                    Text(partner.category)
-                        .font(Typeface.body(12, weight: .bold))
-                        .foregroundStyle(Palette.muted)
+                    Text(detail)
+                        .font(Typeface.body(11.5, weight: .semibold))
+                        .foregroundStyle(isLate ? Palette.danger : Palette.tag)
+                        .lineLimit(1)
                 }
-                Text(detail)
-                    .font(Typeface.body(13))
-                    .foregroundStyle(isLate ? Palette.danger : Palette.muted)
-                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Pill(text: pillText, accent: partner.stageValue.accent)
             }
-            Spacer(minLength: 4)
-            if partner.monthlyCents > 0 {
-                Text("\(euros(partner.monthlyCents))/mo")
-                    .font(Typeface.heading(14))
-                    .foregroundStyle(Palette.ink)
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            if !last { Rectangle().fill(Palette.hairline).frame(height: 1).padding(.horizontal, 12) }
         }
-        .padding(Metrics.m)
-        .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+        .background(UnevenRoundedRectangle(topLeadingRadius: first ? 18 : 0, bottomLeadingRadius: last ? 18 : 0,
+                                           bottomTrailingRadius: last ? 18 : 0, topTrailingRadius: first ? 18 : 0,
+                                           style: .continuous).fill(Palette.paper))
+    }
+
+    private var pillText: String {
+        switch partner.stageValue {
+        case .committed, .giving: "Partner"
+        case .asked: "Asked"
+        case .thinking: "Thinking"
+        default: partner.stageValue.title
+        }
     }
 
     private var isLate: Bool {
@@ -174,11 +222,13 @@ struct PartnerRow: View {
     }
 
     private var detail: String {
-        var parts = [partner.stageValue.title]
+        if partner.monthlyCents > 0 && partner.stageValue.countsAsSupport { return "\(euros(partner.monthlyCents)) / month" }
+        var parts: [String] = []
         if partner.stageValue.isOpen {
             if !partner.nextStep.isEmpty { parts.append(partner.nextStep) }
             if let d = partner.nextFollowUp { parts.append(shortDate(d)) }
         }
+        if parts.isEmpty { parts.append(partner.category.isEmpty ? partner.stageValue.title : partner.category) }
         return parts.joined(separator: " · ")
     }
 }
@@ -199,7 +249,7 @@ struct PartnerDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: partner.stageValue.accent.color.opacity(0.3)) {
+            FormHeroRow {
                 PartnerHero(partner: partner)
             }
 

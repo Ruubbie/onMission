@@ -61,7 +61,7 @@ private struct MonthlyBudgetCard: View {
 
     var body: some View {
         let gap = insights.monthlyBudgetCents - insights.committedMonthlyCents
-        BrutalCard(fill: Accent.green.color.opacity(0.25)) {
+        BrutalCard {
             Label("Every month", systemImage: "calendar")
                 .font(Typeface.heading(18)).foregroundStyle(Palette.ink)
             StatLine(label: "Monthly need", value: euros(insights.monthlyBudgetCents))
@@ -152,11 +152,13 @@ private struct PaidBox: View {
             withAnimation { entry.paid.toggle() }
         } label: {
             Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .black))
-                .foregroundStyle(entry.paid ? Palette.ink : Color.clear)
-                .frame(width: 24, height: 24)
-                .background(RoundedRectangle(cornerRadius: 5).fill(entry.paid ? Accent.green.color : Palette.paper))
-                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Palette.ink, lineWidth: Metrics.border))
+                .font(.system(size: 10, weight: .black))
+                .foregroundStyle(entry.paid ? Palette.doneInk : Color.clear)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(entry.paid ? Accent.green.color : Color.clear))
+                .overlay(Circle().strokeBorder(entry.paid ? Accent.green.color : Palette.ring, lineWidth: 2))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(entry.paid ? "Paid" : "Not paid")
@@ -168,12 +170,12 @@ struct BudgetEntryDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Accent.green.color.opacity(0.25)) {
+            FormHeroRow {
                 TextField("What", text: $entry.label)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)
                 Text(Money.text(entry.amountCents, entry.currency))
-                    .font(Typeface.heading(30))
+                    .font(Typeface.number(26))
                     .foregroundStyle(Palette.ink)
             }
             Section {
@@ -285,9 +287,9 @@ private struct SellSummary: View {
         let sold = items.filter { $0.statusValue == .sold }.reduce(0) { $0 + $1.soldCents }
         let open = items.filter { !$0.statusValue.isSettled }
         let potential = open.reduce(0) { $0 + $1.askingCents }
-        BrutalCard(fill: Accent.sand.color) {
+        BrutalCard {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(euros(sold)).font(Typeface.heading(30)).foregroundStyle(Palette.ink)
+                Text(euros(sold)).font(Typeface.number(26)).foregroundStyle(Palette.ink)
                 Text("sold so far").font(Typeface.body(15)).foregroundStyle(Palette.ink)
             }
             StatLine(label: "Still to sell (asking)", value: euros(potential))
@@ -338,7 +340,7 @@ struct SellDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Accent.sand.color) {
+            FormHeroRow {
                 TextField("What", text: $item.name)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)

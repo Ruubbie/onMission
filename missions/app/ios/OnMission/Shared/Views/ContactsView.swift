@@ -56,8 +56,7 @@ private struct ContactRow: View {
                 .font(Typeface.heading(15))
                 .foregroundStyle(Palette.ink)
                 .frame(width: 38, height: 38)
-                .background(RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(Accent.sand.color))
-                .overlay(RoundedRectangle(cornerRadius: Metrics.radiusSmall).strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
+                .background(Circle().fill(Palette.chip))
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.displayTitle)
                     .font(Typeface.body(16, weight: .bold))
@@ -85,7 +84,7 @@ struct ContactDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: Accent.sand.color) {
+            FormHeroRow {
                 TextField("Name", text: $contact.name)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)

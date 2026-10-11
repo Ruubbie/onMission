@@ -63,7 +63,6 @@ private struct NewsletterRow: View {
                 .foregroundStyle(letter.statusValue.accent.onColor)
                 .frame(width: 44, height: 44)
                 .background(RoundedRectangle(cornerRadius: Metrics.radiusSmall).fill(letter.statusValue.accent.color))
-                .overlay(RoundedRectangle(cornerRadius: Metrics.radiusSmall).strokeBorder(Palette.ink, lineWidth: Metrics.borderThin))
             VStack(alignment: .leading, spacing: 3) {
                 Text(letter.displayTitle)
                     .font(Typeface.body(16, weight: .bold))
@@ -99,7 +98,7 @@ struct NewsletterDetail: View {
 
     var body: some View {
         Form {
-            FormHeroRow(fill: letter.statusValue.accent.color.opacity(0.35)) {
+            FormHeroRow {
                 TextField("Title", text: $letter.title)
                     .font(Typeface.heading(22))
                     .foregroundStyle(Palette.ink)
