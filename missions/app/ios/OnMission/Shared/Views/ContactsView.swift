@@ -110,11 +110,14 @@ struct ContactDetail: View {
                     .autocorrectionDisabled()
                 TextField("Address", text: $contact.address, axis: .vertical)
             } header: { FormHeader("Contact") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextField("Notes", text: $contact.notes, axis: .vertical).lineLimit(3...12)
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .contact(contact))
             Section { DeleteRecordButton(item: contact) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(contact.displayTitle)

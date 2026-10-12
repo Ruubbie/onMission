@@ -201,12 +201,15 @@ struct BudgetEntryDetail: View {
                 OptionalDatePicker(title: "Date", date: $entry.date)
                 TextField("Category (housing, travel, school…)", text: $entry.category)
             } header: { FormHeader("Budget line") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextField("Estimate? Where does the number come from?", text: $entry.notes, axis: .vertical)
                     .lineLimit(2...8)
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .budget(entry))
             Section { DeleteRecordButton(item: entry) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(entry.displayTitle)
@@ -373,14 +376,17 @@ struct SellDetail: View {
                     Link(destination: url) { Label("Open listing", systemImage: "safari") }
                 }
             } header: { FormHeader("Selling") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextField("Buyer", text: $item.buyer)
                 OptionalDatePicker(title: "Pickup", date: $item.pickupDate)
                 TextField("Where it is now", text: $item.location)
                 TextField("Notes", text: $item.notes, axis: .vertical).lineLimit(2...8)
             } header: { FormHeader("Handover") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .sell(item))
             Section { DeleteRecordButton(item: item) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(item.displayTitle)

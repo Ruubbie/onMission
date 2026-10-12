@@ -184,9 +184,11 @@ struct PrayerDetail: View {
                 TextField(note.answeredAt == nil ? "More about it" : "How it was answered", text: $note.body, axis: .vertical)
                     .lineLimit(3...12)
             } header: { FormHeader("Answer") }
+            .listRowBackground(Palette.paper)
             }
             LinksSection(record: .note(note))
             Section { DeleteRecordButton(item: note, compact: true) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(note.isThanks ? "Thanks" : "Prayer point")

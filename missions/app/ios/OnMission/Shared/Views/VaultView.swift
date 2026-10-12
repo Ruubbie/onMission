@@ -212,6 +212,7 @@ struct DocumentDetail: View {
             } footer: {
                 Text("With an expiry date you get a reminder 90 and 30 days before.")
             }
+            .listRowBackground(Palette.paper)
 
             Section {
                 TextField("Addresses, phone numbers, policy details…", text: $doc.notes, axis: .vertical)
@@ -221,9 +222,11 @@ struct DocumentDetail: View {
             } footer: {
                 Text("Don't store full passwords here. A hint, or where to find it, is enough.")
             }
+            .listRowBackground(Palette.paper)
 
             LinksSection(record: .document(doc))
             Section { DeleteRecordButton(item: doc) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(doc.displayTitle)
@@ -287,6 +290,7 @@ struct DocumentDetail: View {
         } footer: {
             Text("Files with \"Keep on every device\" are downloaded during sync, so you have them offline at the border.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     @MainActor @ViewBuilder

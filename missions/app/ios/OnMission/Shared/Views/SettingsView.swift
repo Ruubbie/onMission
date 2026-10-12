@@ -33,6 +33,7 @@ struct SettingsView: View {
             } footer: {
                 Text("For due tasks, partner follow-ups, birthdays and documents that expire. To turn them off, use the iPhone Settings app.")
             }
+            .listRowBackground(Palette.paper)
 
             Section {
                 Button {
@@ -46,6 +47,7 @@ struct SettingsView: View {
             } footer: {
                 Text("A JSON file with all your records (not the vault files themselves; those are on your server). Restoring adds to what's here.")
             }
+            .listRowBackground(Palette.paper)
 
             Section {
                 Text("You do this with God. This app helps you plan, remember and follow up; it doesn't speak for Him.")
@@ -104,6 +106,7 @@ private struct MissionSection: View {
         } footer: {
             Text("Your passport must be valid until at least \(longDate(settings.passportMustLast)). NZ$ 4,200 is about \(euros(Money.cents(fromEuros: 4200 / max(settings.nzdPerEur, 0.1)))).")
         }
+        .listRowBackground(Palette.paper)
     }
 }
 
@@ -167,6 +170,7 @@ private struct AccountSection: View {
         } footer: {
             Text("Everything is saved on this iPhone first. Signed in, your iPhone and the Windows helper stay in sync and your vault files are backed up.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     @MainActor private var signedIn: some View {
@@ -213,6 +217,7 @@ private struct AccountSection: View {
         } footer: {
             Text("The app syncs when it opens and every 2 minutes while it's open.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     @MainActor private var devicesSection: some View {
@@ -233,6 +238,7 @@ private struct AccountSection: View {
         } footer: {
             Text("Lost a phone or laptop? Sign it out here; it can't sync any more after that.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     @MainActor

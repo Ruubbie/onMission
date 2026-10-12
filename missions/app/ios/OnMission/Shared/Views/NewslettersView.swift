@@ -119,11 +119,13 @@ struct NewsletterDetail: View {
                     LabeledContent("Sent", value: longDate(sent))
                 }
             } header: { FormHeader("Newsletter") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextEditor(text: $letter.body)
                     .font(Typeface.body(16))
                     .frame(minHeight: 320)
             } header: { FormHeader("Text") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextField("Web version link", text: $letter.webURL)
                     .keyboardType(.URL)
@@ -135,8 +137,10 @@ struct NewsletterDetail: View {
                 TextField("Notes (who to send to, photos to use…)", text: $letter.notes, axis: .vertical)
                     .lineLimit(2...8)
             } header: { FormHeader("More") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .newsletter(letter))
             Section { DeleteRecordButton(item: letter) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(letter.displayTitle)

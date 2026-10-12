@@ -444,8 +444,10 @@ struct PartnerDetail: View {
                 TextField("What you talked about, prayer requests, family names…", text: $partner.notes, axis: .vertical)
                     .lineLimit(3...12)
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .partner(partner))
             Section { DeleteRecordButton(item: partner) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(partner.displayTitle)
@@ -467,6 +469,7 @@ struct PartnerDetail: View {
         } footer: {
             Text("From three days before the follow-up date, they show under Needs you and on Today.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     private var giftsSection: some View {
@@ -480,6 +483,7 @@ struct PartnerDetail: View {
         } header: {
             FormHeader("Gifts received")
         }
+        .listRowBackground(Palette.paper)
     }
 
     private var messagesSection: some View {
@@ -501,6 +505,7 @@ struct PartnerDetail: View {
         } footer: {
             Text("From your partners guide, with their name filled in. Fill in the [brackets] before sending.")
         }
+        .listRowBackground(Palette.paper)
     }
 
     private var detailsSection: some View {
@@ -537,6 +542,7 @@ struct PartnerDetail: View {
         } header: {
             FormHeader("Details")
         }
+        .listRowBackground(Palette.paper)
     }
 
     private var givingSummary: String {
@@ -688,7 +694,7 @@ private struct PartnerNextAction: View {
         case .idea: "On your list. Ready to ask \(who)?"
         case .toAsk: "Invite \(who) for coffee or a call."
         case .asked: "After you've met, log it: a follow-up call is planned for you."
-        case .thinking: partner.nextFollowUp.map { "Thinking it over. Next follow-up: \(shortDate($0))." } ?? "Thinking it over."
+        case .thinking: partner.nextFollowUp.map { "Thinking it over. Next follow-up \(shortDate($0, midSentence: true))." } ?? "Thinking it over."
         case .committed: needsThanks ? "Committed, and not thanked yet." : "Committed. Waiting for the first gift."
         case .giving: needsThanks ? "A gift came in that you haven't thanked \(who) for yet." : "Giving. Record gifts as they come in."
         case .declined, .paused: "Not now. You can ask again later."
@@ -796,19 +802,23 @@ struct GiftDetail: View {
                 TextField("Via (bank, YWAM, cash…)", text: $gift.via)
                 OptionalDatePicker(title: "Thanked", date: $gift.thankedAt, defaultDate: .now)
             } header: { FormHeader("Gift") }
+            .listRowBackground(Palette.paper)
 
             if let p = partners.first(where: { $0.id == gift.partnerID }) {
                 Section {
                     NavigationLink { PartnerDetail(partner: p) } label: { Label(p.displayTitle, systemImage: "person.fill") }
                 } header: { FormHeader("From") }
+                .listRowBackground(Palette.paper)
             }
 
             Section {
                 TextField("Notes", text: $gift.notes, axis: .vertical).lineLimit(2...8)
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
 
             LinksSection(record: .gift(gift))
             Section { DeleteRecordButton(item: gift) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle("Gift")
@@ -834,6 +844,7 @@ private struct RecordGiftSheet: View {
                 } footer: {
                     Text("Recording a gift adds a thank-you task when it's needed.")
                 }
+                .listRowBackground(Palette.paper)
             }
             .brutalForm()
             .navigationTitle("Record a gift")
@@ -867,11 +878,13 @@ struct BulkAddPartners: View {
                 } footer: {
                     Text("Family, church, friends, school, work, sport, neighbours, YWAM, your phone contacts. Write everyone down; you don't decide for someone else whether they'll give.")
                 }
+                .listRowBackground(Palette.paper)
                 Section {
                     BrutalSelect("Category for all", selection: $category) {
                         ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
                     }
                 }
+                .listRowBackground(Palette.paper)
             }
             .brutalForm()
             .navigationTitle("Add names")

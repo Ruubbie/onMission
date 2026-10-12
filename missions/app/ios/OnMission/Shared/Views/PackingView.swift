@@ -189,11 +189,14 @@ struct PackingDetail: View {
                 }
                 TextField("Category (clothes, tech, papers…)", text: $item.category)
             } header: { FormHeader("Item") }
+            .listRowBackground(Palette.paper)
             Section {
                 TextField("Notes", text: $item.notes, axis: .vertical).lineLimit(2...8)
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
             LinksSection(record: .packing(item))
             Section { DeleteRecordButton(item: item) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(item.displayTitle)

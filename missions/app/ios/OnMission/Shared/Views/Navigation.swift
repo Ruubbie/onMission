@@ -342,6 +342,7 @@ struct LinksSection: View {
         } footer: {
             Text("Connect tasks, partners, documents and notes so the right thing is one tap away.")
         }
+        .listRowBackground(Palette.paper)
         .sheet(isPresented: $picking, onDismiss: { tick += 1 }) {
             LinkPicker(from: record)
         }

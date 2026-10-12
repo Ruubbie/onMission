@@ -338,6 +338,7 @@ struct TaskDetail: View {
                 OptionalDatePicker(title: "Due date", date: $task.dueDate)
                 QuickDateChips(date: $task.dueDate)
             } header: { FormHeader("Task") }
+            .listRowBackground(Palette.paper)
 
             Section {
                 Toggle("Remind me", isOn: Binding(
@@ -348,6 +349,7 @@ struct TaskDetail: View {
                     BrutalDateRow(title: "At", date: Binding(get: { remind }, set: { task.remindAt = $0 }), components: [.date, .hourAndMinute])
                 }
             } header: { FormHeader("Reminder") }
+            .listRowBackground(Palette.paper)
 
             if let list = checklists.first(where: { $0.id == task.checklistID }) {
                 Section {
@@ -355,6 +357,7 @@ struct TaskDetail: View {
                         Label(list.displayTitle, systemImage: "checklist")
                     }
                 } header: { FormHeader("In checklist") }
+                .listRowBackground(Palette.paper)
             }
 
             Section {
@@ -368,10 +371,12 @@ struct TaskDetail: View {
                     Link(destination: url) { Label("Open link", systemImage: "safari") }
                 }
             } header: { FormHeader("Notes") }
+            .listRowBackground(Palette.paper)
 
             LinksSection(record: .task(task))
 
             Section { DeleteRecordButton(item: task) }
+            .listRowBackground(Palette.paper)
         }
         .brutalForm()
         .navigationTitle(task.displayTitle)
