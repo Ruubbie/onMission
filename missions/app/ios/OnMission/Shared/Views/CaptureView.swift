@@ -391,24 +391,37 @@ private struct CaptureForm: View {
     // MARK: Pieces
 
     private var entry: some View {
-        TextField("", text: $text, prompt: Text(kind.placeholder).foregroundStyle(Palette.ink.opacity(0.3)), axis: .vertical)
-            .type(.entry)
-            .foregroundStyle(Palette.ink)
-            .lineLimit(1...4)
-            .focused($focused)
-            .submitLabel(.done)
-            // A vertical field in a scroll view sizes to its one-line placeholder; pin it so long prompts wrap.
-            .frame(width: max(chrome.width - 2 * Metrics.sheetSide - 8, 100), alignment: .leading)
-            .padding(.horizontal, 4)
-            .padding(.top, 14)
-            .frame(minHeight: 76, alignment: .top)
-            .onChange(of: text) { _, new in
-                // Return adds (the field grows over several lines, so Return arrives as a newline).
-                guard new.contains("\n") else { return }
-                text = new.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
-                add()
+        // A vertical field's prompt never wraps, so the placeholder is drawn under the field and sets its height.
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(kind.placeholder)
+                    .type(.entry)
+                    .foregroundStyle(Palette.ink.opacity(0.3))
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
-            .accessibilityLabel("Add or find")
+            TextField("", text: $text, axis: .vertical)
+                .type(.entry)
+                .foregroundStyle(Palette.ink)
+                .lineLimit(1...4)
+                .focused($focused)
+                .submitLabel(.done)
+                .accessibilityLabel("Add or find")
+                .accessibilityHint(kind.placeholder)
+        }
+        // In a scroll view the field takes its content's width; pin it to the sheet so long text wraps.
+        .frame(width: max(chrome.width - 2 * Metrics.sheetSide - 8, 100), alignment: .leading)
+        .padding(.horizontal, 4)
+        .padding(.top, 14)
+        .frame(minHeight: 76, alignment: .top)
+        .onChange(of: text) { _, new in
+            // Return adds (the field grows over several lines, so Return arrives as a newline).
+            guard new.contains("\n") else { return }
+            text = new.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
+            add()
+        }
     }
 
     private func pick(_ k: CaptureKind) {
