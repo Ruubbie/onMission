@@ -106,6 +106,12 @@ struct PeopleView: View {
         .brutalList()
         .toolbar(.hidden, for: .navigationBar)
         .captureContext(.partner)
+        .task {
+            // `-startPartner YES` opens someone in conversation (for screenshots).
+            if UserDefaults.standard.bool(forKey: "startPartner"), opened == nil {
+                opened = partners.first { $0.stageValue == .thinking || $0.stageValue == .asked } ?? partners.first
+            }
+        }
         .navigationDestination(item: $opened) { PartnerDetail(partner: $0) }
         .navigationDestination(item: $openedContact) { ContactDetail(contact: $0) }
         .sheet(isPresented: $bulkAdd) { BulkAddPartners() }

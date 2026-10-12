@@ -99,11 +99,12 @@ enum BarAppearance {
 struct RootView: View {
     @Environment(\.modelContext) private var ctx
     @Environment(\.scenePhase) private var phase
-    @State private var tab: RootTab = .today
+    /// `-startTab people` and `-startCapture YES` as launch arguments open the app there (for screenshots).
+    @State private var tab: RootTab = RootTab(rawValue: UserDefaults.standard.string(forKey: "startTab") ?? "") ?? .today
     /// Bumped when the selected tab is tapped again, which rebuilds its stack at the top level.
     @State private var resets: [RootTab: Int] = [:]
     @State private var keyboardShown = false
-    @State private var capturing = false
+    @State private var capturing = UserDefaults.standard.bool(forKey: "startCapture")
     @State private var captureCenter = CaptureCenter()
 
     var body: some View {
