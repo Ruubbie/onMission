@@ -75,6 +75,7 @@ enum Metrics {
 }
 
 /// DM Sans (bundled in Resources/Fonts), 18 max except big numbers; Lora italic for thanks and prayers.
+/// Sizes are the sizes at the default text size; they grow and shrink with the iPhone's text-size setting.
 enum Typeface {
     static func heading(_ size: CGFloat) -> Font {
         dm("DMSans-Bold", min(size, 18), .bold)
@@ -96,11 +97,28 @@ enum Typeface {
     /// Small uppercase label.
     static let cap: Font = dm("DMSans-Bold", 10.5, .bold)
     static func serif(_ size: CGFloat = 18) -> Font {
-        UIFontAvailable.lora ? .custom("Lora-MediumItalic", size: size) : .system(size: size, weight: .medium, design: .serif).italic()
+        UIFontAvailable.lora
+            ? .custom("Lora-MediumItalic", size: size, relativeTo: style(for: size))
+            : .system(size: size, weight: .medium, design: .serif).italic()
     }
 
     private static func dm(_ name: String, _ size: CGFloat, _ weight: Font.Weight) -> Font {
-        UIFontAvailable.dmSans ? .custom(name, size: size) : .system(size: size, weight: weight)
+        UIFontAvailable.dmSans ? .custom(name, size: size, relativeTo: style(for: size)) : .system(size: size, weight: weight)
+    }
+
+    /// The system text style a size scales with.
+    private static func style(for size: CGFloat) -> Font.TextStyle {
+        switch size {
+        case ..<11.5: .caption2
+        case ..<12.5: .caption
+        case ..<13.5: .footnote
+        case ..<15.5: .subheadline
+        case ..<16.5: .callout
+        case ..<17.5: .body
+        case ..<20.5: .title3
+        case ..<24: .title2
+        default: .title
+        }
     }
 }
 

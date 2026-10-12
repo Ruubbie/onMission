@@ -94,8 +94,8 @@ enum BarAppearance {
     }
 }
 
-/// Five tabs (Today, Tasks, Support, Prayer, More), each its own navigation stack kept alive,
-/// under our floating tab bar.
+/// Five tabs (Today, Tasks, People, Prayer, Move), each its own navigation stack kept alive,
+/// under our floating tab bar, with the Capture button beside it on every tab.
 struct RootView: View {
     @Environment(\.modelContext) private var ctx
     @Environment(\.scenePhase) private var phase
@@ -103,11 +103,14 @@ struct RootView: View {
     /// Bumped when the selected tab is tapped again, which rebuilds its stack at the top level.
     @State private var resets: [RootTab: Int] = [:]
     @State private var keyboardShown = false
+    @State private var capturing = false
+    @State private var captureCenter = CaptureCenter()
 
     var body: some View {
         ZStack {
             ForEach(RootTab.allCases) { t in
                 NavigationStack { t.root }
+                    .environment(\.rootTab, t)
                     .id(resets[t, default: 0])
                     .opacity(tab == t ? 1 : 0)
                     .allowsHitTesting(tab == t)
@@ -115,24 +118,31 @@ struct RootView: View {
             }
         }
         // The bar floats over the stacks. The safe area doesn't reach into a NavigationStack, so screens
-        // learn the bar's height from the environment (the + button) and from content margins (scrolling).
+        // learn the bar's height from the environment and from content margins (scrolling).
         .overlay(alignment: .bottom) {
             if !keyboardShown {
-                FloatingTabBar(selection: tab) { picked in
-                    if picked == tab {
-                        resets[picked, default: 0] += 1
-                    } else {
-                        withAnimation(.easeOut(duration: 0.18)) { tab = picked }
-                    }
+                HStack(spacing: 10) {
+                    RootTabBar(selection: tab, onSelect: select)
+                    CaptureButton { capturing = true }
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 8)
             }
         }
+        .environment(captureCenter)
+        .environment(\.selectTab, { picked in
+            withAnimation(.easeOut(duration: 0.18)) { tab = picked }
+        })
         .environment(\.floatingBarInset, keyboardShown ? 0 : FloatingTabBar.inset)
         .contentMargins(.bottom, keyboardShown ? 0 : FloatingTabBar.inset, for: .scrollContent)
         .toggleStyle(.brutal)
         .tint(Accent.yellow.color)
+        .sheet(isPresented: $capturing, onDismiss: {
+            Task { await Reminders.refresh(ctx) }
+        }) {
+            CaptureSheet(context: captureCenter.context(for: tab))
+                .environment(captureCenter)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             keyboardShown = true
         }
@@ -156,10 +166,18 @@ struct RootView: View {
             }
         }
     }
+
+    private func select(_ picked: RootTab) {
+        if picked == tab {
+            resets[picked, default: 0] += 1
+        } else {
+            withAnimation(.easeOut(duration: 0.18)) { tab = picked }
+        }
+    }
 }
 
 enum RootTab: String, CaseIterable, Identifiable {
-    case today, tasks, support, prayer, more
+    case today, tasks, people, prayer, move
     var id: String { rawValue }
 
     var title: String { rawValue.capitalized }
@@ -168,9 +186,19 @@ enum RootTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: "sun.max"
         case .tasks: "checkmark.square"
-        case .support: "heart"
+        case .people: "person.2"
         case .prayer: "hands.and.sparkles"
-        case .more: "ellipsis"
+        case .move: "suitcase"
+        }
+    }
+
+    var selectedSymbol: String {
+        switch self {
+        case .today: "sun.max.fill"
+        case .tasks: "checkmark.square.fill"
+        case .people: "person.2.fill"
+        case .prayer: "hands.and.sparkles.fill"
+        case .move: "suitcase.fill"
         }
     }
 
@@ -179,19 +207,46 @@ enum RootTab: String, CaseIterable, Identifiable {
         switch self {
         case .today: TodayView()
         case .tasks: TasksView()
-        case .support: PartnersView()
+        case .people: PeopleView()
         case .prayer: PrayerView()
-        case .more: MoreView()
+        case .move: MoveView()
         }
     }
 }
 
-/// A dark mocha pill floating above the content. The selected tab gets a sage circle that slides.
+/// The tab bar with a dot on tabs that need you: overdue tasks, partners to follow up or thank.
+private struct RootTabBar: View {
+    @Query private var tasks: [Todo]
+    @Query private var partners: [Partner]
+    let selection: RootTab
+    let onSelect: (RootTab) -> Void
+
+    var body: some View {
+        FloatingTabBar(selection: selection, badges: badges, onSelect: onSelect)
+    }
+
+    private var badges: Set<RootTab> {
+        var out = Set<RootTab>()
+        if tasks.contains(where: { $0.isOverdue }) { out.insert(.tasks) }
+        let today = Calendar.current.startOfDay(for: .now)
+        let waiting = partners.contains { p in
+            (p.stageValue.isOpen && (p.nextFollowUp.map { $0 <= today } ?? false))
+                || (p.stageValue.countsAsSupport && p.thankedAt == nil)
+        }
+        if waiting { out.insert(.people) }
+        return out
+    }
+}
+
+/// A dark mocha pill floating above the content. The selected tab sits on a soft chip that slides;
+/// the sage is kept for the Capture button next to it.
 struct FloatingTabBar: View {
+    static let height: CGFloat = 58
     /// Room screens leave at the bottom for the bar: its height and its gap.
-    static let inset: CGFloat = 54 + 8
+    static let inset: CGFloat = height + 8
 
     let selection: RootTab
+    var badges: Set<RootTab> = []
     let onSelect: (RootTab) -> Void
     @Namespace private var fill
 
@@ -200,32 +255,68 @@ struct FloatingTabBar: View {
             ForEach(RootTab.allCases) { t in
                 let selected = t == selection
                 Button { onSelect(t) } label: {
-                    Image(systemName: t.symbol)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(selected ? Palette.onAccent : Palette.tabIcon)
-                        .frame(width: 40, height: 40)
-                        .background {
-                            if selected {
-                                Circle().fill(Accent.yellow.color)
-                                    .matchedGeometryEffect(id: "fill", in: fill)
+                    VStack(spacing: 2) {
+                        Image(systemName: selected ? t.selectedSymbol : t.symbol)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(selected ? Palette.ink : Palette.tabIcon)
+                            .frame(width: 46, height: 28)
+                            .background {
+                                if selected {
+                                    Capsule().fill(Palette.chip)
+                                        .matchedGeometryEffect(id: "fill", in: fill)
+                                }
                             }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .contentShape(Rectangle())
+                            .overlay(alignment: .topTrailing) {
+                                if badges.contains(t) {
+                                    Circle().fill(Accent.pink.color)
+                                        .frame(width: 7, height: 7)
+                                        .offset(x: -8, y: 3)
+                                }
+                            }
+                        Text(t.title)
+                            .font(Typeface.body(10, weight: selected ? .bold : .semibold))
+                            .foregroundStyle(selected ? Palette.ink : Palette.tabIcon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Self.height)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(t.title)
+                .accessibilityLabel(badges.contains(t) ? "\(t.title), needs attention" : t.title)
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 6)
-        .frame(height: 54)
+        .padding(.horizontal, 4)
+        .frame(height: Self.height)
         .background(Capsule().fill(Palette.tabBar).shadow(color: .black.opacity(0.3), radius: 12, y: 6))
+    }
+}
+
+/// The round sage + next to the tab bar: add or find anything, from every tab.
+private struct CaptureButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Palette.onAccent)
+                .frame(width: FloatingTabBar.height, height: FloatingTabBar.height)
+                .background(Circle().fill(Accent.yellow.color).shadow(color: .black.opacity(0.3), radius: 12, y: 6))
+                .contentShape(Circle())
+        }
+        .buttonStyle(BrutalSquarePressStyle(fill: .clear))
+        .accessibilityLabel("Add or find")
     }
 }
 
 extension EnvironmentValues {
     /// How much of the bottom edge the floating tab bar covers (0 when it's hidden).
     @Entry var floatingBarInset: CGFloat = 0
+    /// The tab a screen lives in, so Capture knows which screen is on top of which tab.
+    @Entry var rootTab: RootTab = .today
+    /// Switches to another tab.
+    @Entry var selectTab: (RootTab) -> Void = { _ in }
 }

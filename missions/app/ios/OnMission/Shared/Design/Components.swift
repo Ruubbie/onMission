@@ -65,28 +65,24 @@ extension View {
             .listRowInsets(EdgeInsets(top: top, leading: Metrics.l, bottom: bottom, trailing: Metrics.l))
     }
 
-    /// The floating sage + on list screens.
+    /// A + in the navigation bar that makes a new record of this screen's kind and opens it.
+    /// (The floating sage + next to the tab bar is Capture, the same on every screen.)
     func addButton(_ action: @escaping () -> Void) -> some View {
-        overlay(alignment: .bottomTrailing) {
-            AboveTabBar { AddButton(action: action) }
+        toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                IconButton(symbol: "plus", size: 36, label: "New", action: action)
+            }
         }
     }
 
-    /// The floating sage + that opens a menu.
+    /// The navigation-bar + that opens a menu of things to add.
     func addMenu<MenuContent: View>(@ViewBuilder _ content: @escaping () -> MenuContent) -> some View {
-        overlay(alignment: .bottomTrailing) {
-            AboveTabBar { Menu(content: content) { AddButtonLabel() } }
+        toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu(content: content) { IconTile(symbol: "plus", size: 36) }
+                    .accessibilityLabel("New")
+            }
         }
-    }
-}
-
-/// Places the + 20pt from the edges, above the floating tab bar.
-private struct AboveTabBar<Content: View>: View {
-    @Environment(\.floatingBarInset) private var barInset
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        content.padding(.trailing, 20).padding(.bottom, 20 + barInset)
     }
 }
 
@@ -576,6 +572,39 @@ struct OptionalDatePicker: View {
             Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// One-tap dates under a date field: Today, Tomorrow, In 3 days, Next week.
+struct QuickDateChips: View {
+    struct Option: Identifiable {
+        let title: String
+        let days: Int
+        var id: Int { days }
+    }
+
+    @Binding var date: Date?
+    var options: [Option] = [Option(title: "Today", days: 0), Option(title: "Tomorrow", days: 1),
+                             Option(title: "In 3 days", days: 3), Option(title: "Next week", days: 7)]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(options) { option in
+                    let target = Calendar.current.date(byAdding: .day, value: option.days,
+                                                       to: Calendar.current.startOfDay(for: .now))
+                    FilterChip(text: option.title, selected: isSame(date, target)) {
+                        withAnimation(.easeOut(duration: 0.15)) { date = target }
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func isSame(_ a: Date?, _ b: Date?) -> Bool {
+        guard let a, let b else { return false }
+        return Calendar.current.isDate(a, inSameDayAs: b)
     }
 }
 

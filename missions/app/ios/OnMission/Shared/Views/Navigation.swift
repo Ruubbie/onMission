@@ -10,7 +10,7 @@ extension AppSection {
         case .today: TodayView()
         case .tasks: TasksView()
         case .checklists: ChecklistsView()
-        case .partners: PartnersView()
+        case .partners: PeopleView()
         case .documents: VaultView()
         case .budget: BudgetView()
         case .selling: SellView()
@@ -26,9 +26,15 @@ extension AppSection {
     }
 }
 
-// MARK: - The "More" tab: soft tiles for every other screen
+// MARK: - The "Move" tab: everything for leaving, grouped, each with a live line, and search on top
 
-struct MoreView: View {
+struct MoveView: View {
+    struct Status {
+        let text: String
+        var alert: Bool = false
+    }
+
+    @Environment(\.modelContext) private var ctx
     @Query private var checklists: [Checklist]
     @Query private var tasks: [Todo]
     @Query private var packing: [PackingItem]
@@ -36,77 +42,167 @@ struct MoreView: View {
     @Query private var sells: [SellItem]
     @Query private var notes: [Note]
     @Query private var newsletters: [Newsletter]
-    @Query private var contacts: [Contact]
     @Query private var documents: [Document]
-
-    private let columns = [GridItem(.flexible(), spacing: Metrics.s), GridItem(.flexible(), spacing: Metrics.s)]
-    private let sections: [AppSection] = [.checklists, .newsletters, .budget, .selling, .packing, .documents,
-                                          .contacts, .notes, .guides, .search, .settings]
+    @Query private var partners: [Partner]
+    @Query private var gifts: [Gift]
+    @Query private var settingsList: [MissionSettings]
+    @State private var query = ""
 
     /// The home-screen name (brand.appName in tokens.json, set by CI).
     static var appName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "hesent.me"
     }
 
+    private var insights: Insights {
+        Insights(settings: settingsList.first ?? MissionSettings(), tasks: [], partners: partners, gifts: gifts,
+                 budget: budget, sells: sells, packing: packing, documents: documents)
+    }
+
+    private var searching: Bool { query.trimmingCharacters(in: .whitespaces).count >= 2 }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Metrics.l) {
-                HStack(spacing: 10) {
-                    Ollie(pose: .side, height: 56)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(Self.appName).font(Typeface.heading(17)).foregroundStyle(Palette.ink)
-                        Text("Everything else for the move").font(Typeface.body(12)).foregroundStyle(Palette.muted)
-                    }
+                header
+                BrutalSearchField(text: $query, prompt: "Find anything: passport, Anna, bike…")
+                if searching {
+                    results
+                } else {
+                    group("Leaving", [.checklists, .documents, .packing])
+                    group("Money", [.budget, .selling])
+                    group("Words", [.newsletters, .notes, .guides])
+                    SyncBadge()
                 }
-                LazyVGrid(columns: columns, spacing: Metrics.s) {
-                    ForEach(sections) { s in
-                        NavigationLink { s.view } label: {
-                            FolderTabCard(title: s.title, accent: s.accent, symbol: s.symbol,
-                                          count: count(for: s).value, subtitle: count(for: s).label)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                SyncBadge()
             }
-            .padding(Metrics.l)
+            .padding(.horizontal, Metrics.l)
+            .padding(.top, 4)
             .padding(.bottom, Metrics.xl)
         }
+        .scrollDismissesKeyboard(.interactively)
         .brutalBackground()
         .toolbar(.hidden, for: .navigationBar)
+        .captureContext(.task)
     }
 
-    private func count(for s: AppSection) -> (value: String, label: String) {
+    private var header: some View {
+        let days = insights.daysToGo
+        return HStack(spacing: 10) {
+            Ollie(pose: .side, height: 52)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Move").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+                Text(days > 0 ? "\(days) days until you leave" : "Kia ora, you're there")
+                    .font(Typeface.body(12.5))
+                    .foregroundStyle(Palette.muted)
+            }
+            Spacer()
+            NavigationLink { SettingsView() } label: { IconTile(symbol: "gearshape", size: 40) }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Settings")
+        }
+    }
+
+    private func group(_ title: String, _ sections: [AppSection]) -> some View {
+        VStack(alignment: .leading, spacing: Metrics.s) {
+            SectionHeader(title)
+            VStack(spacing: 0) {
+                ForEach(Array(sections.enumerated()), id: \.element) { index, s in
+                    NavigationLink { s.view } label: { MoveRow(section: s, status: status(for: s)) }
+                        .buttonStyle(.plain)
+                    if index < sections.count - 1 {
+                        Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 58)
+                    }
+                }
+            }
+            .brutalBox(radius: 18)
+        }
+    }
+
+    private var results: some View {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        let found = Array(AnyRecord.everything(ctx).filter { $0.searchText.localizedCaseInsensitiveContains(q) }.prefix(200))
+        return VStack(alignment: .leading, spacing: Metrics.s) {
+            if found.isEmpty {
+                BrutalEmptyState(symbol: "questionmark", title: "Nothing found", message: "No match for \"\(q)\".", accent: .grey)
+            } else {
+                SectionHeader("Results", count: found.count)
+                ForEach(found) { rec in
+                    NavigationLink { RecordDestination(record: rec) } label: {
+                        RecordRow(record: rec)
+                            .padding(Metrics.m)
+                            .brutalBox(radius: Metrics.radiusSmall)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func status(for s: AppSection) -> Status {
         switch s {
         case .checklists:
             let items = tasks.filter { !$0.checklistID.isEmpty }
-            return (value: "\(items.filter(\.isDone).count) of \(items.count)", label: "done")
+            let lists = checklists.filter { !$0.archived }.count
+            return Status(text: "\(items.filter(\.isDone).count) of \(items.count) ticked · \(lists) list\(lists == 1 ? "" : "s")")
+        case .documents:
+            let soon = documents.filter { d in d.expiresAt.map(DocumentDetail.expiresSoon) ?? false }.count
+            let missing = documents.filter { !$0.hasFile }.count
+            if soon > 0 { return Status(text: "\(soon) expire\(soon == 1 ? "s" : "") within 90 days", alert: true) }
+            if missing > 0 { return Status(text: "\(documents.count) documents · \(missing) without a file", alert: true) }
+            return Status(text: "\(documents.count) document\(documents.count == 1 ? "" : "s")")
         case .packing:
             let packed = packing.filter(\.packed).count
-            return (value: "\(packed) of \(packing.count)", label: "packed")
+            return Status(text: packing.isEmpty ? "Nothing to pack yet" : "\(packed) of \(packing.count) packed")
         case .budget:
-            return (value: "\(budget.count)", label: "budget lines")
+            let gap = insights.setupGapCents
+            return gap > 0 ? Status(text: "\(euros(gap)) still to cover before you go") : Status(text: "One-off costs covered")
         case .selling:
-            let open = sells.filter { !$0.statusValue.isSettled }.count
-            return (value: "\(open)", label: "items left")
-        case .documents:
-            return (value: "\(documents.count)", label: "documents")
-        case .notes:
-            return (value: "\(notes.filter { $0.kindValue != .prayer && !$0.isThanks }.count)", label: "notes")
+            let i = insights
+            if i.itemsToSort > 0 { return Status(text: "\(i.itemsToSort) to decide · \(euros(i.sellPotentialCents)) to sell") }
+            return Status(text: "\(euros(i.soldCents)) sold · \(euros(i.sellPotentialCents)) to go")
         case .newsletters:
-            let sent = newsletters.filter { $0.statusValue == .sent }.count
-            return (value: "\(newsletters.count)", label: "letters, \(sent) sent")
-        case .contacts:
-            return (value: "\(contacts.count)", label: "people")
+            if let open = newsletters.filter({ $0.statusValue != .sent }).max(by: { $0.number < $1.number }) {
+                return Status(text: "#\(open.number) is \(open.statusValue.title.lowercased())")
+            }
+            if let last = newsletters.compactMap(\.sentAt).max() { return Status(text: "Last sent \(shortDate(last))") }
+            return Status(text: "None yet")
+        case .notes:
+            let n = notes.filter { $0.kindValue != .prayer && !$0.isThanks }.count
+            return Status(text: "\(n) note\(n == 1 ? "" : "s")")
         case .guides:
-            return (value: "\(GuidesView.guides.count)", label: "to read")
-        case .search:
-            return (value: "", label: "Find anything")
-        case .settings:
-            return (value: "", label: "Sync, backup, mission")
+            return Status(text: "\(GuidesView.guides.count) guides to read")
         default:
-            return (value: "", label: "")
+            return Status(text: "")
         }
+    }
+}
+
+private struct MoveRow: View {
+    let section: AppSection
+    let status: MoveView.Status
+
+    var body: some View {
+        HStack(spacing: Metrics.m) {
+            AccentSquareIcon(symbol: section.symbol, accent: section.accent, size: 34)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(section.title)
+                    .font(Typeface.body(15, weight: .bold))
+                    .foregroundStyle(Palette.ink)
+                if !status.text.isEmpty {
+                    Text(status.text)
+                        .font(Typeface.body(12.5, weight: .semibold))
+                        .foregroundStyle(status.alert ? Palette.danger : Palette.muted)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Palette.muted)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }
 

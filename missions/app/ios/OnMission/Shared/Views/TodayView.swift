@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
 
-/// Thanks first, then one task card at a time, with the countdown and support just below.
+/// The morning check-in: the countdown, thanks, today's cards one at a time, the people waiting on you,
+/// support, and anything to watch out for.
 struct TodayView: View {
-    @Environment(\.modelContext) private var ctx
+    @Environment(\.selectTab) private var selectTab
     @Query private var settingsList: [MissionSettings]
     @Query private var tasks: [Todo]
     @Query private var partners: [Partner]
@@ -14,8 +15,7 @@ struct TodayView: View {
     @Query private var documents: [Document]
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
 
-    /// Cards sent to the back with "Later" (only for this visit).
-    @State private var later: [String] = []
+    @State private var showAllWarnings = false
 
     private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
 
@@ -24,60 +24,42 @@ struct TodayView: View {
                  sells: sells, packing: packing, documents: documents)
     }
 
-    private var greeting: String {
-        let h = Calendar.current.component(.hour, from: .now)
-        let part = h < 12 ? "Good morning" : (h < 18 ? "Good afternoon" : "Good evening")
-        return "\(part), Ruben"
-    }
-
     var body: some View {
         let i = insights
-        let deck = order(i.overdue + i.thisWeek)
+        let dueToday = i.thisWeek.filter { $0.dueDate.map { Calendar.current.isDateInToday($0) } ?? false }
+        let deck = i.overdue + dueToday
+        let deckIDs = Set(deck.map(\.id))
+        let upcoming = i.thisWeek.filter { !deckIDs.contains($0.id) }
         ScrollView {
-            VStack(alignment: .leading, spacing: Metrics.m) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                        .font(Typeface.body(13, weight: .semibold))
-                        .foregroundStyle(Palette.muted)
-                    Text(greeting).font(Typeface.heading(18)).foregroundStyle(Palette.ink)
-                }
+            VStack(alignment: .leading, spacing: Metrics.l) {
+                TodayHeader(daysToGo: i.daysToGo)
                 ThanksCard(thanks: notes.filter(\.isThanks))
-                HStack(alignment: .bottom) {
-                    Cap("Today's cards · \(deck.count)")
-                    Spacer()
-                    if !deck.isEmpty {
-                        Ollie(pose: .sit, height: 62)
-                            .padding(.trailing, 6)
-                            .offset(y: 18)
-                            .zIndex(3)
-                    }
-                }
-                .zIndex(3)
-                if deck.isEmpty {
-                    HStack(spacing: Metrics.m) {
-                        Ollie(pose: .sleep, height: 56)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Nothing due this week").font(Typeface.body(14, weight: .bold)).foregroundStyle(Palette.ink)
-                            Text("Ollie's taking a nap. Add a task in Tasks when something comes up.")
-                                .font(Typeface.body(12.5)).foregroundStyle(Palette.muted)
+                VStack(alignment: .leading, spacing: Metrics.s) {
+                    HStack(alignment: .bottom) {
+                        Cap("Today's cards · \(deck.count)")
+                        Spacer()
+                        if !deck.isEmpty {
+                            Ollie(pose: .sit, height: 62)
+                                .padding(.trailing, 6)
+                                .offset(y: 18)
                         }
                     }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .brutalBox(radius: 18)
-                } else {
-                    TaskDeck(tasks: deck, onLater: { t in later.removeAll { $0 == t.id }; later.append(t.id) })
-                }
-                HStack(spacing: Metrics.s) {
-                    MiniStat(label: "To Queenstown", value: i.daysToGo > 0 ? "\(i.daysToGo) days" : "Kia ora!")
-                    NavigationLink { PartnersView() } label: {
-                        MiniStat(label: "Support / month", value: euros(i.committedMonthlyCents))
+                    .zIndex(3)
+                    if deck.isEmpty {
+                        RestCard(hasUpcoming: !upcoming.isEmpty)
+                    } else {
+                        TaskDeck(tasks: deck)
                     }
-                    .buttonStyle(.plain)
+                    if !upcoming.isEmpty {
+                        UpcomingCard(tasks: upcoming) { selectTab(.tasks) }
+                    }
                 }
-                if !i.warnings.isEmpty { WarningsCard(warnings: i.warnings) }
                 if !i.followUps.isEmpty || !i.toThank.isEmpty {
-                    PeopleCard(followUps: i.followUps, toThank: i.toThank)
+                    PeopleWaitingCard(followUps: i.followUps, toThank: i.toThank, gifts: gifts)
+                }
+                SupportStrip(insights: i, settings: settings) { selectTab(.people) }
+                if !i.warnings.isEmpty {
+                    WarningsCard(warnings: i.warnings, showAll: $showAllWarnings) { selectTab(.tasks) }
                 }
             }
             .padding(.horizontal, Metrics.l)
@@ -86,19 +68,41 @@ struct TodayView: View {
         }
         .brutalBackground()
         .toolbar(.hidden, for: .navigationBar)
-    }
-
-    /// Cards put off with Later go to the back, in the order they were put off.
-    private func order(_ list: [Todo]) -> [Todo] {
-        var seen = Set<String>()
-        let unique = list.filter { seen.insert($0.id).inserted }
-        let now = unique.filter { !later.contains($0.id) }
-        let back = later.compactMap { id in unique.first { $0.id == id } }
-        return now + back
+        .captureContext(.task)
     }
 }
 
 // MARK: - Pieces of Today
+
+private struct TodayHeader: View {
+    let daysToGo: Int
+
+    private var greeting: String {
+        let h = Calendar.current.component(.hour, from: .now)
+        return h < 12 ? "Good morning" : (h < 18 ? "Good afternoon" : "Good evening")
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Metrics.m) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                    .font(Typeface.body(13, weight: .semibold))
+                    .foregroundStyle(Palette.muted)
+                Text(greeting).font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+            }
+            Spacer(minLength: 8)
+            if daysToGo > 0 {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(daysToGo)").font(Typeface.number(30)).foregroundStyle(Palette.ink)
+                    Text("days to Queenstown").font(Typeface.body(11, weight: .semibold)).foregroundStyle(Palette.muted)
+                }
+                .accessibilityElement(children: .combine)
+            } else {
+                Text("Kia ora!").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+            }
+        }
+    }
+}
 
 /// "Start with thanks": the question in Lora, this week's thanks as chips, and + add.
 private struct ThanksCard: View {
@@ -131,8 +135,12 @@ private struct ThanksCard: View {
                             .foregroundStyle(Palette.ink)
                             .padding(.horizontal, 10).padding(.vertical, 4)
                             .overlay(Capsule().strokeBorder(Palette.ring, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+                            .padding(.vertical, 8)
+                            .contentShape(Rectangle())
+                            .padding(.vertical, -8)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Add something you're thankful for")
                 }
             }
             if adding {
@@ -198,17 +206,36 @@ private struct FlowChips: Layout {
     }
 }
 
-/// One cream card on top of two fading ones behind it: area, title, when, and Later / Done.
+/// Nothing due today: Ollie naps.
+private struct RestCard: View {
+    let hasUpcoming: Bool
+
+    var body: some View {
+        HStack(spacing: Metrics.m) {
+            Ollie(pose: .sleep, height: 56)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Nothing due today").font(Typeface.body(14, weight: .bold)).foregroundStyle(Palette.ink)
+                Text(hasUpcoming ? "Ollie's napping. Here's what's coming later this week."
+                                 : "Ollie's taking a nap. Tap + when something comes up.")
+                    .font(Typeface.body(12.5)).foregroundStyle(Palette.muted)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .brutalBox(radius: 18)
+    }
+}
+
+/// One cream card on top of two fading ones behind it.
 private struct TaskDeck: View {
     let tasks: [Todo]
-    let onLater: (Todo) -> Void
 
     var body: some View {
         ZStack(alignment: .top) {
             if tasks.count > 2 { back(scale: 0.88, opacity: 0.45, y: 0) }
             if tasks.count > 1 { back(scale: 0.94, opacity: 0.7, y: 8) }
             if let t = tasks.first {
-                TopCard(task: t, onLater: { onLater(t) })
+                TopCard(task: t)
                     .padding(.top, 18)
                     .id(t.id)
                     .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .trailing).combined(with: .opacity)))
@@ -227,23 +254,33 @@ private struct TaskDeck: View {
     }
 }
 
+/// Area, title, when, who it's with, and Tomorrow / Call / Done. Swipe right for done, left for tomorrow.
 private struct TopCard: View {
     @Environment(\.modelContext) private var ctx
+    @Environment(\.openURL) private var openURL
     let task: Todo
-    let onLater: () -> Void
 
     private var when: String {
-        guard let due = task.dueDate else { return "This week" }
-        return task.isOverdue ? "Was due \(shortDate(due))" : "Due \(shortDate(due))"
+        guard let due = task.dueDate else { return "Today" }
+        if task.isOverdue { return "Was due \(shortDate(due))" }
+        return Calendar.current.isDateInToday(due) ? "Due today" : "Due \(shortDate(due))"
+    }
+
+    /// The partner this task is about, if it's linked to one.
+    private var partner: Partner? {
+        for case .partner(let p) in Links.linked(to: .task(task), ctx) { return p }
+        return nil
     }
 
     var body: some View {
+        let person = partner
         FocalCard {
             NavigationLink { TaskDetail(task: task) } label: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(task.areaValue.title)
+                    Text(person.map { "\(task.areaValue.title) · \($0.displayTitle)" } ?? task.areaValue.title)
                         .font(Typeface.body(12, weight: .bold))
                         .foregroundStyle(Cream.tag)
+                        .lineLimit(1)
                     Text(task.displayTitle)
                         .font(Typeface.body(17, weight: .bold))
                         .foregroundStyle(Cream.ink)
@@ -258,17 +295,35 @@ private struct TopCard: View {
             }
             .buttonStyle(.plain)
             HStack(spacing: 8) {
-                Button("Later", action: onLater)
+                Button("Tomorrow", action: tomorrow)
                     .buttonStyle(DeckButtonStyle(fill: Cream.button, ink: Cream.ink))
-                Button("Done") { withAnimation { task.setDone(true); Automations.taskDone(task, ctx) } }
+                if let person, let url = PhoneLinks.call(person.phone) {
+                    Button { openURL(url) } label: { Label("Call", systemImage: "phone.fill") }
+                        .buttonStyle(DeckButtonStyle(fill: Cream.button, ink: Cream.ink))
+                }
+                Button("Done", action: done)
                     .buttonStyle(DeckButtonStyle(fill: Accent.yellow.color, ink: Palette.onAccent))
             }
             .padding(.top, 10)
         }
         .gesture(DragGesture(minimumDistance: 30).onEnded { v in
-            if v.translation.width > 80 { withAnimation { task.setDone(true); Automations.taskDone(task, ctx) } }
-            else if v.translation.width < -80 { onLater() }
+            if v.translation.width > 80 { done() } else if v.translation.width < -80 { tomorrow() }
         })
+        .accessibilityAction(named: "Done", done)
+        .accessibilityAction(named: "Move to tomorrow", tomorrow)
+    }
+
+    private func done() {
+        withAnimation {
+            task.setDone(true)
+            Automations.taskDone(task, ctx)
+        }
+    }
+
+    private func tomorrow() {
+        withAnimation {
+            task.dueDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: .now))
+        }
     }
 }
 
@@ -279,103 +334,215 @@ private struct DeckButtonStyle: ButtonStyle {
         configuration.label
             .font(Typeface.body(13, weight: .bold))
             .foregroundStyle(ink)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, minHeight: 40)
             .background(Capsule().fill(fill))
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 
-private struct MiniStat: View {
-    let label: String
-    let value: String
+/// The rest of this week, a few at a time.
+private struct UpcomingCard: View {
+    let tasks: [Todo]
+    let onSeeAll: () -> Void
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(Typeface.body(11, weight: .semibold)).foregroundStyle(Palette.muted)
-            Text(value).font(Typeface.body(16, weight: .bold)).foregroundStyle(Palette.ink).monospacedDigit()
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Cap("Later this week · \(tasks.count)")
+                Spacer()
+                Button(action: onSeeAll) {
+                    Text("All tasks")
+                        .font(Typeface.body(12.5, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                        .frame(minHeight: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            ForEach(tasks.prefix(4)) { t in
+                TaskRow(task: t, opensDetail: true)
+            }
+            if tasks.count > 4 {
+                Text("and \(tasks.count - 4) more")
+                    .font(Typeface.body(12.5))
+                    .foregroundStyle(Palette.muted)
+                    .padding(.leading, 38)
+            }
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .brutalBox(radius: 14)
+        .brutalBox(radius: 18)
     }
 }
 
-private struct WarningsCard: View {
-    let warnings: [Insights.Warning]
+/// Follow-ups due and thanks owed, each with the action right there.
+private struct PeopleWaitingCard: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(\.openURL) private var openURL
+    let followUps: [Partner]
+    let toThank: [Partner]
+    let gifts: [Gift]
+
+    private struct Item: Identifiable {
+        let partner: Partner
+        let thank: Bool
+        var id: String { partner.id + (thank ? "-thank" : "-follow") }
+    }
+
+    private var items: [Item] {
+        followUps.map { Item(partner: $0, thank: false) } + toThank.map { Item(partner: $0, thank: true) }
+    }
 
     var body: some View {
+        let list = items
+        VStack(alignment: .leading, spacing: Metrics.s) {
+            SectionHeader("People waiting on you", count: list.count)
+            VStack(spacing: 0) {
+                ForEach(list) { item in
+                    row(item)
+                    if item.id != list.last?.id {
+                        Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 56)
+                    }
+                }
+            }
+            .brutalBox(radius: 18)
+        }
+    }
+
+    private func row(_ item: Item) -> some View {
+        let p = item.partner
+        return HStack(spacing: 10) {
+            NavigationLink { PartnerDetail(partner: p) } label: {
+                HStack(spacing: 10) {
+                    Avatar(name: p.displayTitle, size: 34)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(p.displayTitle)
+                            .font(Typeface.body(15, weight: .semibold))
+                            .foregroundStyle(Palette.ink)
+                            .lineLimit(1)
+                        Text(detail(item))
+                            .font(Typeface.body(12, weight: .semibold))
+                            .foregroundStyle(isLate(item) ? Palette.danger : Palette.tag)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if item.thank {
+                Button("Thanked") { withAnimation { p.markThanked(ctx) } }
+                    .buttonStyle(BrutalButtonStyle(kind: .primary, compact: true))
+                    .accessibilityLabel("Mark \(p.displayTitle) as thanked")
+            } else {
+                if let url = PhoneLinks.whatsApp(p.phone) {
+                    IconButton(symbol: "message.fill", accent: .lime, size: 38, label: "WhatsApp \(p.displayTitle)") { openURL(url) }
+                }
+                if let url = PhoneLinks.call(p.phone) {
+                    IconButton(symbol: "phone.fill", accent: .green, size: 38, label: "Call \(p.displayTitle)") { openURL(url) }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func detail(_ item: Item) -> String {
+        let p = item.partner
+        if item.thank {
+            return p.stageValue.countsAsSupport && p.thankedAt == nil ? "\(p.stageValue.title), not thanked yet" : "A gift to thank for"
+        }
+        let what = p.nextStep.isEmpty ? "Follow up" : p.nextStep
+        guard let when = p.nextFollowUp else { return what }
+        return "\(what) · \(shortDate(when))"
+    }
+
+    private func isLate(_ item: Item) -> Bool {
+        guard !item.thank, let d = item.partner.nextFollowUp else { return false }
+        return d < Calendar.current.startOfDay(for: .now)
+    }
+}
+
+/// Monthly support against the goal; opens People.
+private struct SupportStrip: View {
+    let insights: Insights
+    let settings: MissionSettings
+    let onOpen: () -> Void
+
+    var body: some View {
+        let stretch = Double(max(settings.supportTargetMonthlyCents, 1))
+        Button(action: onOpen) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Cap("Monthly support")
+                    Spacer()
+                    Text("\(euros(insights.committedMonthlyCents)) of \(euros(settings.supportTargetMonthlyCents))")
+                        .font(Typeface.body(13, weight: .bold))
+                        .foregroundStyle(Palette.ink)
+                        .monospacedDigit()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                }
+                BrutalProgress(value: Double(insights.committedMonthlyCents) / stretch, accent: .yellow, height: 8,
+                               goal: Double(settings.supportMinimumMonthlyCents) / stretch)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .brutalBox(radius: 18)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens People")
+    }
+}
+
+/// Expiring documents, overdue tasks, the support gap. Two at a time unless you ask for all.
+private struct WarningsCard: View {
+    let warnings: [Insights.Warning]
+    @Binding var showAll: Bool
+    let onOpenTasks: () -> Void
+
+    var body: some View {
+        let shown = showAll ? warnings : Array(warnings.prefix(2))
         BrutalCard {
             Label("Heads up", systemImage: "exclamationmark.triangle.fill")
                 .font(Typeface.body(14, weight: .bold))
                 .foregroundStyle(Accent.pink.color)
-            ForEach(warnings) { w in
+            ForEach(shown) { w in
                 if let rec = w.record {
-                    NavigationLink { RecordDestination(record: rec) } label: {
-                        HStack {
-                            Text(w.text).font(Typeface.body(14)).multilineTextAlignment(.leading)
-                            Spacer(minLength: 4)
-                            Image(systemName: "arrow.right").font(.system(size: 13, weight: .bold))
-                        }
-                        .foregroundStyle(Palette.ink)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    NavigationLink { RecordDestination(record: rec) } label: { line(w.text) }
+                        .buttonStyle(.plain)
+                } else if w.id == "overdue" {
+                    Button(action: onOpenTasks) { line(w.text) }
+                        .buttonStyle(.plain)
                 } else {
                     Text(w.text).font(Typeface.body(14)).foregroundStyle(Palette.ink)
                 }
             }
-        }
-    }
-}
-
-private struct PeopleCard: View {
-    let followUps: [Partner]
-    let toThank: [Partner]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Metrics.m) {
-            SectionHeader("People", count: followUps.count + toThank.count, accent: .pink)
-            BrutalCard {
-                ForEach(followUps) { p in
-                    NavigationLink { PartnerDetail(partner: p) } label: {
-                        PersonLine(name: p.displayTitle,
-                                   detail: [p.nextStep.isEmpty ? "Follow up" : p.nextStep,
-                                            p.nextFollowUp.map(shortDate) ?? ""].filter { !$0.isEmpty }.joined(separator: " · "),
-                                   symbol: "phone.arrow.up.right", accent: p.stageValue.accent)
-                    }
-                    .buttonStyle(.plain)
+            if warnings.count > 2 {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { showAll.toggle() }
+                } label: {
+                    Text(showAll ? "Show less" : "Show \(warnings.count - 2) more")
+                        .font(Typeface.body(13, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                        .frame(minHeight: 32)
                 }
-                ForEach(toThank) { p in
-                    NavigationLink { PartnerDetail(partner: p) } label: {
-                        PersonLine(name: "Thank \(p.displayTitle)", detail: p.stageValue.title,
-                                   symbol: "envelope.badge", accent: .green)
-                    }
-                    .buttonStyle(.plain)
-                }
+                .buttonStyle(.plain)
             }
         }
     }
-}
 
-private struct PersonLine: View {
-    let name: String
-    let detail: String
-    let symbol: String
-    let accent: Accent
-
-    var body: some View {
-        HStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: symbol, accent: accent, size: 32)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(Typeface.body(14, weight: .semibold)).foregroundStyle(Palette.ink)
-                if !detail.isEmpty {
-                    Text(detail).font(Typeface.body(13)).foregroundStyle(Palette.muted).lineLimit(1)
-                }
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.muted)
+    private func line(_ text: String) -> some View {
+        HStack {
+            Text(text).font(Typeface.body(14)).multilineTextAlignment(.leading)
+            Spacer(minLength: 4)
+            Image(systemName: "arrow.right").font(.system(size: 13, weight: .bold))
         }
+        .foregroundStyle(Palette.ink)
         .contentShape(Rectangle())
     }
 }
-

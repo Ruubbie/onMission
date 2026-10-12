@@ -63,6 +63,7 @@ struct PackingView: View {
             }
         }
         .addButton(newItem)
+        .captureContext(.packing)
         .navigationDestination(item: $opened) { PackingDetail(item: $0) }
     }
 
@@ -138,7 +139,9 @@ private struct PackingRow: View {
                     .background(Circle().fill(item.packed ? Accent.green.color : Color.clear))
                     .overlay(Circle().strokeBorder(item.packed ? Accent.green.color : Palette.ring, lineWidth: 2))
                     .frame(width: 28, height: 28)
+                    .padding(8)
                     .contentShape(Rectangle())
+                    .padding(-8)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(item.packed ? "Packed" : "Not packed")

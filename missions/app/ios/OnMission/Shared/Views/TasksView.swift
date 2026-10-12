@@ -3,7 +3,7 @@ import SwiftData
 
 struct TasksView: View {
     enum Grouping: String, CaseIterable, Identifiable {
-        case week = "This week", area = "By area", done = "Done"
+        case week = "Upcoming", area = "By area", done = "Done"
         var id: String { rawValue }
     }
 
@@ -49,24 +49,24 @@ struct TasksView: View {
         }
     }
 
+    /// Overdue, Today, Tomorrow, the rest of the week, later, and no date.
     static func byWeek(_ list: [Todo]) -> [TaskSection] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: .now)
-        var weeks: [Date: [Todo]] = [:]
-        var overdue: [Todo] = []
+        func day(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: today) ?? today }
+        let buckets: [(title: String, until: Date)] = [
+            ("Overdue", today), ("Today", day(1)), ("Tomorrow", day(2)), ("Next 7 days", day(8)), ("Later", .distantFuture),
+        ]
+        var grouped: [String: [Todo]] = [:]
         var someday: [Todo] = []
         for t in list {
             guard let due = t.dueDate else { someday.append(t); continue }
-            if due < today { overdue.append(t); continue }
-            let week = cal.dateInterval(of: .weekOfYear, for: due)?.start ?? due
-            weeks[week, default: []].append(t)
+            let title = buckets.first { due < $0.until }?.title ?? "Later"
+            grouped[title, default: []].append(t)
         }
-        var out: [TaskSection] = []
-        if !overdue.isEmpty { out.append(TaskSection(title: "Overdue", tasks: overdue.sorted(by: Insights.byDue))) }
-        for week in weeks.keys.sorted() {
-            let title = cal.isDate(week, equalTo: today, toGranularity: .weekOfYear)
-                ? "This week" : "Week of \(week.formatted(.dateTime.day().month(.abbreviated)))"
-            out.append(TaskSection(title: title, tasks: (weeks[week] ?? []).sorted(by: Insights.byDue)))
+        var out: [TaskSection] = buckets.compactMap { b in
+            guard let ts = grouped[b.title], !ts.isEmpty else { return nil }
+            return TaskSection(title: b.title, tasks: ts.sorted(by: Insights.byDue))
         }
         if !someday.isEmpty { out.append(TaskSection(title: "No date", tasks: someday)) }
         return out
@@ -89,7 +89,8 @@ struct TasksView: View {
                         }
                         .swipeActions {
                             Button("Delete", role: .destructive) { Store.delete(t, in: ctx) }
-                            Button("Tomorrow") { move(t, days: 1) }.tint(Accent.purple.color)
+                            Button("Next week") { reschedule(t, days: 7) }.tint(Accent.sand.color)
+                            Button("Tomorrow") { reschedule(t, days: 1) }.tint(Accent.purple.color)
                         }
                         .contextMenu { menu(for: t) }
                 }
@@ -104,7 +105,7 @@ struct TasksView: View {
         }
         .brutalList()
         .toolbar(.hidden, for: .navigationBar)
-        .addButton(newTask)
+        .captureContext(.task)
         .navigationDestination(item: $opened) { TaskDetail(task: $0) }
     }
 
@@ -149,9 +150,9 @@ struct TasksView: View {
     private func menu(for t: Todo) -> some View {
         Button(t.isDone ? "Mark not done" : "Mark done") { toggle(t) }
         Menu("Move to") {
-            Button("Today") { t.dueDate = Calendar.current.startOfDay(for: .now) }
-            Button("Tomorrow") { move(t, days: 1) }
-            Button("Next week") { move(t, days: 7) }
+            Button("Today") { reschedule(t, days: 0) }
+            Button("Tomorrow") { reschedule(t, days: 1) }
+            Button("Next week") { reschedule(t, days: 7) }
             Button("No date") { t.dueDate = nil }
         }
         Menu("Status") {
@@ -173,9 +174,11 @@ struct TasksView: View {
         }
     }
 
-    private func move(_ t: Todo, days: Int) {
-        let base = max(t.dueDate ?? .now, Calendar.current.startOfDay(for: .now))
-        t.dueDate = Calendar.current.date(byAdding: .day, value: days, to: Calendar.current.startOfDay(for: base))
+    /// Due a number of days from today (overdue tasks move forward from today, not from their old date).
+    private func reschedule(_ t: Todo, days: Int) {
+        withAnimation {
+            t.dueDate = Calendar.current.date(byAdding: .day, value: days, to: Calendar.current.startOfDay(for: .now))
+        }
     }
 
     private func add() {
@@ -186,10 +189,6 @@ struct TasksView: View {
         quick = ""
     }
 
-    private func newTask() {
-        let t = Automations.addTask("", due: nil, area: areaFilter ?? .other, ctx)
-        opened = t
-    }
 }
 
 // MARK: - Rows
@@ -213,7 +212,10 @@ struct TaskCheckbox: View {
                 .background(Circle().fill(task.isDone ? Accent.green.color : Color.clear))
                 .overlay(Circle().strokeBorder(task.isDone ? Accent.green.color : Palette.ring, lineWidth: 2))
                 .frame(width: 28, height: 28)
+                // 44pt to tap, without making the row taller.
+                .padding(8)
                 .contentShape(Rectangle())
+                .padding(-8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(task.isDone ? "Mark not done" : "Mark done")
@@ -334,6 +336,7 @@ struct TaskDetail: View {
                     ForEach(Priority.allCases) { Text($0.title).tag($0) }
                 }
                 OptionalDatePicker(title: "Due date", date: $task.dueDate)
+                QuickDateChips(date: $task.dueDate)
             } header: { FormHeader("Task") }
 
             Section {

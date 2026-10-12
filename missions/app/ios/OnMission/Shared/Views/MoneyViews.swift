@@ -158,7 +158,9 @@ private struct PaidBox: View {
                 .background(Circle().fill(entry.paid ? Accent.green.color : Color.clear))
                 .overlay(Circle().strokeBorder(entry.paid ? Accent.green.color : Palette.ring, lineWidth: 2))
                 .frame(width: 28, height: 28)
+                .padding(8)
                 .contentShape(Rectangle())
+                .padding(-8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(entry.paid ? "Paid" : "Not paid")
@@ -254,6 +256,7 @@ struct SellView: View {
         .brutalList()
         .navigationTitle("Selling")
         .addButton(newItem)
+        .captureContext(.sell)
         .navigationDestination(item: $opened) { SellDetail(item: $0) }
     }
 
@@ -263,10 +266,17 @@ struct SellView: View {
         opened = item
     }
 
-    /// "Bike 150" or "Bike €150,50": the last word, if it's a number, is the asking price.
     private func add() {
-        var words = quick.split(separator: " ").map(String.init)
-        guard !words.isEmpty else { return }
+        if SellItem.quick(quick, ctx) != nil { quick = "" }
+    }
+}
+
+extension SellItem {
+    /// "Bike 150" or "Bike €150,50": the last word, if it's a number, is the asking price.
+    @discardableResult
+    static func quick(_ text: String, _ ctx: ModelContext) -> SellItem? {
+        var words = text.split(separator: " ").map(String.init)
+        guard !words.isEmpty else { return nil }
         let item = SellItem()
         if let last = words.last, words.count > 1,
            let price = Double(last.replacingOccurrences(of: "€", with: "").replacingOccurrences(of: ",", with: ".")) {
@@ -276,7 +286,7 @@ struct SellView: View {
         item.name = words.joined(separator: " ")
         item.statusValue = item.askingCents > 0 ? .toList : .decide
         ctx.insert(item)
-        quick = ""
+        return item
     }
 }
 

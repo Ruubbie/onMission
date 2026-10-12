@@ -47,7 +47,7 @@ struct ContactsView: View {
     }
 }
 
-private struct ContactRow: View {
+struct ContactRow: View {
     let contact: Contact
 
     var body: some View {

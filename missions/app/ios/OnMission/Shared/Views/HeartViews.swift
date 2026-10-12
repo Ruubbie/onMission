@@ -94,6 +94,7 @@ struct PrayerView: View {
         }
         .brutalList()
         .toolbar(.hidden, for: .navigationBar)
+        .captureContext(mode == .thanks ? CaptureKind.thanks : CaptureKind.prayer)
     }
 
     private var emptyTitle: String {
@@ -245,6 +246,7 @@ struct NotesView: View {
         .brutalList()
         .brutalSearch(text: $search)
         .navigationTitle("Notes")
+        .captureContext(.note)
         .addMenu {
             ForEach(NoteKind.allCases) { k in
                 Button { newNote(k) } label: { Label(k.title, systemImage: k.symbol) }
