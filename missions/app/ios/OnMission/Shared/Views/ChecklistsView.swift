@@ -56,14 +56,16 @@ struct ChecklistsPage: View {
         let segments = ChecklistStop.allCases.map { Segments<ChecklistStop>.Item(value: $0, title: $0.title, count: left($0)) }
         let visible = shown(stop)
         let byList = Dictionary(grouping: items, by: \.checklistID)
+        // Three digits at 184 run into the aside and the stones.
+        let size: CGFloat = all >= 100 ? 150 : 184
         Screen(posterHeight: 306, sheetTop: 10) {
             Hand("Before you fly").rise(0).at(24, 106)
             Text("\(all)")
-                .type(.disp(184))
+                .type(.disp(size))
                 .contentTransition(.numericText(value: Double(all)))
                 .animation(.easeOut(duration: 0.48), value: all)
                 .lineLimit(1)
-                .offset(y: FontMetrics.shift(.archivo, size: 184, lineHeight: 0.78))
+                .offset(y: FontMetrics.shift(.archivo, size: size, lineHeight: 0.78) + (184 - size) * 0.5)
                 .rise(1)
                 .at(18, 136)
             CapLine("Things left\non \(active.count) list\(active.count == 1 ? "" : "s")").rise(2).at(24, 292)

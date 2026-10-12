@@ -292,7 +292,8 @@ struct CaptureCover: View {
                     .id(session)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // minWidth 0: never report more than the screen, or the whole root (and the top bar) widens with it.
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .background(Palette.cream.ignoresSafeArea())
         .mask {
             RevealShape(center: origin, progress: open ? 1 : 0)
@@ -396,6 +397,8 @@ private struct CaptureForm: View {
             .lineLimit(1...4)
             .focused($focused)
             .submitLabel(.done)
+            // A vertical field in a scroll view sizes to its one-line placeholder; pin it so long prompts wrap.
+            .frame(width: max(chrome.width - 2 * Metrics.sheetSide - 8, 100), alignment: .leading)
             .padding(.horizontal, 4)
             .padding(.top, 14)
             .frame(minHeight: 76, alignment: .top)

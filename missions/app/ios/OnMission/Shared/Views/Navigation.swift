@@ -210,8 +210,9 @@ private struct ArcArt: View {
                 }
                 .frame(width: 390, height: 138, alignment: .topLeading)
             }
-            label(from).position(x: 34, y: 129)
-            label(to).position(x: 356, y: 129)
+            // Under the ends, clear of the plane while it waits at home.
+            label(from).position(x: 34, y: 142)
+            label(to).position(x: 356, y: 142)
         }
         .frame(width: 390, height: 138, alignment: .topLeading)
         .accessibilityHidden(true)
@@ -326,7 +327,7 @@ struct CreamPage<Content: View>: View {
             // The top bar sits on cream; scrolled content passes under it.
             Palette.cream.frame(height: chrome.top + Metrics.topBar).allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
         .background(Palette.cream)
         .foregroundStyle(Palette.ink)
     }

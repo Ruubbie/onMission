@@ -78,7 +78,7 @@ struct Screen<Poster: View, Sheet: View>: View {
             }
             Color.clear.frame(height: chrome.bar)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(background)
         .foregroundStyle(Palette.cream)
     }
@@ -131,7 +131,7 @@ struct SheetSurface<Content: View>: View {
         }
         .padding(.top, top)
         .padding(.horizontal, Metrics.sheetSide)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             UnevenRoundedRectangle(topLeadingRadius: Metrics.sheetRadius, topTrailingRadius: Metrics.sheetRadius, style: .continuous)
                 .fill(Palette.cream)
@@ -183,7 +183,8 @@ struct Lines: View {
         let lines = text.components(separatedBy: "\n")
         VStack(alignment: alignment, spacing: FontMetrics.lineGap(style.family, size: style.size, lineHeight: lineHeight)) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                Text(line)
+                Self.text(line, style)
+                    .accessibilityLabel(line)
                     .type(style)
                     .lineLimit(1)
                     .minimumScaleFactor(minScale)
@@ -191,6 +192,13 @@ struct Lines: View {
             }
         }
         .offset(y: FontMetrics.shift(style.family, size: style.size, lineHeight: lineHeight))
+    }
+
+    /// Caveat's strokes run up to 0.2em past the last letter's advance and Text clips them, so a hand line
+    /// ends in an invisible "!" that makes room for the tail.
+    private static func text(_ line: String, _ style: TypeStyle) -> Text {
+        guard style.family == .caveat, !line.isEmpty else { return Text(line) }
+        return Text(line) + Text("!").foregroundStyle(Color.clear)
     }
 }
 
@@ -536,8 +544,14 @@ struct RoundButton: View {
             play += 1
             action()
         } label: {
-            AnimatedIcon(icon, size: 20, trigger: play + trigger)
-                .foregroundStyle(ink.map { AnyShapeStyle($0) } ?? AnyShapeStyle(ForegroundStyle()))
+            Group {
+                // Without an ink the icon inherits the bar's colour, like the ring around it.
+                if let ink {
+                    AnimatedIcon(icon, size: 20, trigger: play + trigger).foregroundStyle(ink)
+                } else {
+                    AnimatedIcon(icon, size: 20, trigger: play + trigger)
+                }
+            }
                 .frame(width: 44, height: 44)
                 .background { if let filled { Circle().fill(filled) } }
                 .overlay { if filled == nil { Circle().strokeBorder(lineWidth: 1.7) } }

@@ -557,7 +557,8 @@ private struct StagePath: View {
                     .position(x: x(CGFloat(i)), y: 26)
                 Button { onPick(PartnerStage.path[i]) } label: {
                     Text(PartnerStage.pathLabels[i].uppercased())
-                        .type(TypeStyle(size: 11.5, wght: 800, tracking: 0.09, relativeTo: nil))
+                        // Narrower than the kicker: the stops are 62pt apart and THINKING is the longest.
+                        .type(TypeStyle(size: 11.5, wdth: 80, wght: 800, tracking: 0.06, relativeTo: nil))
                         .foregroundStyle(Palette.cream)
                         .opacity(i == stage.pathIndex ? 1 : 0.5)
                         .fixedSize()

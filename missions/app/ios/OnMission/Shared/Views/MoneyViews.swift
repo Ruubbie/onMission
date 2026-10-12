@@ -59,7 +59,8 @@ struct BudgetPage: View {
             }
             .id(mode)
             .transition(.asymmetric(insertion: .offset(y: 14).combined(with: .opacity), removal: .offset(y: -14).combined(with: .opacity)))
-            BalanceScale(tilt: tilt).at(224, 248)
+            // 206 keeps the OUT pan clear of the edge at full tilt.
+            BalanceScale(tilt: tilt).at(206, 248)
         } sheet: {
             Segments(items: segments, selection: $mode)
             SheetScroll {
