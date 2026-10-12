@@ -132,6 +132,39 @@
     }
   },
   {
+    "collection": "checklists",
+    "key": "work-studies",
+    "data": {
+      "title": "Work & studies",
+      "description": "Leaving your job or studies cleanly: notice, final pay, references.",
+      "area": "admin",
+      "phase": "now",
+      "order": 13
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "digital",
+    "data": {
+      "title": "Digital & backups",
+      "description": "Accounts, two-factor logins, backups and your phone, so nothing locks you out from the other side of the world.",
+      "area": "admin",
+      "phase": "before-departure",
+      "order": 14
+    }
+  },
+  {
+    "collection": "checklists",
+    "key": "people",
+    "data": {
+      "title": "People & farewells",
+      "description": "Your home front team, goodbyes and the people who keep you going while you're away.",
+      "area": "personal",
+      "phase": "before-departure",
+      "order": 15
+    }
+  },
+  {
     "collection": "tasks",
     "key": "visa-ask-ywam-which-visa",
     "data": {
@@ -2225,14 +2258,1009 @@
     "key": "domain-name",
     "data": {
       "kind": "expense",
-      "label": "Domain name for website/newsletter",
+      "label": "Domain name hesent.me",
       "category": "newsletter",
-      "amountCents": 1000,
+      "amountCents": 2000,
       "currency": "EUR",
       "recurrence": "yearly",
       "phase": "monthly",
       "paid": false,
-      "notes": "About EUR 10 per year. Hosting (Cloudflare) and sending (Brevo, up to 300 mails/day) are free."
+      "notes": "Estimate. Yearly renewal at mijn.host; check the exact price on your invoice. Website, newsletter and app all run on your own server."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "visa-ivl",
+    "data": {
+      "kind": "expense",
+      "label": "Visitor levy (IVL) with the visa application",
+      "category": "visa",
+      "amountCents": 10000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). International Visitor Conservation and Tourism Levy, paid together with the Working Holiday Visa fee. Check the amount on the INZ page when you apply."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "flight-ams-zqn",
+    "data": {
+      "kind": "expense",
+      "label": "Flight to Queenstown (one way, checked bag)",
+      "category": "travel",
+      "amountCents": 110000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). January is high season in NZ. One-way Amsterdam to Queenstown usually lands between EUR 900 and 1,400; book early and include at least one checked bag."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "flight-extra-bag",
+    "data": {
+      "kind": "expense",
+      "label": "Extra checked bag or overweight",
+      "category": "travel",
+      "amountCents": 10000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Only if one bag is not enough. Often cheaper when added at booking than at the airport."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "ywam-application-deposit",
+    "data": {
+      "kind": "expense",
+      "label": "YWAM application fee and deposit",
+      "category": "ywam",
+      "amountCents": 60000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Placeholder until YWAM Queenstown confirms the real numbers (see the task to confirm role, start date and fees)."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "health-checkups",
+    "data": {
+      "kind": "expense",
+      "label": "Dentist, GP check and vaccinations before leaving",
+      "category": "health",
+      "amountCents": 15000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Use your Dutch insurance before it stops on 5 Jan. Ask about a spare prescription for any medication."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "passport-renewal",
+    "data": {
+      "kind": "expense",
+      "label": "New passport (only if needed)",
+      "category": "admin",
+      "amountCents": 8500,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Only if your passport expires within about 15 months of arrival. Delete this line if yours is fine."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "intl-driving-permit",
+    "data": {
+      "kind": "expense",
+      "label": "International driving permit (only if you'll drive)",
+      "category": "admin",
+      "amountCents": 2500,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). From the ANWB. NZ accepts a Dutch licence with an official translation or permit for the first 12 months."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "gear",
+    "data": {
+      "kind": "expense",
+      "label": "Gear: backpack, rain jacket, boots, warm layers",
+      "category": "gear",
+      "amountCents": 40000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Queenstown has cold winters (June to August) and changeable weather all year. Buy what you don't have; sell or skip what YWAM or the base can lend."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "adapters-esim",
+    "data": {
+      "kind": "expense",
+      "label": "Plug adapters (type I) and travel bits",
+      "category": "gear",
+      "amountCents": 4000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). NZ uses type I plugs at 230 V, so Dutch chargers work with an adapter."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "vision-evening",
+    "data": {
+      "kind": "expense",
+      "label": "Vision evening and farewell",
+      "category": "support",
+      "amountCents": 15000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Coffee, snacks and printing for the vision evening and send-off. Often shared or covered by church or family."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "arrival-start",
+    "data": {
+      "kind": "expense",
+      "label": "First week in Queenstown: SIM, bus card, groceries, bedding",
+      "category": "living",
+      "amountCents": 30000,
+      "currency": "NZD",
+      "recurrence": "once",
+      "phase": "setup",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Start-up costs in the first days, before the monthly rhythm kicks in."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "emergency-fund",
+    "data": {
+      "kind": "saving",
+      "label": "Emergency fund (at least a flight home)",
+      "category": "saving",
+      "amountCents": 150000,
+      "currency": "EUR",
+      "recurrence": "once",
+      "phase": "setup",
+      "notes": "Estimate (Oct 2026). Keep it untouched. It may overlap with the visa funds proof as long as the visa amount stays visible in your account."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "ywam-staff-fee",
+    "data": {
+      "kind": "expense",
+      "label": "YWAM fee (room and board)",
+      "category": "ywam",
+      "amountCents": 90000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Placeholder until YWAM confirms the fee for your role. Usually covers a bed on the base and most meals, so there is no separate rent line. If you end up living off base, add rent (Queenstown rooms often cost NZD 250 to 350 a week)."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "insurance-health-travel",
+    "data": {
+      "kind": "expense",
+      "label": "Health and travel insurance",
+      "category": "insurance",
+      "amountCents": 12000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Long-stay international cover with medical, repatriation and liability. Replace with the real premium once you've compared quotes."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "food-extra",
+    "data": {
+      "kind": "expense",
+      "label": "Extra food, coffee and eating out",
+      "category": "living",
+      "amountCents": 15000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). On top of the meals the YWAM fee covers."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "phone-nz",
+    "data": {
+      "kind": "expense",
+      "label": "NZ phone plan",
+      "category": "living",
+      "amountCents": 4000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Prepaid plan with data from a NZ provider."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "transport-nz",
+    "data": {
+      "kind": "expense",
+      "label": "Local transport (bus, occasional rides)",
+      "category": "living",
+      "amountCents": 6000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Queenstown buses are cheap with a Bee Card. More if you buy a bike or share a car."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "personal-care",
+    "data": {
+      "kind": "expense",
+      "label": "Toiletries, clothes and haircuts",
+      "category": "living",
+      "amountCents": 8000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Small personal costs that add up."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "days-off",
+    "data": {
+      "kind": "expense",
+      "label": "Days off and recreation",
+      "category": "living",
+      "amountCents": 6000,
+      "currency": "NZD",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Hikes, a coffee with friends, the odd trip. Rest is part of staying healthy."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "giving",
+    "data": {
+      "kind": "expense",
+      "label": "Giving (tithe)",
+      "category": "giving",
+      "amountCents": 10000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). About 10% of a EUR 1,000 support goal. Adjust to what you decide."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "nl-bank",
+    "data": {
+      "kind": "expense",
+      "label": "Dutch bank account fees",
+      "category": "admin",
+      "amountCents": 500,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "paid": false,
+      "notes": "Estimate (Oct 2026). Keep your Dutch account open for support gifts and Dutch payments."
+    }
+  },
+  {
+    "collection": "budget",
+    "key": "buffer-saving",
+    "data": {
+      "kind": "saving",
+      "label": "Monthly buffer saving",
+      "category": "saving",
+      "amountCents": 5000,
+      "currency": "EUR",
+      "recurrence": "monthly",
+      "phase": "monthly",
+      "notes": "Estimate (Oct 2026). For surprises: a broken phone, a doctor's visit, a trip home."
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "work-notice",
+    "data": {
+      "title": "Hand in your notice at work (check your notice period)",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2026-10-31",
+      "notes": "Check your contract or CAO for the notice period so your last day lands in mid/late December.",
+      "checklistId": "work-studies",
+      "order": 101
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "work-final-pay",
+    "data": {
+      "title": "Ask about final pay, holiday hours payout and holiday allowance",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "notes": "Unused vakantie-uren and vakantiegeld are usually paid out with your last salary.",
+      "checklistId": "work-studies",
+      "order": 102
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "work-reference",
+    "data": {
+      "title": "Ask your employer for a reference letter (in English)",
+      "status": "todo",
+      "area": "admin",
+      "priority": "low",
+      "dueDate": "2026-12-15",
+      "notes": "Handy for NZ work on the Working Holiday Visa or for a later visa.",
+      "checklistId": "work-studies",
+      "order": 103
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "work-pension",
+    "data": {
+      "title": "Check your pension(s) on mijnpensioenoverzicht.nl and note the funds",
+      "status": "todo",
+      "area": "finance",
+      "priority": "low",
+      "dueDate": "2026-12-31",
+      "notes": "You'll need to give each pension fund your foreign address later.",
+      "checklistId": "work-studies",
+      "order": 104
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "ywam-application",
+    "data": {
+      "title": "Finish your YWAM application, references and health form",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "high",
+      "dueDate": "2026-10-25",
+      "notes": "Ask YWAM Queenstown exactly which forms and references they still need from you.",
+      "checklistId": "visa",
+      "order": 105
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "ywam-vog",
+    "data": {
+      "title": "Ask YWAM if they need a police certificate (VOG) and apply via Justis",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "high",
+      "dueDate": "2026-10-25",
+      "notes": "A VOG takes up to a few weeks; request it online with DigiD at justis.nl.",
+      "checklistId": "visa",
+      "order": 106
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "ywam-fees",
+    "data": {
+      "title": "Pay the YWAM deposit or first fees and save the receipt",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "notes": "Also ask what the fee covers (bed, meals, outreach) and when the next payments are due.",
+      "checklistId": "visa",
+      "order": 107
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "ywam-what-to-bring",
+    "data": {
+      "title": "Ask YWAM for their packing list (bedding, laptop, work clothes)",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "notes": "Saves weight: some bases provide bedding and towels.",
+      "checklistId": "packing",
+      "order": 108
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "travel-book-flight",
+    "data": {
+      "title": "Book your flight to Queenstown (ZQN) with checked baggage",
+      "status": "todo",
+      "area": "travel",
+      "priority": "high",
+      "dueDate": "2026-10-31",
+      "notes": "Book once YWAM confirms your start date. Compare via Auckland or Christchurch; leave buffer days before your start.",
+      "checklistId": "departure-week",
+      "order": 109
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "travel-transit-rules",
+    "data": {
+      "title": "Check visa/transit rules for your layover country",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-10-31",
+      "notes": "Some transit countries (e.g. Australia, USA) need a transit visa or ETA even if you stay airside.",
+      "checklistId": "departure-week",
+      "order": 110
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "travel-ride-schiphol",
+    "data": {
+      "title": "Arrange a ride to Schiphol on departure day",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-12-20",
+      "notes": "Maybe a nice moment to say goodbye with family.",
+      "checklistId": "departure-week",
+      "order": 111
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "travel-checkin",
+    "data": {
+      "title": "Check in online and save the boarding passes offline",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "checklistId": "departure-week",
+      "order": 112
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "travel-bz-register",
+    "data": {
+      "title": "Sign up for the Informatieservice of BZ (Dutch foreign ministry)",
+      "status": "todo",
+      "area": "travel",
+      "priority": "low",
+      "dueDate": "2026-12-31",
+      "notes": "So the embassy can reach you in an emergency. Download the BZ Reisapp.",
+      "checklistId": "departure-week",
+      "order": 113
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "admin-volmacht",
+    "data": {
+      "title": "Give a trusted person power of attorney (volmacht) for post, bank and tax",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2026-11-30",
+      "notes": "Choose one person who opens your post, scans letters and can act for you at the bank or Belastingdienst.",
+      "checklistId": "leaving-nl",
+      "order": 114
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "admin-pension-address",
+    "data": {
+      "title": "Give your pension fund(s) and other organisations your foreign address",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2027-01-31",
+      "checklistId": "from-abroad",
+      "order": 115
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "admin-insurance-cancel",
+    "data": {
+      "title": "Cancel or adjust contents (inboedel) and liability (AVP) insurance",
+      "status": "todo",
+      "area": "insurance",
+      "priority": "normal",
+      "dueDate": "2026-12-07",
+      "notes": "Check whether your AVP or travel insurance covers liability abroad before cancelling.",
+      "checklistId": "leaving-nl",
+      "order": 116
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "admin-tax-2026",
+    "data": {
+      "title": "File your 2026 income tax return from NZ (before 1 May 2027)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2027-04-30",
+      "notes": "Works online with DigiD. Keep your jaaropgaaf 2026 in Documents.",
+      "checklistId": "from-abroad",
+      "order": 117
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "admin-municipal-refund",
+    "data": {
+      "title": "Ask the gemeente/waterschap for a refund of taxes paid after you left",
+      "status": "todo",
+      "area": "finance",
+      "priority": "low",
+      "dueDate": "2027-02-28",
+      "checklistId": "from-abroad",
+      "order": 118
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "housing-utilities",
+    "data": {
+      "title": "End energy, water and internet contracts and plan the final meter readings",
+      "status": "todo",
+      "area": "housing",
+      "priority": "normal",
+      "dueDate": "2026-12-07",
+      "notes": "Take photos of the meters on the handover day.",
+      "checklistId": "selling-housing",
+      "order": 119
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "housing-deposit",
+    "data": {
+      "title": "Agree on the deposit refund and handover report with your landlord",
+      "status": "todo",
+      "area": "housing",
+      "priority": "normal",
+      "dueDate": "2027-01-04",
+      "checklistId": "selling-housing",
+      "order": 120
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "selling-marktplaats",
+    "data": {
+      "title": "Photograph the first items and list them on Marktplaats",
+      "status": "todo",
+      "area": "selling",
+      "priority": "normal",
+      "dueDate": "2026-10-25",
+      "notes": "Start with the big, valuable things; they take longest to sell.",
+      "checklistId": "selling-housing",
+      "order": 121
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "selling-car",
+    "data": {
+      "title": "If you own a car or scooter: sell it and stop insurance and road tax",
+      "status": "todo",
+      "area": "selling",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "notes": "Report the transfer (vrijwaring) at RDW so road tax and insurance stop.",
+      "checklistId": "selling-housing",
+      "order": 122
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "selling-kringloop",
+    "data": {
+      "title": "Bring unsold items to the kringloop or give them away",
+      "status": "todo",
+      "area": "selling",
+      "priority": "low",
+      "dueDate": "2026-12-20",
+      "checklistId": "selling-housing",
+      "order": 123
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-emergency-fund",
+    "data": {
+      "title": "Set aside an emergency fund (at least the cost of a flight home)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2026-12-15",
+      "notes": "Keep it separate from your support income.",
+      "checklistId": "money",
+      "order": 124
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-credit-card",
+    "data": {
+      "title": "Get a credit card and a backup card that work in NZ",
+      "status": "todo",
+      "area": "finance",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "notes": "Keep the backup card in a different bag. Check fees for foreign payments.",
+      "checklistId": "money",
+      "order": 125
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-budget",
+    "data": {
+      "title": "Finish your monthly NZ budget (fee, food, phone, transport, giving, savings)",
+      "status": "todo",
+      "area": "finance",
+      "priority": "high",
+      "dueDate": "2026-10-25",
+      "notes": "This sets your real support target; compare with the €750 to €1,000 goal.",
+      "checklistId": "money",
+      "order": 126
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "money-auto-transfer",
+    "data": {
+      "title": "Set up a monthly EUR to NZD transfer of your support via Wise",
+      "status": "todo",
+      "area": "finance",
+      "priority": "low",
+      "dueDate": "2027-02-15",
+      "checklistId": "from-abroad",
+      "order": 127
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "support-oneoff",
+    "data": {
+      "title": "Ask for one-off gifts for setup costs (flight, insurance, fees)",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-11-01",
+      "notes": "Some people prefer to give once instead of monthly.",
+      "checklistId": "support",
+      "order": 128
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "support-prayer-group",
+    "data": {
+      "title": "Start a prayer group (WhatsApp/Signal) for short prayer updates",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "support",
+      "order": 129
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "newsletter-signups",
+    "data": {
+      "title": "Add everyone who ticked 'newsletter' on a response card to your list",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "checklistId": "newsletter",
+      "order": 130
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "newsletter-calendar",
+    "data": {
+      "title": "Plan newsletter topics for your first 6 months",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "low",
+      "dueDate": "2026-12-15",
+      "notes": "E.g. arrival, first weeks, outreach, a story about a person (with permission).",
+      "checklistId": "newsletter",
+      "order": 131
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "newsletter-photos",
+    "data": {
+      "title": "Take photos and short videos of your goodbye for the next newsletter",
+      "status": "todo",
+      "area": "newsletter",
+      "priority": "low",
+      "dueDate": "2026-12-31",
+      "checklistId": "newsletter",
+      "order": 132
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-medical-summary",
+    "data": {
+      "title": "Ask your GP for a summary of your medical file in English",
+      "status": "todo",
+      "area": "health",
+      "priority": "normal",
+      "dueDate": "2026-12-15",
+      "checklistId": "health-insurance",
+      "order": 133
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-glasses",
+    "data": {
+      "title": "Get spare glasses/contacts and a copy of your prescription",
+      "status": "todo",
+      "area": "health",
+      "priority": "low",
+      "dueDate": "2026-12-15",
+      "notes": "Only if you wear them.",
+      "checklistId": "health-insurance",
+      "order": 134
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "health-biosecurity",
+    "data": {
+      "title": "Clean hiking boots and outdoor gear for NZ biosecurity",
+      "status": "todo",
+      "area": "packing",
+      "priority": "normal",
+      "dueDate": "2027-01-02",
+      "notes": "NZ checks for soil and seeds; declare food. Fines start at NZD 400.",
+      "checklistId": "packing",
+      "order": 135
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "digital-2fa",
+    "data": {
+      "title": "Move two-factor logins from SMS to an authenticator app",
+      "status": "todo",
+      "area": "admin",
+      "priority": "high",
+      "dueDate": "2026-11-30",
+      "notes": "Many accounts send codes to your Dutch number, which you might not have in NZ. Save the recovery codes.",
+      "checklistId": "digital",
+      "order": 136
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "digital-password-manager",
+    "data": {
+      "title": "Put all your logins in a password manager",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "digital",
+      "order": 137
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "digital-backup",
+    "data": {
+      "title": "Back up your phone and laptop (cloud plus an external drive left in NL)",
+      "status": "todo",
+      "area": "admin",
+      "priority": "normal",
+      "dueDate": "2026-12-20",
+      "checklistId": "digital",
+      "order": 138
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "digital-unlocked",
+    "data": {
+      "title": "Check your phone is SIM-unlocked and supports eSIM",
+      "status": "todo",
+      "area": "travel",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "checklistId": "digital",
+      "order": 139
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "digital-adapters",
+    "data": {
+      "title": "Buy an NZ plug adapter (type I) and check chargers are 230 V",
+      "status": "todo",
+      "area": "packing",
+      "priority": "low",
+      "dueDate": "2026-12-15",
+      "checklistId": "digital",
+      "order": 140
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-thuisfront",
+    "data": {
+      "title": "Form a home front team (thuisfrontteam) of 3 to 5 people",
+      "status": "todo",
+      "area": "support",
+      "priority": "high",
+      "dueDate": "2026-11-01",
+      "notes": "They pray, help with post and admin, care for you and are the contact if something happens.",
+      "checklistId": "people",
+      "order": 141
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-emergency",
+    "data": {
+      "title": "Give family your emergency info: address, YWAM contact, insurance, document copies",
+      "status": "todo",
+      "area": "personal",
+      "priority": "high",
+      "dueDate": "2026-12-20",
+      "checklistId": "people",
+      "order": 142
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-mentor",
+    "data": {
+      "title": "Ask someone to be your mentor or regular check-in while abroad",
+      "status": "todo",
+      "area": "personal",
+      "priority": "normal",
+      "dueDate": "2026-11-30",
+      "notes": "Monthly video call: how are you really doing?",
+      "checklistId": "people",
+      "order": 143
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-goodbyes",
+    "data": {
+      "title": "Plan one-on-one goodbyes with family and close friends",
+      "status": "todo",
+      "area": "personal",
+      "priority": "normal",
+      "dueDate": "2026-12-01",
+      "notes": "Put them in your calendar; December fills up fast.",
+      "checklistId": "people",
+      "order": 144
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-rest",
+    "data": {
+      "title": "Plan rest and quiet time in your last busy weeks",
+      "status": "todo",
+      "area": "personal",
+      "priority": "normal",
+      "dueDate": "2026-11-15",
+      "checklistId": "people",
+      "order": 145
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-culture",
+    "data": {
+      "title": "Read up on NZ culture, Maori tikanga and basic te reo greetings",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "low",
+      "dueDate": "2026-12-15",
+      "checklistId": "people",
+      "order": 146
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "people-gift",
+    "data": {
+      "title": "Bring Dutch treats (stroopwafels, drop) for your new YWAM team",
+      "status": "todo",
+      "area": "ywam",
+      "priority": "low",
+      "dueDate": "2026-12-31",
+      "checklistId": "people",
+      "order": 147
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arrival-safe",
+    "data": {
+      "title": "Let partners and family know you arrived safely",
+      "status": "todo",
+      "area": "support",
+      "priority": "normal",
+      "dueDate": "2027-01-07",
+      "notes": "A short message or photo is enough.",
+      "checklistId": "arrival",
+      "order": 148
+    }
+  },
+  {
+    "collection": "tasks",
+    "key": "arrival-transport",
+    "data": {
+      "title": "Get a Queenstown bus card (Orbus/Bee Card) or sort transport",
+      "status": "todo",
+      "area": "travel",
+      "priority": "low",
+      "dueDate": "2027-01-19",
+      "checklistId": "arrival",
+      "order": 149
     }
   }
 ]
