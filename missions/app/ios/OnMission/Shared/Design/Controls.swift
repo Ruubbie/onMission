@@ -1,33 +1,143 @@
 import SwiftUI
+import SwiftData
 
-// Our own versions of the controls that would otherwise look like iOS (design-system.md, section 6).
-// The system's own pop-ups (menu list, calendar) still open from them.
+// Form controls for the detail pages, on the cream sheet: rows divided by tomato rules, labels in ink,
+// values and actions in tomato. The system pop-ups (menus, the calendar) still open from them.
 
-// MARK: - Toggle
+// MARK: - Blocks and rows
 
-/// Pill track with a paper knob. Set once on the root, so every Toggle uses it.
-struct BrutalToggleStyle: ToggleStyle {
-    var on: Color = Palette.ok
+/// A titled group of form rows, like a Form section.
+struct FormBlock<Content: View>: View {
+    let title: String
+    var footer: String = ""
+    @ViewBuilder let content: Content
 
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            configuration.isOn = !configuration.isOn
-        } label: {
-            HStack(spacing: Metrics.m) {
-                configuration.label
-                    .font(Typeface.body(15))
-                    .foregroundStyle(Palette.ink)
-                Spacer(minLength: 0)
-                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Capsule().fill(configuration.isOn ? on : Palette.chip)
-                    Circle()
-                        .fill(Cream.fill)
-                        .frame(width: 24, height: 24)
-                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-                        .padding(.horizontal, 3)
+    init(_ title: String, footer: String = "", @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.footer = footer
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !title.isEmpty {
+                SectionHeader(title).padding(.top, 22).padding(.bottom, 2)
+            }
+            content
+            if !footer.isEmpty {
+                Text(footer)
+                    .type(.small)
+                    .foregroundStyle(Palette.inkFaint)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+            }
+        }
+    }
+}
+
+/// One form row with a rule under it.
+struct FieldRow<Content: View>: View {
+    var rule = true
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 12) { content }
+            .padding(.vertical, 11)
+            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            .overlay(alignment: .bottom) {
+                if rule { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
+            }
+    }
+}
+
+/// A text field as a row.
+struct TextRow: View {
+    let placeholder: String
+    @Binding var text: String
+    var vertical = false
+    var lines: ClosedRange<Int> = 1...8
+    var keyboard: UIKeyboardType = .default
+    var plain = false
+
+    init(_ placeholder: String, text: Binding<String>, vertical: Bool = false, lines: ClosedRange<Int> = 1...8,
+         keyboard: UIKeyboardType = .default, plain: Bool = false) {
+        self.placeholder = placeholder
+        self._text = text
+        self.vertical = vertical
+        self.lines = lines
+        self.keyboard = keyboard
+        self.plain = plain
+    }
+
+    var body: some View {
+        FieldRow {
+            Group {
+                if vertical {
+                    TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkFaint), axis: .vertical)
+                        .lineLimit(lines)
+                } else {
+                    TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkFaint))
                 }
-                .frame(width: 50, height: 30)
-                .animation(.easeOut(duration: 0.12), value: configuration.isOn)
+            }
+            .type(.bodyBold)
+            .foregroundStyle(Palette.ink)
+            .keyboardType(keyboard)
+            .textInputAutocapitalization(plain ? .never : .sentences)
+            .autocorrectionDisabled(plain)
+        }
+    }
+}
+
+/// Label on the left, anything on the right.
+struct LabeledRow<Trailing: View>: View {
+    let label: String
+    var rule = true
+    @ViewBuilder let trailing: Trailing
+
+    init(_ label: String, rule: Bool = true, @ViewBuilder trailing: () -> Trailing) {
+        self.label = label
+        self.rule = rule
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        FieldRow(rule: rule) {
+            Text(label).type(.bodyBold).foregroundStyle(Palette.ink)
+            Spacer(minLength: 8)
+            trailing
+        }
+    }
+}
+
+/// "Label ........ value" (read-only).
+struct ValueRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        LabeledRow(label) {
+            Text(value).type(.body).foregroundStyle(Palette.inkSoft).multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+/// A tappable row in tomato with an icon (Attach a file, Record a gift…).
+struct ActionRow: View {
+    let title: String
+    var icon: Icon = .chev
+    var role: ButtonRole? = nil
+    let action: () -> Void
+    @State private var play = 0
+
+    var body: some View {
+        Button(role: role) {
+            play += 1
+            action()
+        } label: {
+            FieldRow {
+                AnimatedIcon(icon, size: 20, trigger: play).foregroundStyle(Palette.tomato)
+                Text(title).type(.bodyBold).foregroundStyle(role == .destructive ? Palette.tomatoInk : Palette.ink)
+                Spacer(minLength: 4)
             }
             .contentShape(Rectangle())
         }
@@ -35,43 +145,62 @@ struct BrutalToggleStyle: ToggleStyle {
     }
 }
 
-extension ToggleStyle where Self == BrutalToggleStyle {
-    static var brutal: BrutalToggleStyle { BrutalToggleStyle() }
-}
+// MARK: - Toggle
 
-// MARK: - Segmented control
-
-struct BrutalSegmented<V: Hashable>: View {
-    let options: [(value: V, label: String)]
-    @Binding var selection: V
-    var accent: Accent = .yellow
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(options.enumerated()), id: \.offset) { _, option in
-                let selected = option.value == selection
-                Button { selection = option.value } label: {
-                    Text(option.label)
-                        .font(Typeface.body(12, weight: .semibold))
-                        .foregroundStyle(selected ? Palette.onAccent : Palette.muted)
-                        .lineLimit(1)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(selected ? Accent.yellow.color : Palette.chip))
-                        .contentShape(Capsule())
+/// A tomato track with a cream knob. Set once on the root, so every Toggle uses it.
+struct TomatoToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: Metrics.m) {
+                configuration.label
+                    .type(.bodyBold)
+                    .foregroundStyle(Palette.ink)
+                Spacer(minLength: 0)
+                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                    Capsule().fill(configuration.isOn ? Palette.tomato : Color.clear)
+                    Capsule().strokeBorder(configuration.isOn ? Palette.tomato : Palette.chipRule, lineWidth: 1.6)
+                    Circle()
+                        .fill(configuration.isOn ? Palette.cream : Palette.ink.opacity(0.35))
+                        .frame(width: 22, height: 22)
+                        .padding(.horizontal, 4)
                 }
-                .buttonStyle(.plain)
+                .frame(width: 50, height: 30)
+                .animation(.curve(0.3, 1.4, 0.5, 1, 0.3).rm, value: configuration.isOn)
             }
-            Spacer(minLength: 0)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: configuration.isOn)
+        .accessibilityAddTraits(.isToggle)
+        .accessibilityValue(configuration.isOn ? "On" : "Off")
     }
 }
 
-// MARK: - Select (a Picker in a box)
+extension ToggleStyle where Self == TomatoToggleStyle {
+    static var tomato: TomatoToggleStyle { TomatoToggleStyle() }
+}
 
-/// Label on the left, the current value in a paper box on the right. Tapping opens the system menu.
-/// Same signature as `Picker(_:selection:content:)`.
-struct BrutalSelect<V: Hashable, Content: View>: View {
+/// A toggle as a row.
+struct ToggleRow: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    init(_ title: String, isOn: Binding<Bool>) {
+        self.title = title
+        self._isOn = isOn
+    }
+
+    var body: some View {
+        FieldRow { Toggle(title, isOn: $isOn).toggleStyle(.tomato) }
+    }
+}
+
+// MARK: - Select
+
+/// Label on the left, the current value in tomato on the right; tapping opens the system menu.
+struct SelectRow<V: Hashable, Content: View>: View {
     let title: String
     @Binding var selection: V
     @ViewBuilder var content: Content
@@ -83,49 +212,36 @@ struct BrutalSelect<V: Hashable, Content: View>: View {
     }
 
     var body: some View {
-        LabeledContent {
+        LabeledRow(title) {
             Picker(title, selection: $selection) { content }
                 .pickerStyle(.menu)
                 .labelsHidden()
-                .tint(Palette.ink)
-                .font(Typeface.body(15, weight: .semibold))
-                .padding(.horizontal, 4)
-                .brutalBox(fill: Palette.chip, radius: Metrics.radiusSmall)
-                .padding(.trailing, Metrics.shadowSmall)
-                .padding(.vertical, 2)
-        } label: {
-            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
+                .tint(Palette.tomatoInk)
         }
     }
 }
 
-// MARK: - Date field
+// MARK: - Dates
 
-/// "Fri 9 Oct" in a select-style box with a calendar icon. Tapping opens the system calendar.
-struct BrutalDateField: View {
+/// "Fri 9 Oct" in tomato with a calendar icon. Tapping opens the system calendar.
+struct DateField: View {
     @Binding var date: Date
     var components: DatePickerComponents = .date
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(text)
-                .font(Typeface.body(16, weight: .semibold))
-                .foregroundStyle(Palette.ink)
-                .lineLimit(1)
-            Image(systemName: "calendar")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Palette.ink)
+            Text(text).type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body)).foregroundStyle(Palette.tomatoInk).lineLimit(1)
+            AnimatedIcon(.calendar, size: 17).foregroundStyle(Palette.tomato)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .brutalBox(fill: Palette.chip, radius: Metrics.radiusSmall)
+        .frame(minHeight: 36)
+        .overlay(Capsule().strokeBorder(Palette.chipRule, lineWidth: 1.6))
         // The real (invisible) picker on top takes the tap and opens the calendar.
         .overlay {
             DatePicker("", selection: $date, displayedComponents: components)
                 .labelsHidden()
                 .opacity(0.02)
         }
-        .padding(.trailing, Metrics.shadowSmall)
     }
 
     private var text: String {
@@ -135,217 +251,207 @@ struct BrutalDateField: View {
     }
 }
 
-/// A form row: label left, date field right.
-struct BrutalDateRow: View {
+struct DateRow: View {
     let title: String
     @Binding var date: Date
     var components: DatePickerComponents = .date
 
     var body: some View {
-        LabeledContent {
-            BrutalDateField(date: $date, components: components)
-        } label: {
-            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
+        LabeledRow(title) { DateField(date: $date, components: components) }
+    }
+}
+
+/// A date that can also be empty: the date field with a × to clear it, or "Add date".
+struct OptionalDateRow: View {
+    let title: String
+    @Binding var date: Date?
+    var defaultDate: Date = Calendar.current.startOfDay(for: .now)
+
+    var body: some View {
+        LabeledRow(title) {
+            if let current = date {
+                HStack(spacing: 6) {
+                    DateField(date: Binding(get: { current }, set: { date = $0 }))
+                    Button { date = nil } label: {
+                        AnimatedIcon(.x, size: 14).foregroundStyle(Palette.inkSoft).frame(width: 32, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear \(title)")
+                }
+            } else {
+                Button("Add date") { date = defaultDate }
+                    .buttonStyle(.outlinedSmall)
+            }
         }
     }
 }
 
-// MARK: - Stepper
+/// One-tap dates under a date row: Today, Tomorrow, In 3 days, Next week.
+struct QuickDates: View {
+    struct Option: Identifiable {
+        let title: String
+        let days: Int
+        var id: Int { days }
+    }
 
-struct BrutalStepper: View {
+    @Binding var date: Date?
+    var options: [Option] = [Option(title: "Today", days: 0), Option(title: "Tomorrow", days: 1),
+                             Option(title: "In 3 days", days: 3), Option(title: "Next week", days: 7)]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(options) { option in
+                    let target = Calendar.current.date(byAdding: .day, value: option.days, to: Calendar.current.startOfDay(for: .now))
+                    let on = isSame(date, target)
+                    Button {
+                        withAnimation(Motion.indicator.rm) { date = target }
+                    } label: {
+                        Text(option.title)
+                            .type(TypeStyle(size: 14, wght: 800, relativeTo: .subheadline))
+                            .foregroundStyle(on ? Palette.cream : Palette.ink)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 36)
+                            .background {
+                                if on { Capsule().fill(Palette.tomato) } else { Capsule().strokeBorder(Palette.chipRule, lineWidth: 1.6) }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 10)
+        }
+    }
+
+    private func isSame(_ a: Date?, _ b: Date?) -> Bool {
+        guard let a, let b else { return false }
+        return Calendar.current.isDate(a, inSameDayAs: b)
+    }
+}
+
+// MARK: - Numbers
+
+/// An amount typed in euros (or another currency), stored in cents.
+struct MoneyRow: View {
+    let title: String
+    @Binding var cents: Int
+    var currency: String = "EUR"
+
+    private var amount: Binding<Double> {
+        Binding(get: { Money.euros(cents) }, set: { cents = Money.cents(fromEuros: $0) })
+    }
+
+    var body: some View {
+        LabeledRow("\(title) (\(symbol))") {
+            TextField("0", value: amount, format: .number)
+                .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
+                .foregroundStyle(Palette.tomatoInk)
+                .multilineTextAlignment(.trailing)
+                .keyboardType(.decimalPad)
+                .frame(maxWidth: 140)
+        }
+    }
+
+    private var symbol: String {
+        switch currency {
+        case "EUR": "€"
+        case "NZD": "NZ$"
+        default: currency
+        }
+    }
+}
+
+struct StepperRow: View {
     let title: String
     @Binding var value: Int
     let range: ClosedRange<Int>
 
-    init(_ title: String, value: Binding<Int>, in range: ClosedRange<Int>) {
-        self.title = title
-        self._value = value
-        self.range = range
-    }
-
     var body: some View {
-        HStack(spacing: 10) {
-            Text(title).font(Typeface.body(15)).foregroundStyle(Palette.ink)
-            Spacer(minLength: 0)
-            step("minus", enabled: value > range.lowerBound) { value -= 1 }
-            Text("\(value)")
-                .font(Typeface.body(15, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(Palette.ink)
-                .frame(minWidth: 28)
-            step("plus", enabled: value < range.upperBound) { value += 1 }
-                .padding(.trailing, Metrics.shadowSmall)
+        LabeledRow(title) {
+            HStack(spacing: 6) {
+                step(.minus, enabled: value > range.lowerBound) { value -= 1 }
+                Text("\(value)")
+                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
+                    .monospacedDigit()
+                    .frame(minWidth: 28)
+                step(.plus, enabled: value < range.upperBound) { value += 1 }
+            }
         }
     }
 
-    private func step(_ symbol: String, enabled: Bool, _ action: @escaping () -> Void) -> some View {
+    private func step(_ icon: Icon, enabled: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 13, weight: .black))
-                .foregroundStyle(enabled ? Palette.ink : Palette.muted)
-                .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
+            AnimatedIcon(icon, size: 16)
+                .foregroundStyle(enabled ? Palette.tomato : Palette.inkFaint)
+                .frame(width: 36, height: 36)
+                .overlay(Circle().strokeBorder(Palette.chipRule, lineWidth: 1.6))
+                .contentShape(Circle())
         }
-        .buttonStyle(BrutalSquarePressStyle())
+        .buttonStyle(.press)
         .disabled(!enabled)
     }
 }
 
-// MARK: - Search field
-
-struct BrutalSearchField: View {
+/// The page's own title, edited in place (big, condensed).
+struct TitleField: View {
+    let placeholder: String
     @Binding var text: String
-    var prompt: String = "Search"
 
     var body: some View {
-        HStack(spacing: Metrics.s) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Palette.ink)
-            TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Palette.muted))
-                .font(Typeface.body(15))
-                .foregroundStyle(Palette.ink)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-            if !text.isEmpty {
-                Button { text = "" } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .black))
-                        .foregroundStyle(Palette.ink)
-                        .frame(width: 22, height: 22)
-                        .background(Circle().fill(Palette.chip))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear")
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .brutalBox(radius: Metrics.radiusSmall)
+        TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkFaint), axis: .vertical)
+            .type(TypeStyle(size: 26, wdth: 78, wght: 800, relativeTo: .title))
+            .foregroundStyle(Palette.ink)
+            .lineLimit(1...4)
+            .padding(.vertical, 6)
+            .overlay(alignment: .bottom) { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
     }
 }
+
+// MARK: - Confirm and delete
 
 extension View {
-    /// A search field pinned at the top of the screen, under the title. Replaces `.searchable`.
-    func brutalSearch(text: Binding<String>, prompt: String = "Search") -> some View {
-        safeAreaInset(edge: .top, spacing: 0) {
-            BrutalSearchField(text: text, prompt: prompt)
-                .padding(.leading, Metrics.l)
-                .padding(.trailing, Metrics.l + Metrics.shadowSmall)
-                .padding(.top, 4)
-                .padding(.bottom, Metrics.m)
-                .background(Palette.backgroundTop)
+    /// Asks before something that can't be undone.
+    func confirm(_ title: String, isPresented: Binding<Bool>, message: String = "", button: String = "Delete",
+                 action: @escaping () -> Void) -> some View {
+        alert(title, isPresented: isPresented) {
+            Button(button, role: .destructive, action: action)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if !message.isEmpty { Text(message) }
+        }
+    }
+
+    /// A message with only OK.
+    func notice(_ title: String, message: Binding<String?>) -> some View {
+        alert(title, isPresented: Binding(get: { message.wrappedValue != nil }, set: { if !$0 { message.wrappedValue = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(message.wrappedValue ?? "")
         }
     }
 }
 
-// MARK: - Spinner
-
-/// A small sage spinner.
-struct BrutalSpinner: View {
-    var size: CGFloat = 20
+/// Delete with a confirmation on detail pages. Goes back first and deletes after, so the page
+/// never reads a deleted record.
+struct DeleteButton<T: Syncable>: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    let item: T
+    var extra: (() -> Void)? = nil
+    @State private var confirming = false
 
     var body: some View {
-        ProgressView()
-            .tint(Accent.yellow.color)
-            .frame(width: size, height: size)
-            .accessibilityLabel("Loading")
-    }
-}
-
-// MARK: - Dialog
-
-/// A paper card on a dark scrim. Replaces alerts and the Delete action sheet.
-struct BrutalDialog: View {
-    let title: String
-    var message: String = ""
-    var confirm: String? = nil
-    var cancel: String = "Cancel"
-    let onConfirm: () -> Void
-    let onClose: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.45).ignoresSafeArea()
-                .onTapGesture(perform: onClose)
-            VStack(alignment: .leading, spacing: Metrics.m) {
-                Text(title)
-                    .font(Typeface.heading(18))
-                    .foregroundStyle(Palette.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !message.isEmpty {
-                    Text(message)
-                        .font(Typeface.body(15))
-                        .foregroundStyle(Palette.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                VStack(spacing: Metrics.m) {
-                    if let confirm {
-                        Button {
-                            onClose()
-                            onConfirm()
-                        } label: { Text(confirm).frame(maxWidth: .infinity) }
-                        .buttonStyle(BrutalButtonStyle(kind: .danger))
-                    }
-                    Button(action: onClose) { Text(cancel).frame(maxWidth: .infinity) }
-                        .buttonStyle(.brutalSecondary)
-                }
-                .padding(.top, 4)
-            }
-            .padding(Metrics.xl)
-            .brutalBox(fill: Palette.paper, radius: 24)
-            .padding(.horizontal, 32)
-        }
-    }
-}
-
-extension View {
-    /// Shows a `BrutalDialog` while `isPresented` is true. Without `confirm` it only has an OK button.
-    func brutalDialog(_ title: String, isPresented: Binding<Bool>, message: String = "",
-                      confirm: String? = nil, action: @escaping () -> Void = {}) -> some View {
-        modifier(BrutalDialogModifier(title: title, message: message, confirm: confirm,
-                                      isPresented: isPresented, action: action))
-    }
-}
-
-private struct BrutalDialogModifier: ViewModifier {
-    let title: String
-    let message: String
-    let confirm: String?
-    @Binding var isPresented: Bool
-    let action: () -> Void
-
-    func body(content: Content) -> some View {
-        content.fullScreenCover(isPresented: $isPresented) {
-            BrutalDialog(title: title, message: message, confirm: confirm,
-                         cancel: confirm == nil ? "OK" : "Cancel",
-                         onConfirm: action, onClose: { isPresented = false })
-                .presentationBackground(.clear)
-        }
-    }
-}
-
-// MARK: - Toolbar buttons
-
-extension View {
-    /// Cancel and Save in a sheet's header, as compact buttons instead of blue text.
-    func brutalSheetToolbar(cancel: @escaping () -> Void, save: String? = nil, saveDisabled: Bool = false,
-                            onSave: @escaping () -> Void = {}) -> some View {
-        toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel", action: cancel).buttonStyle(.brutalCompact)
-            }
-            if let save {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(save, action: onSave)
-                        .buttonStyle(BrutalButtonStyle(kind: .primary, compact: true))
-                        .disabled(saveDisabled)
-                        .opacity(saveDisabled ? 0.5 : 1)
+        ActionRow(title: "Delete", icon: .trash, role: .destructive) { confirming = true }
+            .padding(.top, 18)
+            .confirm("Delete \(item.displayTitle)?", isPresented: $confirming) {
+                let doomed = item
+                let context = ctx
+                let more = extra
+                router.back()
+                Motion.after(0.7, always: true) {
+                    more?()
+                    Store.delete(doomed, in: context)
                 }
             }
-        }
-        .toolbarBackground(Palette.backgroundTop, for: .navigationBar)
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Palette.gradient)
     }
 }
