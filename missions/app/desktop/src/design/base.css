@@ -1,0 +1,25 @@
+@font-face { font-family: "Familjen Grotesk"; src: url("../assets/fonts/FamiljenGrotesk-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Familjen Grotesk"; src: url("../assets/fonts/FamiljenGrotesk-Bold.ttf"); font-weight: 700; }
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--background); color: var(--ink); font: 400 var(--text-body)/1.4 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.1; }
+h1 { font-size: var(--text-h1); letter-spacing: -0.02em; }
+h2 { font-size: var(--text-h2); }
+h3 { font-size: var(--text-h3); }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.muted { color: var(--muted); }
+.caption { font-size: var(--text-caption); }
+.bold { font-weight: 700; }
+.row { display: flex; align-items: center; gap: var(--space-s); }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: var(--space-m); }
+.grid { display: grid; gap: var(--space-l); grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.num { font-variant-numeric: tabular-nums; }
+.strike { text-decoration: line-through; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent-purple); outline-offset: 2px; }
+::selection { background: var(--accent-yellow); }

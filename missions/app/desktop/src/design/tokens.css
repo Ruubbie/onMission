@@ -1,0 +1,51 @@
+/* Generated from tokens.json. Spec: design-system.md */
+:root {
+  --background: #FBF6EA;
+  --paper: #FFFDF7;
+  --ink: #111111;
+  --muted: #6E6A60;
+  --hairline: #E4DCC8;
+  --altRow: #FFF9EC;
+  --accent-yellow: #FFD21F;
+  --accent-pink: #FF4F7B;
+  --accent-green: #2DBE4E;
+  --accent-lime: #A4E22F;
+  --accent-purple: #7B61FF;
+  --accent-sand: #FFE08A;
+  --accent-grey: #9A9A9A;
+  --soft-yellow: #FFF3C4;
+  --soft-pink: #FFE1E8;
+  --danger: #FF4F7B;
+  --ok: #2DBE4E;
+  --warning: #FFD21F;
+  --border: 2.5px;
+  --border-thin: 1.5px;
+  --shadow: 5px;
+  --shadow-small: 3px;
+  --radius-card: 10px;
+  --radius-small: 7px;
+  --radius-pill: 999px;
+  --radius-tabBar: 22px;
+  --radius-sheet: 16px;
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 12px;
+  --space-l: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --text-h1: 46px;
+  --text-h2: 26px;
+  --text-h3: 19px;
+  --text-body: 16px;
+  --text-caption: 13px;
+  --font: 'Familjen Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --motion-press: 80ms;
+  --motion: 180ms;
+}
+
+/* The box: fill, ink outline, hard shadow. Press = move into the shadow. */
+.box { background: var(--paper); border: var(--border) solid var(--ink); border-radius: var(--radius-card);
+  box-shadow: var(--shadow) var(--shadow) 0 var(--ink); transition: transform var(--motion-press) ease-out, box-shadow var(--motion-press) ease-out; }
+.box.small { border-radius: var(--radius-small); box-shadow: var(--shadow-small) var(--shadow-small) 0 var(--ink); }
+.pressable:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--shadow) + 1px) calc(var(--shadow) + 1px) 0 var(--ink); }
+.pressable:active { transform: translate(var(--shadow), var(--shadow)); box-shadow: none; }

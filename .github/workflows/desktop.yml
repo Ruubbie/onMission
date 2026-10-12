@@ -1,0 +1,51 @@
+# Builds the desktop app (missions/app/desktop) into a Windows installer on GitHub's Windows machines
+# and publishes it as the "desktop-latest" release:
+#   https://github.com/Ruubbie/onMission/releases/download/desktop-latest/OnMission-Setup.exe
+name: Desktop app
+
+on:
+  push:
+    paths: ["missions/app/desktop/**", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: missions/app/desktop
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: missions/app/desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: missions/app/desktop/src-tauri -> target
+      - run: npm ci
+      - name: Build the installer
+        run: npx tauri build
+      - name: Collect the installer
+        shell: bash
+        run: |
+          ls src-tauri/target/release/bundle/nsis
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe OnMission-Setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OnMission-Setup
+          path: missions/app/desktop/OnMission-Setup.exe
+      - name: Publish the "desktop-latest" release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete desktop-latest --yes --cleanup-tag || true
+          gh release create desktop-latest OnMission-Setup.exe --target "$GITHUB_SHA" --latest=false \
+            --title "Desktop app for Windows (build ${{ github.run_number }})" \
+            --notes "Windows installer for the desktop app. Built from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}. Windows may warn because the app isn't signed: More info > Run anyway."

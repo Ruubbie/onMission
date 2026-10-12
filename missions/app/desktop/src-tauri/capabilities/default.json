@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Open links in the browser and files in their own app.",
+  "windows": ["main"],
+  "permissions": ["core:default", "opener:default"]
+}
