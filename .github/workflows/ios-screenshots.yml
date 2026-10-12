@@ -38,7 +38,7 @@ jobs:
           echo "Simulator: $UDID"
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
-          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl ui "$UDID" appearance light
           xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.ContinuousPath EnableContinuousPathIntroduction -bool false || true
           xcrun simctl spawn "$UDID" defaults write com.apple.Preferences DidShowContinuousPathIntroduction -bool true || true
           xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
@@ -59,6 +59,9 @@ jobs:
           shot prayer -startTab prayer
           shot move -startTab move
           shot capture -startTab people -startCapture YES
+          for page in checklists vault packing budget selling newsletters notes guides settings allpeople; do
+            shot "page-$page" -startTab move -startPage $page
+          done
           xcrun simctl ui "$UDID" content_size accessibility-medium
           shot today-large-text -startTab today
           shot people-large-text -startTab people

@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
 
-/// Search across everything at once.
-struct SearchView: View {
+/// Find anything (a cream page from Move): tasks, people, papers, notes, prayers, lists, letters.
+struct SearchPage: View {
     @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     @State private var query = ""
     // Read so the results refresh when records change.
     @Query private var tasks: [Todo]
@@ -20,28 +21,33 @@ struct SearchView: View {
 
     var body: some View {
         let found = results
-        List {
-            if query.trimmingCharacters(in: .whitespaces).count < 2 {
-                BrutalEmptyState(symbol: "magnifyingglass", title: "Search everything",
-                                 message: "Tasks, partners, documents, notes, prayer points, checklists, newsletters.", accent: .yellow)
-                    .brutalRow(top: 30)
+        let typing = query.trimmingCharacters(in: .whitespaces).count >= 2
+        CreamPage {
+            Text("Find anything")
+                .type(.disp(62))
+                .foregroundStyle(Palette.tomato)
+                .padding(.top, 10)
+                .accessibilityAddTraits(.isHeader)
+            SearchField(text: $query, prompt: "Passport, Anna, insurance…")
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+            if !typing {
+                Text("Tasks, people, papers, notes, prayers, checklists and letters.")
+                    .type(.hand(26))
+                    .foregroundStyle(Palette.tomato)
+                    .rotationEffect(.degrees(-2))
+                    .padding(.top, 14)
             } else if found.isEmpty {
-                BrutalEmptyState(symbol: "questionmark", title: "Nothing found", message: "No match for \"\(query)\".", accent: .grey)
-                    .brutalRow(top: 30)
+                EmptyRow(title: "Nothing found", message: "No match for \"\(query)\".")
             } else {
-                SectionHeader("Results", count: found.count).brutalRow(top: 10, bottom: 2)
-                ForEach(found) { rec in
-                    CardLink { RecordDestination(record: rec) } label: {
-                        RecordRow(record: rec)
-                            .padding(Metrics.m)
-                            .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
+                SectionHeader("Results", count: found.count).padding(.top, 12)
+                ForEach(Array(found.enumerated()), id: \.element.id) { index, rec in
+                    Button { router.open(rec) } label: {
+                        RecordRow(record: rec, rule: index < found.count - 1)
                     }
-                    .brutalRow(top: 4, bottom: 6)
+                    .buttonStyle(.plain)
                 }
             }
         }
-        .brutalList()
-        .brutalSearch(text: $query, prompt: "Passport, Anna, insurance…")
-        .navigationTitle("Search")
     }
 }

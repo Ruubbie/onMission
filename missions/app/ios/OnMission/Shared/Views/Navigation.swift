@@ -1,32 +1,28 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Which screen each section shows
+// MARK: - Move (handoff §5): how ready you are, and a tile for everything about leaving
 
-extension AppSection {
-    @ViewBuilder
-    var view: some View {
-        switch self {
-        case .today: TodayView()
-        case .tasks: TasksView()
-        case .checklists: ChecklistsView()
-        case .partners: PeopleView()
-        case .documents: VaultView()
-        case .budget: BudgetView()
-        case .selling: SellView()
-        case .packing: PackingView()
-        case .prayer: PrayerView()
-        case .notes: NotesView()
-        case .newsletters: NewslettersView()
-        case .contacts: ContactsView()
-        case .guides: GuidesView()
-        case .search: SearchView()
-        case .settings: SettingsView()
-        }
+/// How ready you are to go: the average of checklist items ticked, papers in the vault and things packed.
+/// Parts with nothing in them yet don't count.
+enum Readiness {
+    static func fraction(tasks: [Todo], documents: [Document], packing: [PackingItem]) -> Double {
+        let items = tasks.filter { !$0.checklistID.isEmpty }
+        var parts: [Double] = []
+        if !items.isEmpty { parts.append(Double(items.filter(\.isDone).count) / Double(items.count)) }
+        if !documents.isEmpty { parts.append(Double(documents.filter(\.hasFile).count) / Double(documents.count)) }
+        if !packing.isEmpty { parts.append(Double(packing.filter(\.packed).count) / Double(packing.count)) }
+        guard !parts.isEmpty else { return 0 }
+        return parts.reduce(0, +) / Double(parts.count)
     }
 }
 
-// MARK: - The "Move" tab: everything for leaving, grouped, each with a live line, and search on top
+extension Document {
+    /// Expires within 90 days (or already has).
+    static func expiresSoon(_ d: Date) -> Bool {
+        d < (Calendar.current.date(byAdding: .day, value: 90, to: .now) ?? .now)
+    }
+}
 
 struct MoveView: View {
     struct Status {
@@ -34,8 +30,51 @@ struct MoveView: View {
         var alert: Bool = false
     }
 
-    @Environment(\.modelContext) private var ctx
-    @Query private var checklists: [Checklist]
+    enum Hub: CaseIterable {
+        case checklists, vault, packing, budget, selling, newsletters, notes, guides
+
+        var title: String {
+            switch self {
+            case .checklists: "Checklists"
+            case .vault: "Vault"
+            case .packing: "Packing"
+            case .budget: "Budget"
+            case .selling: "Selling"
+            case .newsletters: "Newsletters"
+            case .notes: "Notes"
+            case .guides: "Guides"
+            }
+        }
+
+        var icon: Icon {
+            switch self {
+            case .checklists: .list
+            case .vault: .lock
+            case .packing: .bag
+            case .budget: .euro
+            case .selling: .tag
+            case .newsletters: .mail
+            case .notes: .note
+            case .guides: .book
+            }
+        }
+
+        var page: Page {
+            switch self {
+            case .checklists: .checklists
+            case .vault: .vault
+            case .packing: .packing
+            case .budget: .budget
+            case .selling: .selling
+            case .newsletters: .newsletters
+            case .notes: .notes
+            case .guides: .guides
+            }
+        }
+    }
+
+    @Environment(Router.self) private var router
+    @Environment(\.entry) private var entry
     @Query private var tasks: [Todo]
     @Query private var packing: [PackingItem]
     @Query private var budget: [BudgetEntry]
@@ -43,246 +82,167 @@ struct MoveView: View {
     @Query private var notes: [Note]
     @Query private var newsletters: [Newsletter]
     @Query private var documents: [Document]
-    @Query private var partners: [Partner]
-    @Query private var gifts: [Gift]
     @Query private var settingsList: [MissionSettings]
-    @State private var query = ""
+    @State private var tilePlay = Array(repeating: 0, count: Hub.allCases.count)
 
     /// The home-screen name (brand.appName in tokens.json, set by CI).
     static var appName: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "hesent.me"
     }
 
+    private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
+
     private var insights: Insights {
-        Insights(settings: settingsList.first ?? MissionSettings(), tasks: [], partners: partners, gifts: gifts,
-                 budget: budget, sells: sells, packing: packing, documents: documents)
+        Insights(settings: settings, tasks: [], partners: [], gifts: [], budget: budget, sells: sells,
+                 packing: packing, documents: documents)
     }
 
-    private var searching: Bool { query.trimmingCharacters(in: .whitespaces).count >= 2 }
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Metrics.l) {
-                header
-                BrutalSearchField(text: $query, prompt: "Find anything: passport, Anna, bike…")
-                if searching {
-                    results
-                } else {
-                    group("Leaving", [.checklists, .documents, .packing])
-                    group("Money", [.budget, .selling])
-                    group("Words", [.newsletters, .notes, .guides])
-                    SyncBadge()
+        let ready = Readiness.fraction(tasks: tasks, documents: documents, packing: packing)
+        let pct = Int((ready * 100).rounded())
+        Screen(posterHeight: 306, sheetTop: 16) {
+            Hand("Leaving \(settings.departureDate.formatted(.dateTime.day().month(.wide)))", size: 33).rise(0).at(24, 106)
+            CountUp(value: pct, trigger: entry, duration: 1.4) { "\($0)%" }
+                .type(.disp(124))
+                .lineLimit(1)
+                .offset(y: FontMetrics.shift(.archivo, size: 124, lineHeight: 0.88))
+                .rise(1)
+                .at(18, 140)
+            CapLine("Ready\nto go").rise(2).at(238, 192)
+            ArcArt(fraction: ready, trigger: entry, from: "AMS", to: airport).at(0, 236)
+        } sheet: {
+            SheetScroll {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)], spacing: 9) {
+                    ForEach(Array(Hub.allCases.enumerated()), id: \.offset) { index, hub in
+                        let s = status(for: hub)
+                        Tile(icon: hub.icon, title: hub.title, status: s.text, alert: s.alert, trigger: tilePlay[index]) {
+                            router.push(hub.page)
+                        }
+                        .rise(index)
+                    }
                 }
+                MoreLink(title: "Find anything") { router.push(.search) }
             }
-            .padding(.horizontal, Metrics.l)
-            .padding(.top, 4)
-            .padding(.bottom, Metrics.xl)
         }
-        .scrollDismissesKeyboard(.interactively)
-        .brutalBackground()
-        .toolbar(.hidden, for: .navigationBar)
+        .onAppear(perform: playTiles)
+        .onChange(of: entry) { _, _ in playTiles() }
         .captureContext(.task)
     }
 
-    private var header: some View {
-        let days = insights.daysToGo
-        return HStack(spacing: 10) {
-            Ollie(pose: .side, height: 52)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Move").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
-                Text(days > 0 ? "\(days) days until you leave" : "Kia ora, you're there")
-                    .font(Typeface.body(12.5))
-                    .foregroundStyle(Palette.muted)
-            }
-            Spacer()
-            NavigationLink { SettingsView() } label: { IconTile(symbol: "gearshape", size: 40) }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Settings")
+    /// The tile icons play one after another (from 260ms, 70ms apart).
+    private func playTiles() {
+        guard !Motion.reduced else { return }
+        for i in tilePlay.indices {
+            Motion.after(0.26 + Double(i) * 0.07) { tilePlay[i] += 1 }
         }
     }
 
-    private func group(_ title: String, _ sections: [AppSection]) -> some View {
-        VStack(alignment: .leading, spacing: Metrics.s) {
-            SectionHeader(title)
-            VStack(spacing: 0) {
-                ForEach(Array(sections.enumerated()), id: \.element) { index, s in
-                    NavigationLink { s.view } label: { MoveRow(section: s, status: status(for: s)) }
-                        .buttonStyle(.plain)
-                    if index < sections.count - 1 {
-                        Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 58)
-                    }
-                }
-            }
-            .brutalBox(radius: 18)
-        }
+    /// "ZQN" for Queenstown; otherwise the first three letters of the city.
+    private var airport: String {
+        let city = settings.city
+        if city.localizedCaseInsensitiveContains("queenstown") { return "ZQN" }
+        return String(city.filter(\.isLetter).prefix(3)).uppercased()
     }
 
-    private var results: some View {
-        let q = query.trimmingCharacters(in: .whitespaces)
-        let found = Array(AnyRecord.everything(ctx).filter { $0.searchText.localizedCaseInsensitiveContains(q) }.prefix(200))
-        return VStack(alignment: .leading, spacing: Metrics.s) {
-            if found.isEmpty {
-                BrutalEmptyState(symbol: "questionmark", title: "Nothing found", message: "No match for \"\(q)\".", accent: .grey)
-            } else {
-                SectionHeader("Results", count: found.count)
-                ForEach(found) { rec in
-                    NavigationLink { RecordDestination(record: rec) } label: {
-                        RecordRow(record: rec)
-                            .padding(Metrics.m)
-                            .brutalBox(radius: Metrics.radiusSmall)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func status(for s: AppSection) -> Status {
-        switch s {
+    private func status(for hub: Hub) -> Status {
+        switch hub {
         case .checklists:
             let items = tasks.filter { !$0.checklistID.isEmpty }
-            let lists = checklists.filter { !$0.archived }.count
-            return Status(text: "\(items.filter(\.isDone).count) of \(items.count) ticked · \(lists) list\(lists == 1 ? "" : "s")")
-        case .documents:
-            let soon = documents.filter { d in d.expiresAt.map(DocumentDetail.expiresSoon) ?? false }.count
+            let left = items.filter { !$0.isDone }.count
+            if items.isEmpty { return Status(text: "Start one") }
+            return Status(text: left == 0 ? "All done" : "\(left) left")
+        case .vault:
+            let soon = documents.filter { d in d.expiresAt.map(Document.expiresSoon) ?? false }.count
             let missing = documents.filter { !$0.hasFile }.count
-            if soon > 0 { return Status(text: "\(soon) expire\(soon == 1 ? "s" : "") within 90 days", alert: true) }
-            if missing > 0 { return Status(text: "\(documents.count) documents · \(missing) without a file", alert: true) }
-            return Status(text: "\(documents.count) document\(documents.count == 1 ? "" : "s")")
+            if missing > 0 { return Status(text: "\(missing) missing", alert: true) }
+            if soon > 0 { return Status(text: "\(soon) expiring", alert: true) }
+            return Status(text: documents.isEmpty ? "Empty" : "All in")
         case .packing:
-            let packed = packing.filter(\.packed).count
-            return Status(text: packing.isEmpty ? "Nothing to pack yet" : "\(packed) of \(packing.count) packed")
+            guard !packing.isEmpty else { return Status(text: "Nothing yet") }
+            let pct = Int((Double(packing.filter(\.packed).count) / Double(packing.count) * 100).rounded())
+            return Status(text: "\(pct)% packed")
         case .budget:
             let gap = insights.setupGapCents
-            return gap > 0 ? Status(text: "\(euros(gap)) still to cover before you go") : Status(text: "One-off costs covered")
+            return gap > 0 ? Status(text: "\(euros(gap)) to go") : Status(text: "On track")
         case .selling:
             let i = insights
-            if i.itemsToSort > 0 { return Status(text: "\(i.itemsToSort) to decide · \(euros(i.sellPotentialCents)) to sell") }
-            return Status(text: "\(euros(i.soldCents)) sold · \(euros(i.sellPotentialCents)) to go")
+            if i.itemsToSort > 0 { return Status(text: "\(i.itemsToSort) to decide") }
+            let listed = sells.filter { $0.statusValue == .listed || $0.statusValue == .reserved }.count
+            return Status(text: listed > 0 ? "\(listed) listed" : "\(euros(i.soldCents)) sold")
         case .newsletters:
             if let open = newsletters.filter({ $0.statusValue != .sent }).max(by: { $0.number < $1.number }) {
-                return Status(text: "#\(open.number) is \(open.statusValue.title.lowercased())")
+                let month = open.plannedDate.map { $0.formatted(.dateTime.month(.abbreviated)) }
+                return Status(text: month.map { "\($0) \(open.statusValue.title.lowercased())" } ?? open.statusValue.title)
             }
-            if let last = newsletters.compactMap(\.sentAt).max() { return Status(text: "Last sent \(shortDate(last))") }
+            if let last = newsletters.compactMap(\.sentAt).max() { return Status(text: "Sent \(whenText(last))") }
             return Status(text: "None yet")
         case .notes:
-            let n = notes.filter { $0.kindValue != .prayer && !$0.isThanks }.count
-            return Status(text: "\(n) note\(n == 1 ? "" : "s")")
+            return Status(text: "\(notes.filter { $0.kindValue != .prayer && !$0.isThanks }.count)")
         case .guides:
-            return Status(text: "\(GuidesView.guides.count) guides to read")
-        default:
-            return Status(text: "")
+            let all = GuidesView.guides
+            let read = all.filter { LocalState.guideProgress($0.id) >= 1 }.count
+            return Status(text: read == 0 ? "\(all.count)" : "\(read) of \(all.count) read")
         }
     }
 }
 
-private struct MoveRow: View {
-    let section: AppSection
-    let status: MoveView.Status
+/// The dotted arc from home to there: a plane flies along it to how ready you are (1.6s), turning with the curve.
+private struct ArcArt: View {
+    let fraction: Double
+    let trigger: Int
+    let from: String
+    let to: String
 
     var body: some View {
-        HStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: section.symbol, accent: section.accent, size: 34)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(section.title)
-                    .font(Typeface.body(15, weight: .bold))
-                    .foregroundStyle(Palette.ink)
-                if !status.text.isEmpty {
-                    Text(status.text)
-                        .font(Typeface.body(12.5, weight: .semibold))
-                        .foregroundStyle(status.alert ? Palette.danger : Palette.muted)
-                        .lineLimit(1)
+        let path = SVG.path(Art.arcPath)
+        ZStack(alignment: .topLeading) {
+            LineArt(drawing: Art.arc)
+            Clock(trigger: trigger, duration: 1.7) { t in
+                let f = max((t >= 1.6 ? 1 : Ease.outCubic(t / 1.6)) * fraction, 0.001)
+                let spot = path.point(at: f)
+                ZStack(alignment: .topLeading) {
+                    SVGShape(d: Art.arcPath)
+                        .trim(from: 0, to: f)
+                        .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
+                    Plane()
+                        .rotationEffect(.degrees(spot.angle))
+                        .position(spot.point)
                 }
+                .frame(width: 390, height: 138, alignment: .topLeading)
             }
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Palette.muted)
+            label(from).position(x: 34, y: 129)
+            label(to).position(x: 356, y: 129)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .frame(width: 390, height: 138, alignment: .topLeading)
+        .accessibilityHidden(true)
+    }
+
+    private func label(_ text: String) -> some View {
+        Text(text)
+            .type(TypeStyle(size: 12, wght: 800, tracking: 0.125, relativeTo: nil))
+            .foregroundStyle(Palette.cream)
+            .fixedSize()
     }
 }
 
-// MARK: - Sync status line
-
-struct SyncBadge: View {
-    @Environment(\.modelContext) private var ctx
-    @MainActor private var sync: SyncEngine { SyncEngine.shared }
-
+/// The little plane: a tomato body with a cream outline.
+private struct Plane: View {
     var body: some View {
-        HStack(spacing: 8) {
-            statusIcon
-            Text(statusText)
-                .font(Typeface.body(12, weight: .medium))
-                .foregroundStyle(Palette.muted)
-                .lineLimit(2)
-            Spacer(minLength: 0)
-            if sync.isLoggedIn && !sync.isSyncing {
-                IconButton(symbol: "arrow.triangle.2.circlepath", size: 32, label: "Sync now") {
-                    Task { await sync.sync(ctx) }
-                }
-            }
+        ZStack {
+            SVGShape(d: "M4 1 L38 10 L4 19 L11 10 Z").fill(Palette.tomato)
+            SVGShape(d: "M4 1 L38 10 L4 19 L11 10 Z")
+                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round, lineJoin: .round))
+            SVGShape(d: "M11 10 L38 10")
+                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
         }
-        .padding(10)
-        .brutalBox(radius: 16)
-    }
-
-    @MainActor @ViewBuilder
-    private var statusIcon: some View {
-        if sync.isSyncing {
-            BrutalSpinner(size: 16)
-        } else if !sync.isLoggedIn {
-            Image(systemName: "icloud.slash").foregroundStyle(Palette.muted)
-        } else if sync.lastError != nil {
-            Image(systemName: "exclamationmark.icloud.fill").foregroundStyle(Palette.danger)
-        } else {
-            Image(systemName: "checkmark.icloud.fill").foregroundStyle(Palette.ok)
-        }
-    }
-
-    @MainActor private var statusText: String {
-        if sync.isSyncing { return "Syncing…" }
-        if !sync.isLoggedIn { return "Only on this device. Sign in under Settings to sync." }
-        if let error = sync.lastError { return error }
-        if let last = sync.lastSync { return "Synced \(last.formatted(.relative(presentation: .named)))" }
-        return "Not synced yet"
+        // Drawn around (20, 10) so it turns about its middle.
+        .frame(width: 40, height: 20, alignment: .topLeading)
     }
 }
 
-// MARK: - Opening any record
+// MARK: - Pages for any record
 
-/// One line for a record in search results and link lists.
-struct RecordRow: View {
-    let record: AnyRecord
-    var showType: Bool = true
-
-    var body: some View {
-        HStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: record.symbol, accent: record.accent, size: 34)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(record.title)
-                    .font(Typeface.body(16, weight: .semibold))
-                    .foregroundStyle(Palette.ink)
-                    .lineLimit(2)
-                if !record.subtitle.isEmpty {
-                    Text(record.subtitle)
-                        .font(Typeface.body(13))
-                        .foregroundStyle(Palette.muted)
-                        .lineLimit(1)
-                }
-            }
-            Spacer(minLength: 4)
-            if showType {
-                Chip(text: record.typeLabel, accent: record.accent)
-            }
-        }
-    }
-}
-
-/// The detail screen for any record.
+/// The page for any record.
 struct RecordDestination: View {
     let record: AnyRecord
 
@@ -290,15 +250,15 @@ struct RecordDestination: View {
 
     var body: some View {
         switch record {
-        case .task(let x): TaskDetail(task: x)
+        case .task(let x): TaskPage(task: x)
         case .checklist(let x): ChecklistDetail(list: x)
-        case .partner(let x): PartnerDetail(partner: x)
+        case .partner(let x): PartnerPage(partner: x)
         case .gift(let x): GiftDetail(gift: x)
         case .budget(let x): BudgetEntryDetail(entry: x)
         case .sell(let x): SellDetail(item: x)
         case .packing(let x): PackingDetail(item: x)
         case .note(let x):
-            if x.kindValue == .prayer { PrayerDetail(note: x) } else { NoteDetail(note: x) }
+            if x.kindValue == .prayer || x.isThanks { PrayerDetail(note: x) } else { NoteDetail(note: x) }
         case .document(let x): DocumentDetail(doc: x)
         case .contact(let x): ContactDetail(contact: x)
         case .newsletter(let x): NewsletterDetail(letter: x)
@@ -306,9 +266,160 @@ struct RecordDestination: View {
     }
 }
 
-// MARK: - Smart links, on every detail screen (a Form section)
+/// A detail page in the house pattern: an aside by hand and the record's name big on tomato,
+/// its fields on the sheet (handoff §7, "not in the prototype").
+struct DetailPage<Content: View>: View {
+    let aside: String
+    let title: String
+    var cap: String = ""
+    @ViewBuilder let content: Content
 
-struct LinksSection: View {
+    init(aside: String, title: String, cap: String = "", @ViewBuilder content: () -> Content) {
+        self.aside = aside
+        self.title = title
+        self.cap = cap
+        self.content = content()
+    }
+
+    var body: some View {
+        let shown = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled" : title
+        let size: CGFloat = shown.count > 22 ? 52 : (shown.count > 11 ? 68 : 96)
+        Screen(posterHeight: 306) {
+            Hand(aside).rise(0).at(24, 106)
+            VStack(alignment: .leading, spacing: 0) {
+                Lines(wrapLines(shown, .disp(size), width: 346, maxLines: 3), .disp(size), lineHeight: 0.9, minScale: 0.6)
+                if !cap.isEmpty {
+                    CapLine(cap).lineLimit(2).padding(.top, 16).padding(.leading, 2)
+                }
+            }
+            .frame(width: 346, alignment: .leading)
+            .rise(1)
+            .at(22, 146)
+        } sheet: {
+            SheetScroll { content }
+        }
+    }
+}
+
+/// A whole cream page (the reader, search, a note): ink on cream, scrolling under the top bar.
+struct CreamPage<Content: View>: View {
+    @ViewBuilder let content: Content
+    @Environment(\.chrome) private var chrome
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                content
+            }
+            .padding(.horizontal, Metrics.gutter)
+            .padding(.top, chrome.top + Metrics.topBar + 8)
+            .padding(.bottom, chrome.bar + 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .riseSheet()
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .overlay(alignment: .top) {
+            // The top bar sits on cream; scrolled content passes under it.
+            Palette.cream.frame(height: chrome.top + Metrics.topBar).allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Palette.cream)
+        .foregroundStyle(Palette.ink)
+    }
+}
+
+/// A sheet for a quick form (record a gift, add names, link to…): Cancel, a tomato title, Save.
+struct CreamSheet<Content: View>: View {
+    let title: String
+    var save: String = "Save"
+    var saveDisabled = false
+    var onSave: (() -> Void)? = nil
+    @ViewBuilder let content: Content
+    @Environment(\.dismiss) private var dismiss
+
+    init(title: String, save: String = "Save", saveDisabled: Bool = false, onSave: (() -> Void)? = nil,
+         @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.save = save
+        self.saveDisabled = saveDisabled
+        self.onSave = onSave
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .type(.bodyBold)
+                    .foregroundStyle(Palette.tomatoInk)
+                    .frame(minHeight: 44)
+                Spacer()
+                if let onSave {
+                    Button(save, action: onSave)
+                        .buttonStyle(.filledSmall)
+                        .disabled(saveDisabled)
+                        .opacity(saveDisabled ? 0.4 : 1)
+                }
+            }
+            .padding(.top, 12)
+            Text(title)
+                .type(TypeStyle(size: 30, wdth: 78, wght: 800, relativeTo: .title))
+                .foregroundStyle(Palette.tomato)
+                .lineLimit(2)
+                .padding(.top, 6)
+                .accessibilityAddTraits(.isHeader)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    content
+                }
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .padding(.horizontal, Metrics.sheetSide)
+        .background(Palette.cream.ignoresSafeArea())
+        .foregroundStyle(Palette.ink)
+        .environment(\.colorScheme, .light)
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(Metrics.sheetRadius)
+    }
+}
+
+// MARK: - Opening any record
+
+/// One line for a record in search results and link lists: an avatar for people, a paper box for the rest.
+struct RecordRow: View {
+    let record: AnyRecord
+    var rule = true
+    var showType = true
+
+    var body: some View {
+        Row(rule: rule) {
+            switch record {
+            case .partner(let p): Avatar(name: p.displayTitle)
+            case .contact(let c): Avatar(name: c.displayTitle)
+            default: DocBox(icon: record.icon)
+            }
+            RowText(title: record.title, subtitle: line)
+        }
+    }
+
+    private var line: String {
+        let sub = record.subtitle
+        guard showType else { return sub }
+        if sub.isEmpty || sub.hasPrefix(record.typeLabel) { return sub.isEmpty ? record.typeLabel : sub }
+        return "\(record.typeLabel) · \(sub)"
+    }
+}
+
+// MARK: - Smart links, on every detail page
+
+struct LinksBlock: View {
     @Environment(\.modelContext) private var ctx
     let record: AnyRecord
     @State private var picking = false
@@ -320,37 +431,26 @@ struct LinksSection: View {
     var body: some View {
         let _ = tick
         let linked = Links.linked(to: record, ctx)
-        Section {
+        FormBlock("Linked", footer: linked.isEmpty ? "Connect tasks, people, papers and notes so the right thing is one tap away." : "") {
             ForEach(linked) { rec in
-                NavigationLink { RecordDestination(record: rec) } label: { RecordRow(record: rec) }
-                    .swipeActions {
-                        Button("Unlink", role: .destructive) { unlink(rec) }
-                    }
+                LinkedRow(record: rec)
                     .contextMenu {
                         Button("Remove link", role: .destructive) { unlink(rec) }
                     }
+                    .accessibilityAction(named: "Remove link") { unlink(rec) }
             }
-            Button {
-                picking = true
-            } label: {
-                Label("Link to…", systemImage: "link.badge.plus")
-                    .font(Typeface.body(16, weight: .semibold))
-                    .foregroundStyle(Palette.ink)
-            }
-        } header: {
-            FormHeader("Linked")
-        } footer: {
-            Text("Connect tasks, partners, documents and notes so the right thing is one tap away.")
+            ActionRow(title: "Link to…", icon: .link) { picking = true }
         }
-        .listRowBackground(Palette.paper)
         .sheet(isPresented: $picking, onDismiss: { tick += 1 }) {
             LinkPicker(from: record)
         }
     }
 
     private func unlink(_ other: AnyRecord) {
-        Links.unlink(record, other, ctx)
-        tick += 1
+        withAnimation(Motion.fold.rm) {
+            Links.unlink(record, other, ctx)
+            tick += 1
+        }
     }
 }
 
@@ -361,28 +461,23 @@ struct LinkPicker: View {
     @State private var query = ""
 
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(results) { rec in
-                    Button {
-                        Links.link(from, rec, ctx)
-                        dismiss()
-                    } label: {
-                        RecordRow(record: rec)
-                            .padding(10)
-                            .brutalBox(radius: 16)
-                    }
-                    .buttonStyle(.plain)
-                    .brutalRow(top: 4, bottom: 6)
+        let found = results
+        CreamSheet(title: "Link to") {
+            SearchField(text: $query, prompt: "Find a task, person, paper…")
+                .padding(.vertical, 12)
+            ForEach(Array(found.enumerated()), id: \.element.id) { index, rec in
+                Button {
+                    Links.link(from, rec, ctx)
+                    dismiss()
+                } label: {
+                    RecordRow(record: rec, rule: index < found.count - 1)
                 }
+                .buttonStyle(.plain)
             }
-            .brutalList()
-            .brutalSearch(text: $query, prompt: "Find a task, partner, document…")
-            .navigationTitle("Link to")
-            .navigationBarTitleDisplayMode(.inline)
-            .brutalSheetToolbar(cancel: { dismiss() })
+            if found.isEmpty {
+                EmptyRow(title: "Nothing found", message: query.isEmpty ? "Add something first." : "No match for \"\(query)\".")
+            }
         }
-        .tint(Palette.ink)
     }
 
     private var results: [AnyRecord] {

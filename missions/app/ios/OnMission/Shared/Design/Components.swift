@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 // The building blocks of Tomato Flood (handoff §3): a poster on tomato that never scrolls, a cream sheet
 // that holds the rest, rows with rules, rings that tick, capsule buttons, tiles, segments, pills and a toast.
@@ -37,6 +38,8 @@ struct Screen<Poster: View, Sheet: View>: View {
     let posterHeight: CGFloat
     var background: Color = Palette.tomato
     var sheetTop: CGFloat = Metrics.sheetTop
+    /// Today's All done: the sheet drops off the bottom and the poster lifts and fades.
+    var dropped = false
     let hasSheet: Bool
     let poster: Poster
     let sheet: Sheet
@@ -45,10 +48,11 @@ struct Screen<Poster: View, Sheet: View>: View {
     @Environment(\.dynamicTypeSize) private var dts
 
     init(posterHeight: CGFloat, background: Color = Palette.tomato, sheetTop: CGFloat = Metrics.sheetTop,
-         @ViewBuilder poster: () -> Poster, @ViewBuilder sheet: () -> Sheet) {
+         dropped: Bool = false, @ViewBuilder poster: () -> Poster, @ViewBuilder sheet: () -> Sheet) {
         self.posterHeight = posterHeight
         self.background = background
         self.sheetTop = sheetTop
+        self.dropped = dropped
         self.hasSheet = true
         self.poster = poster()
         self.sheet = sheet()
@@ -60,9 +64,15 @@ struct Screen<Poster: View, Sheet: View>: View {
             Color.clear.frame(height: chrome.top + Metrics.topBar)
             PosterCanvas(height: posterHeight, scale: k) { poster }
                 .accessibilityElement(children: .combine)
+                .opacity(dropped ? 0 : 1)
+                .offset(y: dropped ? -18 : 0)
+                .animation(.curve(0.3, 0, 0.2, 1, 0.45).rm, value: dropped)
+                .allowsHitTesting(!dropped)
             if hasSheet {
                 SheetSurface(top: sheetTop) { sheet }
                     .riseSheet()
+                    .offset(y: dropped ? chrome.height : 0)
+                    .animation(Motion.drop.rm, value: dropped)
             } else {
                 Spacer(minLength: 0)
             }
@@ -920,4 +930,30 @@ enum PhoneLinks {
         let trimmed = address.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? nil : URL(string: "mailto:\(trimmed)")
     }
+}
+
+/// Breaks display text into lines that fit `width`, so `Lines` can stack them at a CSS line-height
+/// tighter than the font's own.
+func wrapLines(_ text: String, _ style: TypeStyle, width: CGFloat, maxLines: Int = 4) -> String {
+    let font = TF.uiFont(style.family, size: style.size, wdth: style.wdth, wght: style.wght)
+    let shown = style.uppercase ? text.uppercased() : text
+    func measure(_ s: String) -> CGFloat {
+        (s as NSString).size(withAttributes: [.font: font, .kern: style.tracking * style.size]).width
+    }
+    var lines: [String] = []
+    var current = ""
+    for word in shown.split(separator: " ").map(String.init) {
+        let candidate = current.isEmpty ? word : current + " " + word
+        if measure(candidate) <= width || current.isEmpty {
+            current = candidate
+        } else {
+            lines.append(current)
+            current = word
+        }
+    }
+    if !current.isEmpty { lines.append(current) }
+    if lines.count > maxLines {
+        lines = Array(lines.prefix(maxLines - 1)) + [lines.dropFirst(maxLines - 1).joined(separator: " ")]
+    }
+    return lines.joined(separator: "\n")
 }

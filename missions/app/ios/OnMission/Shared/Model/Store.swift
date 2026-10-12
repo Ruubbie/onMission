@@ -173,38 +173,6 @@ enum AnyRecord: Identifiable {
         }
     }
 
-    var symbol: String {
-        switch self {
-        case .task(let t): t.isDone ? "checkmark.square.fill" : "square"
-        case .checklist: "checklist"
-        case .partner(let p): p.stageValue.symbol
-        case .gift: "gift"
-        case .budget(let b): b.kindValue == .income ? "arrow.down.circle" : "eurosign.circle"
-        case .sell: "tag"
-        case .packing(let p): p.packed ? "suitcase.fill" : "suitcase"
-        case .note(let n): n.kindValue.symbol
-        case .document(let d): d.kindValue.symbol
-        case .contact: "person.crop.rectangle"
-        case .newsletter: "envelope.open"
-        }
-    }
-
-    var accent: Accent {
-        switch self {
-        case .task(let t): t.areaValue.accent
-        case .checklist(let c): c.areaValue.accent
-        case .partner(let p): p.stageValue.accent
-        case .gift: .green
-        case .budget: .green
-        case .sell(let s): s.statusValue.accent
-        case .packing: .lime
-        case .note(let n): n.kindValue == .prayer ? .purple : .sand
-        case .document: .purple
-        case .contact: .grey
-        case .newsletter(let n): n.statusValue.accent
-        }
-    }
-
     var subtitle: String {
         switch self {
         case .task(let t):

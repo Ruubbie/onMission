@@ -21,27 +21,65 @@ enum CaptureKind: String, CaseIterable, Identifiable {
         }
     }
 
-    var symbol: String {
+    /// The line drawing at the top of Capture.
+    var art: Drawing {
         switch self {
-        case .task: "checkmark.square"
-        case .partner: "person.badge.plus"
-        case .prayer: "hands.and.sparkles"
-        case .thanks: "heart"
-        case .sell: "tag"
-        case .packing: "suitcase"
-        case .note: "note.text"
+        case .task: Art.captureTask
+        case .partner: Art.capturePerson
+        case .prayer: Art.captureFlame
+        case .thanks: Art.captureHeart
+        case .sell: Art.captureTag
+        case .packing: Art.captureBag
+        case .note: Art.captureNote
         }
     }
 
-    var accent: Accent {
+    /// "↓ sounds like a person".
+    var noun: String {
         switch self {
-        case .task: .yellow
-        case .partner: .pink
-        case .prayer: .purple
-        case .thanks: .sand
-        case .sell: .sand
-        case .packing: .lime
-        case .note: .grey
+        case .task: "a task"
+        case .partner: "a person"
+        case .prayer: "a prayer"
+        case .thanks: "a thank-you"
+        case .sell: "something to sell"
+        case .packing: "something to pack"
+        case .note: "a note"
+        }
+    }
+
+    /// The tab whose icon pops when something of this kind is added.
+    var tab: RootTab {
+        switch self {
+        case .task: .tasks
+        case .partner: .people
+        case .prayer, .thanks: .prayer
+        case .sell, .packing, .note: .move
+        }
+    }
+
+    /// Where it went, for the toast.
+    var place: String {
+        switch self {
+        case .task: "Tasks"
+        case .partner: "People"
+        case .prayer: "Prayer"
+        case .thanks: "Prayer & thanks"
+        case .sell: "Selling"
+        case .packing: "Packing"
+        case .note: "Notes"
+        }
+    }
+
+    /// What the big entry says before you type.
+    var placeholder: String {
+        switch self {
+        case .task: "What needs doing?"
+        case .partner: "Who should hear about it?"
+        case .prayer: "What to pray for?"
+        case .thanks: "What are you thankful for?"
+        case .sell: "What's going? Bike 150"
+        case .packing: "What goes in the bag?"
+        case .note: "What's on your mind?"
         }
     }
 
@@ -231,189 +269,256 @@ extension View {
     }
 }
 
-// MARK: - The sheet
 
-/// One field to add or find anything. What you type decides what it becomes ("pray: …", "sell: Bike 150",
-/// "@Anna", or a task like "Call Anna friday #support"); the chips override it. Matching records show
-/// below, so a name you type opens the person instead of adding them twice.
-struct CaptureSheet: View {
+// MARK: - The cover
+
+/// Add anything (handoff §6): a cream cover floods out of the + and folds back into it. What you type
+/// decides what it becomes ("pray: …", "sell: Bike 150", "@Anna", or a task like "Call Anna friday #support");
+/// the chips override it. Matching records show below, so a name you type opens the person instead of
+/// adding them twice.
+struct CaptureCover: View {
+    @Environment(Router.self) private var router
+    @Environment(CaptureCenter.self) private var center
+    @Environment(\.chrome) private var chrome
+    @State private var session = 0
+    @State private var mounted = false
+
+    var body: some View {
+        let open = router.captureOpen
+        let origin = CGPoint(x: chrome.width - 18 - 22, y: chrome.top - 3 + Metrics.topBar / 2)
+        ZStack {
+            if mounted {
+                CaptureForm(context: center.context(for: router.tab), open: open)
+                    .id(session)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Palette.cream.ignoresSafeArea())
+        .mask {
+            RevealShape(center: origin, progress: open ? 1 : 0)
+                .animation(Motion.flood.rm, value: open)
+                .ignoresSafeArea()
+        }
+        .allowsHitTesting(open)
+        .accessibilityHidden(!open)
+        .accessibilityAddTraits(open ? .isModal : [])
+        .onChange(of: open) { _, now in
+            if now {
+                session += 1
+                mounted = true
+            } else {
+                Motion.after(0.7, always: true) {
+                    if !router.captureOpen { mounted = false }
+                }
+            }
+        }
+        .zIndex(15)
+    }
+}
+
+private struct CaptureForm: View {
     @Environment(\.modelContext) private var ctx
-    @Environment(\.dismiss) private var dismiss
+    @Environment(Router.self) private var router
+    @Environment(\.chrome) private var chrome
     let context: CaptureContext?
+    let open: Bool
 
     @State private var text = ""
     @State private var picked: CaptureKind?
-    @State private var added: [AnyRecord] = []
+    @State private var artPlay = 0
+    @State private var addPlay = 0
     @FocusState private var focused: Bool
 
     private var line: Capture.Line { Capture.split(text) }
     private var kind: CaptureKind { line.kind ?? picked ?? context?.kind ?? .task }
+    /// The typed line picked the kind on its own ("pray: …", "@Anna").
+    private var guessed: Bool { line.kind != nil }
 
     var body: some View {
         let found = matches
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Metrics.l) {
-                    field
-                    kindChips
-                    if !line.text.isEmpty { preview }
-                    if !found.isEmpty { matchesSection(found) }
-                    if !added.isEmpty { addedSection }
-                    if text.isEmpty && added.isEmpty { hints }
+        let kinds = CaptureKind.allCases.map { Pills<CaptureKind>.Item(value: $0, title: $0.title) }
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Add anything")
+                        .type(.kicker)
+                        .frame(height: Metrics.topBar)
+                        .padding(.leading, Metrics.gutter - Metrics.sheetSide)
+                        .padding(.top, chrome.top - 3)
+                        .accessibilityAddTraits(.isHeader)
+                    LineArt(drawing: kind.art, ink: .onCream, delay: 0, trigger: artPlay, drawDuration: 0.65, stagger: 0.05)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
+                    entry
+                    Hand("↓ sounds like \(kind.noun)", size: 26, tilt: -4)
+                        .foregroundStyle(Palette.tomato)
+                        .opacity(guessed ? 1 : 0)
+                        .animation(.easeOut(duration: 0.35), value: guessed)
+                        .padding(.leading, 72)
+                        .accessibilityHidden(!guessed)
+                    Pills(items: kinds, selection: Binding(get: { kind }, set: pick))
+                        .padding(.top, 6)
+                    fieldRow
+                    if !found.isEmpty {
+                        matchesSection(found)
+                    } else if text.isEmpty {
+                        hints
+                    }
                 }
-                .padding(Metrics.l)
+                .padding(.horizontal, Metrics.sheetSide)
+                .padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.interactively)
-            .brutalBackground()
-            .navigationTitle("Add or find")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .buttonStyle(BrutalButtonStyle(kind: .secondary, compact: true))
-                }
-            }
-            .toolbarBackground(Palette.backgroundTop, for: .navigationBar)
+            addButton
+                .padding(.horizontal, Metrics.gutter)
+                .padding(.top, 8)
+                .padding(.bottom, router.keyboardShown ? 10 : max(chrome.bottomSafe, 16) + 6)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Palette.gradient)
-        .onAppear { focused = true }
+        .foregroundStyle(Palette.ink)
+        .sensoryFeedback(.success, trigger: addPlay)
+        .onAppear {
+            guard open else { return }
+            Motion.after(0.2) { artPlay += 1 }
+            Motion.after(0.4, always: true) { focused = true }
+        }
+        .onChange(of: open) { _, now in
+            if !now { focused = false }
+        }
+        .onChange(of: kind) { _, _ in artPlay += 1 }
     }
 
     // MARK: Pieces
 
-    private var field: some View {
-        HStack(spacing: Metrics.m) {
-            AccentSquareIcon(symbol: kind.symbol, accent: kind.accent, size: 34)
-                .animation(.easeOut(duration: 0.15), value: kind)
-            TextField(kind.prompt, text: $text, prompt: Text(kind.prompt).foregroundStyle(Palette.muted))
-                .font(Typeface.body(17))
-                .foregroundStyle(Palette.ink)
-                .focused($focused)
-                .submitLabel(.done)
-                .onSubmit(save)
-            Button(action: save) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Palette.onAccent)
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(Accent.yellow.color))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Circle())
+    private var entry: some View {
+        TextField("", text: $text, prompt: Text(kind.placeholder).foregroundStyle(Palette.ink.opacity(0.3)), axis: .vertical)
+            .type(.entry)
+            .foregroundStyle(Palette.ink)
+            .lineLimit(1...4)
+            .focused($focused)
+            .submitLabel(.done)
+            .padding(.horizontal, 4)
+            .padding(.top, 14)
+            .frame(minHeight: 76, alignment: .top)
+            .onChange(of: text) { _, new in
+                // Return adds (the field grows over several lines, so Return arrives as a newline).
+                guard new.contains("\n") else { return }
+                text = new.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
+                add()
             }
-            .buttonStyle(.plain)
-            .disabled(line.text.isEmpty)
-            .opacity(line.text.isEmpty ? 0.4 : 1)
-            .accessibilityLabel("Add \(kind.title.lowercased())")
-        }
-        .padding(.leading, 12)
-        .padding(.trailing, 4)
-        .padding(.vertical, 4)
-        .brutalBox(radius: Metrics.radius)
+            .accessibilityLabel("Add or find")
     }
 
-    private var kindChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(CaptureKind.allCases) { k in
-                    FilterChip(text: k.title, symbol: k.symbol, selected: kind == k) {
-                        picked = k
-                        // A typed "pray:" would win over the chip, so drop it.
-                        if line.kind != nil { text = line.text }
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-        }
+    private func pick(_ k: CaptureKind) {
+        picked = k
+        // A typed "pray:" would win over the chip, so drop it.
+        if line.kind != nil { text = line.text }
     }
 
-    /// What pressing return will do, in words.
-    private var preview: some View {
-        HStack(spacing: 6) {
-            ForEach(previewParts, id: \.self) { part in
-                Chip(text: part, accent: kind.accent, selected: false)
-            }
-            if let link = context?.link {
-                Chip(text: "Linked to \(link.title)", accent: .grey, symbol: "link", selected: false)
-            }
-            Spacer(minLength: 0)
-        }
-        .lineLimit(1)
-    }
-
-    private var previewParts: [String] {
+    /// One line about where it goes: the due date, the stage, the price, or what it's linked to.
+    private var field: (label: String, value: String) {
+        if let link = context?.link { return ("Link to", link.title) }
         switch kind {
         case .task:
             let parsed = QuickAdd.parse(line.text)
-            var parts = ["Task"]
-            if let due = parsed.due { parts.append(shortDate(due)) }
-            if let area = parsed.area { parts.append(area.title) }
-            if parsed.priority == .high { parts.append("High") }
-            return parts
+            let parts = [parsed.due.map { shortDate($0) }, parsed.area?.title, parsed.priority == .high ? "High" : nil]
+                .compactMap { $0 }
+            return ("Due", parts.isEmpty ? "No date" : parts.joined(separator: " · "))
+        case .partner:
+            return ("Stage", PartnerStage.idea.title)
+        case .prayer, .thanks, .packing:
+            return ("Goes to", kind.place)
         case .sell:
             let words = line.text.split(separator: " ")
             if words.count > 1, let last = words.last,
                let price = Double(last.replacingOccurrences(of: "€", with: "").replacingOccurrences(of: ",", with: ".")) {
-                return ["To sell", "asking \(euros(Money.cents(fromEuros: price)))"]
+                return ("Asking", euros(Money.cents(fromEuros: price)))
             }
-            return ["To sell", "price later"]
-        case .partner: return ["New person", "On my list"]
-        default: return [kind.title]
+            return ("Asking", "Price later")
+        case .note:
+            return ("Link to", "Nothing yet")
         }
     }
 
+    private var fieldRow: some View {
+        let f = field
+        return HStack(spacing: 12) {
+            Text(f.label).type(TypeStyle(size: 15.5, wght: 600, relativeTo: .body)).opacity(0.6)
+            Spacer(minLength: 8)
+            Text(f.value)
+                .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
+                .foregroundStyle(Palette.tomatoInk)
+                .lineLimit(1)
+                .contentTransition(.opacity)
+        }
+        .frame(minHeight: 54)
+        .overlay(alignment: .top) { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
+        .padding(.horizontal, 4)
+        .padding(.top, 14)
+        .animation(.easeOut(duration: 0.2), value: f.value)
+        .accessibilityElement(children: .combine)
+    }
+
     private func matchesSection(_ found: [AnyRecord]) -> some View {
-        VStack(alignment: .leading, spacing: Metrics.s) {
-            SectionHeader("Already here", count: found.count)
-            ForEach(found) { rec in
-                NavigationLink { RecordDestination(record: rec) } label: {
-                    RecordRow(record: rec)
-                        .padding(Metrics.m)
-                        .brutalBox(radius: Metrics.radiusSmall)
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader("Already here", count: found.count).padding(.top, 22)
+            ForEach(Array(found.enumerated()), id: \.element.id) { index, rec in
+                Button { open(rec) } label: {
+                    RecordRow(record: rec, rule: index < found.count - 1)
                 }
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    private var addedSection: some View {
-        VStack(alignment: .leading, spacing: Metrics.s) {
-            SectionHeader("Just added", count: added.count)
-            ForEach(added) { rec in
-                HStack(spacing: Metrics.s) {
-                    NavigationLink { RecordDestination(record: rec) } label: {
-                        RecordRow(record: rec, showType: false)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    Button("Undo") { undo(rec) }
-                        .buttonStyle(.brutalCompact)
-                }
-                .padding(Metrics.m)
-                .brutalBox(radius: Metrics.radiusSmall)
-            }
-        }
+        .padding(.horizontal, 4)
     }
 
     private var hints: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Cap("Type it like you'd say it")
-            hint("Call Anna friday #support", "a task with a date and area")
-            hint("@Anna Jansen", "a new person on your list")
-            hint("pray: the visa interview", "a prayer point")
+        VStack(alignment: .leading, spacing: 7) {
+            SectionHeader("Type it like you'd say it").padding(.bottom, 4)
+            hint("Call Anna friday #support", "a task with a date")
+            hint("@Anna Jansen", "a new person")
+            hint("pray: the visa interview", "a prayer")
             hint("thanks: coffee with Jan", "a thank-you")
-            hint("sell: Bike 150", "something to sell, with a price")
+            hint("sell: Bike 150", "something to sell")
             hint("pack: charger", "something to pack")
         }
-        .padding(.top, 4)
+        .padding(.top, 22)
+        .padding(.horizontal, 4)
     }
 
     private func hint(_ example: String, _ meaning: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(example).font(Typeface.body(14, weight: .semibold)).foregroundStyle(Palette.ink)
-            Text(meaning).font(Typeface.body(13)).foregroundStyle(Palette.muted)
+            Text(example).type(.bodyBold)
+            Text(meaning).type(.small).foregroundStyle(Palette.inkSoft)
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var addTitle: String {
+        switch kind {
+        case .task: "Add task"
+        case .partner: "Add person"
+        case .prayer: "Add prayer"
+        case .thanks: "Add thanks"
+        case .sell: "Add to Selling"
+        case .packing: "Add to Packing"
+        case .note: "Add note"
+        }
+    }
+
+    private var addButton: some View {
+        let empty = line.text.isEmpty
+        return Button(action: add) {
+            HStack(spacing: 10) {
+                Text(addTitle)
+                AnimatedIcon(.arrow, size: 19, trigger: addPlay)
+            }
+            .frame(maxWidth: .infinity, minHeight: 60)
+        }
+        .buttonStyle(CapsuleStyle(kind: .filled, wide: true))
+        .disabled(empty)
+        .opacity(empty ? 0.45 : 1)
+        .animation(.easeOut(duration: 0.2), value: empty)
     }
 
     // MARK: Data
@@ -421,21 +526,26 @@ struct CaptureSheet: View {
     private var matches: [AnyRecord] {
         let q = line.text
         guard q.count >= 2 else { return [] }
-        let justAdded = Set(added.map(\.id))
-        return Array(AnyRecord.everything(ctx)
-            .filter { !justAdded.contains($0.id) && $0.searchText.localizedCaseInsensitiveContains(q) }
-            .prefix(5))
+        return Array(AnyRecord.everything(ctx).filter { $0.searchText.localizedCaseInsensitiveContains(q) }.prefix(5))
     }
 
-    private func save() {
-        guard let rec = Capture.save(line.text, as: kind, linkTo: context?.link, ctx) else { return }
-        withAnimation(.easeOut(duration: 0.18)) { added.insert(rec, at: 0) }
-        text = ""
-        focused = true
+    /// Adds it, folds the cover back into the +, then says where it went and pops that tab's icon.
+    private func add() {
+        let k = kind
+        guard let rec = Capture.save(line.text, as: k, linkTo: context?.link, ctx) else { return }
+        addPlay += 1
+        focused = false
+        let message = k == .partner ? "\(rec.title) added to People" : "Added to \(k.place)"
+        router.captureOpen = false
+        Motion.after(0.42) {
+            router.showToast(message)
+            router.popIcon(k.tab)
+        }
     }
 
-    private func undo(_ rec: AnyRecord) {
-        withAnimation(.easeOut(duration: 0.18)) { added.removeAll { $0.id == rec.id } }
-        rec.delete(ctx)
+    private func open(_ rec: AnyRecord) {
+        focused = false
+        router.captureOpen = false
+        Motion.after(0.3) { router.open(rec) }
     }
 }

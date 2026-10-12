@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 // MARK: - Moving a partner along
 
 extension PartnerStage {
-    /// The next stage on the usual path, for the swipe and the main button.
+    /// The next stage on the usual path.
     var next: PartnerStage? {
         switch self {
         case .idea: .toAsk
@@ -29,6 +29,33 @@ extension PartnerStage {
         case .paused: "Paused"
         }
     }
+
+    /// The stop on the six-stop path (List · Ask · Asked · Thinking · Yes · Giving).
+    var pathIndex: Int {
+        switch self {
+        case .idea: 0
+        case .toAsk: 1
+        case .asked: 2
+        case .thinking, .declined, .paused: 3
+        case .committed: 4
+        case .giving: 5
+        }
+    }
+
+    static let path: [PartnerStage] = [.idea, .toAsk, .asked, .thinking, .committed, .giving]
+    static let pathLabels = ["List", "Ask", "Asked", "Thinking", "Yes", "Giving"]
+}
+
+extension PartnerCategory {
+    /// "close friend" for the handwritten aside.
+    var aside: String {
+        switch self {
+        case .a: "close friend"
+        case .b: "good contact"
+        case .c: "looser contact"
+        case .k: "church or group"
+        }
+    }
 }
 
 extension Partner {
@@ -40,7 +67,7 @@ extension Partner {
         Automations.partnerStageChanged(self, from: old, ctx)
     }
 
-    /// Committed or giving without a thank-you yet, or a gift came in after the last one (as on Today).
+    /// Committed or giving without a thank-you yet, or a gift came in after the last one.
     func needsThanks(_ gifts: [Gift]) -> Bool {
         if stageValue.countsAsSupport && thankedAt == nil { return true }
         return gifts.contains { g in
@@ -53,70 +80,623 @@ extension Partner {
         thankedAt = .now
         Automations.partnerThanked(self, ctx)
     }
+
+    /// "Gives €50 a month", "Thinking it over", "To ask".
+    var line: String {
+        if monthlyCents > 0 && stageValue.countsAsSupport { return "Gives \(Money.text(monthlyCents, currency)) a month" }
+        switch stageValue {
+        case .idea: return "On your list"
+        case .toAsk: return "To ask"
+        case .asked: return nextStep.isEmpty ? "Asked" : nextStep
+        case .thinking: return "Thinking it over"
+        case .committed: return "Committed"
+        case .giving: return "Giving"
+        case .declined: return "Not now"
+        case .paused: return "Paused"
+        }
+    }
 }
 
-// MARK: - People: partners by what they need from you, and contacts
+// MARK: - People tab
 
+/// People (handoff §5): monthly support big on tomato, a walker up the trail to the percentage;
+/// the people waiting on you, each with one action.
 struct PeopleView: View {
-    enum Segment: Hashable { case partners, contacts }
-
-    struct PartnerGroup: Identifiable {
-        let title: String
-        let partners: [Partner]
-        var id: String { title }
-    }
-
     @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    @Environment(\.entry) private var entry
     @Query(sort: \Partner.name) private var partners: [Partner]
-    @Query(sort: \Contact.name) private var contacts: [Contact]
     @Query private var gifts: [Gift]
     @Query private var settingsList: [MissionSettings]
-    @State private var segment: Segment = .partners
+
+    private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
+
+    var body: some View {
+        let i = Insights(settings: settings, tasks: [], partners: partners, gifts: gifts, budget: [],
+                         sells: [], packing: [], documents: [])
+        let target = max(settings.supportTargetMonthlyCents, 1)
+        let fraction = min(Double(i.committedMonthlyCents) / Double(target), 1)
+        let waiting = waitingList(i)
+        Screen(posterHeight: 306) {
+            Hand("Monthly support").rise(0).at(24, 106)
+            Lines(euros(i.committedMonthlyCents), .disp(112), minScale: 0.6).frame(width: 340, alignment: .leading).rise(1).at(20, 140)
+            CapLine("of \(euros(settings.supportTargetMonthlyCents)) a month · \(Int((fraction * 100).rounded()))%", size: 18)
+                .rise(2).at(24, 238)
+            TrailArt(fraction: fraction, trigger: entry).at(0, 252)
+        } sheet: {
+            SheetScroll {
+                if waiting.isEmpty {
+                    SectionHeader("Waiting on you")
+                    EmptyRow(title: "Nobody's waiting on you", message: "Nice. Everyone has heard from you.")
+                } else {
+                    SectionHeader("Waiting on you", count: waiting.count)
+                    ForEach(Array(waiting.prefix(3).enumerated()), id: \.element.id) { index, p in
+                        WaitingRow(partner: p, gifts: gifts, rule: index < min(waiting.count, 3) - 1)
+                            .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .trailing).combined(with: .opacity)))
+                    }
+                    if waiting.count > 3 {
+                        MoreNote(text: "+\(waiting.count - 3) more waiting")
+                    }
+                }
+                MoreLink(title: "All \(partners.count) people") { router.push(.allPeople) }
+            }
+        }
+        .captureContext(.partner)
+    }
+
+    /// The "Needs you" group: follow-ups due and thanks owed.
+    private func waitingList(_ i: Insights) -> [Partner] {
+        var out: [Partner] = []
+        for p in i.toThank + i.followUps where !out.contains(where: { $0.id == p.id }) {
+            out.append(p)
+        }
+        return out
+    }
+}
+
+/// The trail up the mountain: the walker travels to the support percentage over 1.5s on entry.
+private struct TrailArt: View {
+    let fraction: Double
+    let trigger: Int
+
+    var body: some View {
+        let path = SVG.path(Art.trailPath)
+        ZStack(alignment: .topLeading) {
+            LineArt(drawing: Art.trail)
+            Clock(trigger: trigger, duration: 1.6) { t in
+                let f = (t >= 1.5 ? 1 : Ease.outCubic(t / 1.5)) * fraction
+                let spot = path.point(at: f)
+                ZStack(alignment: .topLeading) {
+                    SVGShape(d: Art.trailPath)
+                        .trim(from: 0, to: f)
+                        .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
+                    Circle().fill(Palette.cream)
+                        .frame(width: 13, height: 13)
+                        .position(spot.point)
+                }
+                .frame(width: 390, height: 136, alignment: .topLeading)
+            }
+        }
+        .frame(width: 390, height: 136, alignment: .topLeading)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A person waiting on you, with the one thing to do: Say thanks, Check in, or Ask.
+private struct WaitingRow: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    let partner: Partner
+    let gifts: [Gift]
+    var rule = true
+    @State private var thanked = false
+    @State private var heart = 0
+
+    private enum Action { case thanks, checkIn, ask }
+
+    private var action: Action {
+        if partner.needsThanks(gifts) { return .thanks }
+        if partner.stageValue == .asked || partner.stageValue == .thinking { return .checkIn }
+        return .ask
+    }
+
+    private var subtitle: String {
+        if thanked { return "Thanked just now" }
+        switch action {
+        case .thanks:
+            if let g = gifts.filter({ $0.partnerID == partner.id && $0.thankedAt == nil }).max(by: { $0.date < $1.date }) {
+                return "Gave \(Money.text(g.amountCents, g.currency)) \(relativeDate(g.date))"
+            }
+            return "\(partner.stageValue.title), not thanked yet"
+        case .checkIn:
+            let what = partner.stageValue == .thinking ? "Thinking it over" : (partner.nextStep.isEmpty ? "Follow up" : partner.nextStep)
+            guard let when = partner.nextFollowUp else { return what }
+            return "\(what) · \(shortDate(when, midSentence: true))"
+        case .ask:
+            return "On your list to ask"
+        }
+    }
+
+    private var late: Bool {
+        guard action == .checkIn, let d = partner.nextFollowUp else { return false }
+        return d < Calendar.current.startOfDay(for: .now)
+    }
+
+    var body: some View {
+        Row(rule: rule) {
+            Avatar(name: partner.displayTitle)
+            RowText(title: partner.displayTitle, subtitle: subtitle, late: late)
+                .contentShape(Rectangle())
+                .onTapGesture { router.push(.partner(partner)) }
+            switch action {
+            case .thanks:
+                Button { sayThanks() } label: {
+                    ButtonLabel(title: thanked ? "Thanked" : "Say thanks", icon: thanked ? .heart : nil, trigger: heart, small: true)
+                }
+                .buttonStyle(.filledSmall)
+                .pop(heart, to: 1.08)
+                .disabled(thanked)
+            case .checkIn:
+                ActionButton(title: "Check in", style: .outlinedSmall) {
+                    router.openCheckIn(CheckInRequest(partner: partner))
+                }
+            case .ask:
+                ShareLink(item: MessageTemplate.invite.text(for: partner)) {
+                    Text("Ask")
+                }
+                .buttonStyle(.outlinedSmall)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func sayThanks() {
+        thanked = true
+        heart += 1
+        let p = partner
+        let context = ctx
+        Motion.after(0.7) {
+            withAnimation(Motion.fold.rm) { p.markThanked(context) }
+        }
+    }
+}
+
+// MARK: - A partner's page
+
+/// Their name big, the six-stop path with a walker, the one next thing as a hero, their story.
+struct PartnerPage: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    @Environment(\.openURL) private var openURL
+    @Bindable var partner: Partner
+    @Query private var gifts: [Gift]
+    @State private var recordingGift = false
+    @State private var showDetails = false
+    @State private var thanksPlay = 0
+
+    init(partner: Partner) {
+        self.partner = partner
+        let pid = partner.id
+        _gifts = Query(filter: #Predicate<Gift> { $0.partnerID == pid }, sort: \Gift.date, order: .reverse)
+    }
+
+    private var who: String { partner.firstName.isEmpty ? "them" : partner.firstName }
+
+    var body: some View {
+        Screen(posterHeight: 306) {
+            Hand("Category \(partner.categoryValue.rawValue) · \(partner.categoryValue.aside)").rise(0).at(24, 106)
+            Lines(wrapLines(partner.displayTitle, .disp(96), width: 350, maxLines: 2), .disp(96), lineHeight: 0.86, minScale: 0.5)
+                .frame(width: 350, alignment: .leading)
+                .rise(1)
+                .at(20, 140)
+            StagePath(stage: partner.stageValue) { picked in
+                withAnimation(.easeOut(duration: 0.2)) { partner.move(to: picked, ctx) }
+            }
+            .at(0, 304)
+        } sheet: {
+            SheetScroll { sheet }
+        }
+        .captureContext(.task, linkTo: .partner(partner))
+        .sheet(isPresented: $recordingGift) { RecordGiftSheet(partner: partner) }
+    }
+
+    // MARK: Sheet
+
+    @ViewBuilder
+    private var sheet: some View {
+        SectionHeader("Next", count: dueLabel, color: Palette.tomatoInk)
+        hero
+            .id(partner.stage + (partner.needsThanks(gifts) ? "-thanks" : ""))
+            .transition(.asymmetric(insertion: .offset(y: 22).combined(with: .opacity),
+                                    removal: .offset(x: 40).combined(with: .opacity)))
+        let story = storyItems
+        SectionHeader("Story", count: story.count)
+        ForEach(Array(story.enumerated()), id: \.offset) { index, item in
+            Row(rule: index < story.count - 1) {
+                RowText(title: item.title, subtitle: item.subtitle)
+                WhenText(text: item.when)
+            }
+        }
+        MoreLink(title: showDetails ? "Fewer details" : "Details, messages and notes") {
+            withAnimation(.easeOut(duration: 0.25)) { showDetails.toggle() }
+        }
+        if showDetails { details.transition(.opacity) }
+    }
+
+    private var dueLabel: String {
+        guard partner.stageValue.isOpen, let d = partner.nextFollowUp else { return "" }
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        if d < today { return "Was due \(shortDate(d, midSentence: true))" }
+        if cal.isDateInToday(d) { return "Today" }
+        let days = cal.dateComponents([.day], from: today, to: d).day ?? 0
+        if days >= 7 && days % 7 == 0 { return "In \(days / 7) week\(days == 7 ? "" : "s")" }
+        return shortDate(d)
+    }
+
+    @ViewBuilder
+    private var hero: some View {
+        let thanks = partner.needsThanks(gifts)
+        let late = (partner.nextFollowUp.map { $0 < Calendar.current.startOfDay(for: .now) } ?? false) && partner.stageValue.isOpen
+        switch partner.stageValue {
+        case .idea:
+            HeroCard(title: "Ready to ask \(who)?", subtitle: "On your list. Plan when you'll ask.") {
+                ActionButton(title: "Plan to ask", icon: .arrow) { withAnimation { partner.move(to: .toAsk, ctx) } }
+                share("Message", .invite, filled: false)
+            }
+        case .toAsk:
+            HeroCard(title: "Invite \(who) for coffee", subtitle: "Or a call. Tell your story first, then ask.") {
+                share("Send invite", .invite, filled: true)
+                ActionButton(title: "I asked", style: .outlined) { withAnimation { partner.move(to: .asked, ctx) } }
+            }
+        case .asked:
+            HeroCard(title: partner.nextStep.isEmpty ? "Log the meeting" : partner.nextStep,
+                     subtitle: "After you've met, log it: a follow-up is planned for you.", late: late) {
+                ActionButton(title: "Log it", icon: .check) {
+                    partner.lastContact = Calendar.current.startOfDay(for: .now)
+                    withAnimation { partner.move(to: .thinking, ctx) }
+                }
+                share("Thanks text", .thanksAfterMeeting, filled: false)
+            }
+        case .thinking:
+            HeroCard(title: partner.nextStep.isEmpty ? "Check in about the decision" : partner.nextStep,
+                     subtitle: "\(partner.firstName.isEmpty ? "They're" : partner.firstName + " is") still thinking it over.", late: late) {
+                if let url = PhoneLinks.call(partner.phone) {
+                    ActionButton(title: "Call", icon: .phone) {
+                        openURL(url)
+                        router.openCheckIn(CheckInRequest(partner: partner))
+                    }
+                } else {
+                    ActionButton(title: "Check in", icon: .phone) { router.openCheckIn(CheckInRequest(partner: partner)) }
+                }
+                share("Message", .followUp, filled: false)
+            }
+        case .committed, .giving:
+            if thanks {
+                HeroCard(title: "Say thanks and set the amount", subtitle: "\(who.capitalized) said yes! Thank them while it's fresh.") {
+                    Button {
+                        thanksPlay += 1
+                        router.showToast("Thank-you noted for \(partner.firstName.isEmpty ? partner.displayTitle : partner.firstName)")
+                        Motion.after(0.5) { withAnimation(Motion.arrive.rm) { partner.markThanked(ctx) } }
+                    } label: {
+                        ButtonLabel(title: thanksPlay > 0 ? "Thanked" : "Say thanks", icon: .heart, trigger: thanksPlay)
+                    }
+                    .buttonStyle(.filled)
+                    .pop(thanksPlay)
+                    ActionButton(title: "Record a gift", style: .outlined) { recordingGift = true }
+                }
+            } else {
+                HeroCard(title: partner.monthlyCents > 0 ? "Gives \(Money.text(partner.monthlyCents, partner.currency)) a month" : "A partner",
+                         subtitle: "Record gifts as they come in.") {
+                    ActionButton(title: "Record a gift", icon: .gift) { recordingGift = true }
+                }
+            }
+        case .declined, .paused:
+            HeroCard(title: "Catch up later", subtitle: "No pressure. You can ask again another time.") {
+                ActionButton(title: "Ask again", style: .outlined) { withAnimation { partner.move(to: .toAsk, ctx) } }
+                share("Write a note", .invite, filled: false)
+            }
+        }
+    }
+
+    private func share(_ title: String, _ template: MessageTemplate, filled: Bool) -> some View {
+        ShareLink(item: template.text(for: partner)) {
+            ButtonLabel(title: title, icon: .message)
+        }
+        .buttonStyle(filled ? CapsuleStyle(kind: .filled) : CapsuleStyle(kind: .outlined))
+    }
+
+    private struct StoryItem {
+        let title: String
+        let subtitle: String
+        let when: String
+        let date: Date
+    }
+
+    private var storyItems: [StoryItem] {
+        var out: [StoryItem] = []
+        for g in gifts {
+            out.append(StoryItem(title: "Gave \(Money.text(g.amountCents, g.currency))",
+                                 subtitle: g.recurring ? "Monthly gift" : "One-off gift" + (g.thankedAt != nil ? " · thanked" : ""),
+                                 when: whenText(g.date), date: g.date))
+        }
+        if let last = partner.lastContact {
+            out.append(StoryItem(title: "Last contact", subtitle: partner.stageValue.title, when: whenText(last), date: last))
+        }
+        for case .note(let n) in Links.linked(to: .partner(partner), ctx) {
+            out.append(StoryItem(title: n.displayTitle, subtitle: n.kindValue.title, when: whenText(n.createdAt), date: n.createdAt))
+        }
+        out.append(StoryItem(title: "Added to your list", subtitle: partner.church.isEmpty ? "" : partner.church,
+                             when: partner.createdAt.formatted(.dateTime.month(.abbreviated)), date: partner.createdAt))
+        return out.sorted { $0.date > $1.date }
+    }
+
+    // MARK: Details (the existing partner form)
+
+    @ViewBuilder
+    private var details: some View {
+        FormBlock("Name") {
+            TitleField(placeholder: "Name", text: $partner.name)
+            SelectRow("Category", selection: Binding(get: { partner.categoryValue }, set: { partner.categoryValue = $0 })) {
+                ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
+            }
+            SelectRow("Stage", selection: Binding(get: { partner.stageValue }, set: { new in withAnimation { partner.move(to: new, ctx) } })) {
+                ForEach(PartnerStage.allCases) { Text($0.title).tag($0) }
+            }
+        }
+        if partner.stageValue.isOpen {
+            FormBlock("Next step", footer: "From three days before the follow-up date, they show under Waiting on you and on Today.") {
+                TextRow("What's next (call, coffee, send pitch…)", text: $partner.nextStep)
+                OptionalDateRow(title: "Follow up on", date: $partner.nextFollowUp)
+                QuickDates(date: $partner.nextFollowUp,
+                           options: [.init(title: "Tomorrow", days: 1), .init(title: "In 3 days", days: 3),
+                                     .init(title: "Next week", days: 7), .init(title: "In 2 weeks", days: 14)])
+                OptionalDateRow(title: "Last contact", date: $partner.lastContact)
+            }
+        }
+        if partner.stageValue.countsAsSupport || !gifts.isEmpty {
+            FormBlock("Gifts received") {
+                ForEach(gifts) { g in
+                    LinkedRow(record: .gift(g))
+                }
+                ActionRow(title: "Record a gift", icon: .gift) { recordingGift = true }
+            }
+        }
+        FormBlock("Messages", footer: "From your partners guide, with their name filled in. Fill in the [brackets] before sending.") {
+            ForEach(MessageTemplate.suggested(for: partner)) { t in
+                ShareLink(item: t.text(for: partner)) {
+                    FieldRow {
+                        AnimatedIcon(.templates, size: 20).foregroundStyle(Palette.tomato)
+                        Text(t.title).type(.bodyBold).foregroundStyle(Palette.ink)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            Menu {
+                ForEach(MessageTemplate.allCases) { t in ShareLink(t.title, item: t.text(for: partner)) }
+            } label: {
+                FieldRow {
+                    AnimatedIcon(.more, size: 20).foregroundStyle(Palette.tomato)
+                    Text("All templates").type(.bodyBold).foregroundStyle(Palette.ink)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        FormBlock("Giving") {
+            MoneyRow(title: "Monthly", cents: $partner.monthlyCents, currency: partner.currency)
+            MoneyRow(title: "One-off", cents: $partner.oneOffCents, currency: partner.currency)
+            SelectRow("Currency", selection: $partner.currency) {
+                Text("Euro").tag("EUR")
+                Text("NZ dollar").tag("NZD")
+            }
+            OptionalDateRow(title: "Giving since", date: $partner.startDate)
+            ToggleRow("Thanked", isOn: Binding(get: { partner.thankedAt != nil }, set: { on in
+                if on { partner.markThanked(ctx) } else { partner.thankedAt = nil }
+            }))
+            ToggleRow("Prays for you", isOn: $partner.prayer)
+            ToggleRow("Gets the newsletter", isOn: $partner.newsletter)
+        }
+        FormBlock("Contact") {
+            contactButtons
+            TextRow("Phone", text: $partner.phone, keyboard: .phonePad, plain: true)
+            TextRow("Email", text: $partner.email, keyboard: .emailAddress, plain: true)
+            TextRow("Church", text: $partner.church)
+            TextRow("Postal address (for cards)", text: $partner.address, vertical: true)
+            OptionalDateRow(title: "Birthday", date: $partner.birthday)
+        }
+        FormBlock("Notes") {
+            TextRow("What you talked about, prayer requests, family names…", text: $partner.notes, vertical: true, lines: 3...12)
+        }
+        LinksBlock(record: .partner(partner))
+        DeleteButton(item: partner)
+    }
+
+    @ViewBuilder
+    private var contactButtons: some View {
+        let call = PhoneLinks.call(partner.phone)
+        let app = PhoneLinks.whatsApp(partner.phone)
+        let mail = PhoneLinks.email(partner.email)
+        if call != nil || app != nil || mail != nil {
+            HStack(spacing: 8) {
+                if let call { ActionButton(title: "Call", icon: .phone, style: .outlinedSmall) { openURL(call) } }
+                if let app { ActionButton(title: "WhatsApp", icon: .message, style: .outlinedSmall) { openURL(app) } }
+                if let mail { ActionButton(title: "Email", icon: .mail, style: .outlinedSmall) { openURL(mail) } }
+            }
+            .padding(.vertical, 10)
+        }
+    }
+}
+
+/// The six stops from List to Giving. The walker slides to their stage on entry (1s) and a halo pulses;
+/// a step forward springs, and Not now dims the path. Tap a stop to set the stage.
+private struct StagePath: View {
+    let stage: PartnerStage
+    let onPick: (PartnerStage) -> Void
+    @Environment(\.entry) private var entry
+    @State private var pos: CGFloat = 0
+    @State private var halo = 0
+
+    private func x(_ i: CGFloat) -> CGFloat { 40 + i * 62 }
+
+    var body: some View {
+        let out = stage == .declined || stage == .paused
+        ZStack(alignment: .topLeading) {
+            SVGShape(d: "M40 26 L350 26")
+                .stroke(Palette.cream, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: [1, 8]))
+            Path { p in
+                p.move(to: CGPoint(x: 40, y: 26))
+                p.addLine(to: CGPoint(x: x(pos), y: 26))
+            }
+            .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+            ForEach(0..<6, id: \.self) { i in
+                let reached = x(CGFloat(i)) <= x(pos) + 0.5
+                Circle()
+                    .fill(reached ? Palette.cream : Palette.tomato)
+                    .overlay(Circle().stroke(Palette.cream, lineWidth: 2.4))
+                    .frame(width: 11, height: 11)
+                    .position(x: x(CGFloat(i)), y: 26)
+                Button { onPick(PartnerStage.path[i]) } label: {
+                    Text(PartnerStage.pathLabels[i].uppercased())
+                        .type(TypeStyle(size: 11.5, wght: 800, tracking: 0.09, relativeTo: nil))
+                        .foregroundStyle(Palette.cream)
+                        .opacity(i == stage.pathIndex ? 1 : 0.5)
+                        .fixedSize()
+                        .frame(width: 60, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .position(x: x(CGFloat(i)), y: 56)
+                .accessibilityLabel(PartnerStage.path[i].title)
+                .accessibilityAddTraits(i == stage.pathIndex ? .isSelected : [])
+            }
+            Circle()
+                .stroke(Palette.cream, lineWidth: 2)
+                .frame(width: 22, height: 22)
+                .keyframeAnimator(initialValue: HaloValue(), trigger: halo) { view, v in
+                    view.scaleEffect(v.scale).opacity(v.opacity)
+                } keyframes: { _ in
+                    KeyframeTrack(\.scale) {
+                        MoveKeyframe(1)
+                        LinearKeyframe(2.6, duration: 0.9, timingCurve: .bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.8), endControlPoint: UnitPoint(x: 0.2, y: 1)))
+                    }
+                    KeyframeTrack(\.opacity) {
+                        MoveKeyframe(0.9)
+                        LinearKeyframe(0, duration: 0.9)
+                    }
+                }
+                .position(x: x(pos), y: 26)
+            Circle().fill(Palette.cream)
+                .frame(width: 22, height: 22)
+                .position(x: x(pos), y: 26)
+                .accessibilityHidden(true)
+        }
+        .frame(width: 390, height: 86, alignment: .topLeading)
+        .opacity(out ? 0.35 : 1)
+        .animation(.easeOut(duration: 0.6), value: out)
+        .onChange(of: entry) { _, _ in walkIn() }
+        .onAppear { walkIn() }
+        .onChange(of: stage) { old, new in
+            let target = CGFloat(new.pathIndex)
+            if new.pathIndex > old.pathIndex {
+                Motion.after(0.5) {
+                    withAnimation(.spring(k: 170, c: 14).rm) { pos = target }
+                    Motion.after(0.8) { halo += 1 }
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.4)) { pos = target }
+                Motion.after(0.5) { halo += 1 }
+            }
+        }
+        .sensoryFeedback(.selection, trigger: stage)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Stage: \(stage.title)")
+    }
+
+    private func walkIn() {
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) { pos = 0 }
+        Motion.after(0.2) {
+            withAnimation(.curve(0.33, 1, 0.68, 1, 1).rm) { pos = CGFloat(stage.pathIndex) }
+            Motion.after(1) { halo += 1 }
+        }
+    }
+}
+
+private struct HaloValue {
+    var scale: CGFloat = 1
+    var opacity: Double = 0
+}
+
+// MARK: - All people
+
+/// Everyone: category pills, live search, and the tools for adding many at once.
+struct AllPeoplePage: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    @Query(sort: \Partner.name) private var partners: [Partner]
+    @Query private var contacts: [Contact]
+    @State private var category = "all"
     @State private var search = ""
+    @State private var slide = 0
+    @State private var direction: CGFloat = 1
     @State private var bulkAdd = false
     @State private var importing = false
     @State private var exporting = false
     @State private var message: String?
-    @State private var opened: Partner?
-    @State private var openedContact: Contact?
-
-    private static let needsYou = "Needs you"
-
-    private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
-
-    private var insights: Insights {
-        Insights(settings: settings, tasks: [], partners: partners, gifts: gifts, budget: [],
-                 sells: [], packing: [], documents: [])
-    }
 
     var body: some View {
-        let i = insights
-        List {
-            header.brutalRow(top: 8, bottom: 4)
-            BrutalSegmented(options: [(value: Segment.partners, label: "Partners · \(partners.count)"),
-                                      (value: Segment.contacts, label: "Contacts · \(contacts.count)")],
-                            selection: $segment)
-                .brutalRow(top: 2, bottom: 6)
-            if segment == .partners {
-                partnerRows(i)
-            } else {
-                contactRows
+        let monthly = partners.filter { $0.stageValue.countsAsSupport && $0.monthlyCents > 0 }
+        let together = monthly.reduce(0) { $0 + $1.monthlyCents }
+        let items = [Pills<String>.Item(value: "all", title: "All", count: partners.count)]
+            + PartnerCategory.allCases.map { c in
+                Pills<String>.Item(value: c.rawValue, title: c.rawValue, count: partners.filter { $0.categoryValue == c }.count)
+            }
+        let shown = partners.filter { p in
+            (category == "all" || p.category == category)
+                && (search.isEmpty || p.name.localizedCaseInsensitiveContains(search) || p.church.localizedCaseInsensitiveContains(search))
+        }
+        Screen(posterHeight: 306, sheetTop: 16) {
+            Hand("Your people").rise(0).at(24, 106)
+            Lines("\(partners.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
+            CapLine("\(monthly.count) give monthly\n\(euros(together)) together").rise(2).at(24, 292)
+            LineArt(drawing: Art.group).at(206, 146)
+        } sheet: {
+            Pills(items: items, selection: $category)
+            SearchField(text: $search, prompt: "Search \(partners.count) people")
+            SheetScroll {
+                Group {
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, p in
+                        Button { router.push(.partner(p)) } label: {
+                            Row(rule: index < shown.count - 1) {
+                                Avatar(name: p.displayTitle)
+                                RowText(title: p.displayTitle, subtitle: p.line)
+                                WhenText(text: p.category)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if shown.isEmpty {
+                        EmptyRow(title: partners.isEmpty ? "No names yet" : "Nobody by that name",
+                                 message: partners.isEmpty ? "Add many at once below, or one with the + on a tab."
+                                                           : "Add them with the + at the top.")
+                    }
+                }
+                .slideIn(slide, direction: direction)
+                FormBlock("Add and share") {
+                    ActionRow(title: "New partner", icon: .user) { newPartner() }
+                    ActionRow(title: "Add many names", icon: .list) { bulkAdd = true }
+                    ActionRow(title: "Import partners (CSV)", icon: .download) { importing = true }
+                    ActionRow(title: "Export partners (CSV)", icon: .share) { exporting = true }
+                    ActionRow(title: "Contacts · \(contacts.count)", icon: .building) { router.push(.contacts) }
+                }
             }
         }
-        .brutalList()
-        .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: category) { old, new in
+            direction = Pills<String>.direction(from: old, to: new, in: items)
+            slide += 1
+        }
         .captureContext(.partner)
-        .task {
-            // `-startPartner YES` opens someone in conversation (for screenshots).
-            if UserDefaults.standard.bool(forKey: "startPartner"), opened == nil {
-                #if DEBUG
-                if partners.isEmpty { Self.addDemoPartners(ctx) }
-                #endif
-                opened = Store.all(Partner.self, ctx).first { $0.stageValue == .thinking } ?? partners.first
-            }
-        }
-        .navigationDestination(item: $opened) { PartnerDetail(partner: $0) }
-        .navigationDestination(item: $openedContact) { ContactDetail(contact: $0) }
         .sheet(isPresented: $bulkAdd) { BulkAddPartners() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText, .text]) { result in
             guard case .success(let url) = result else { return }
@@ -124,194 +704,14 @@ struct PeopleView: View {
         }
         .fileExporter(isPresented: $exporting, document: DataFile(data: Backup.partnersCSV(partners)),
                       contentType: .commaSeparatedText, defaultFilename: "partners.csv") { _ in }
-        .brutalDialog("Import", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } }),
-                      message: message ?? "")
+        .notice("Import", message: $message)
     }
-
-    private var header: some View {
-        HStack {
-            Text("People").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
-            Spacer()
-            Menu {
-                Button { newPartner() } label: { Label("New partner", systemImage: "person.badge.plus") }
-                Button { bulkAdd = true } label: { Label("Add many names", systemImage: "list.bullet") }
-                Button { newContact() } label: { Label("New contact", systemImage: "person.crop.rectangle") }
-                Divider()
-                Button { importing = true } label: { Label("Import partners (CSV)…", systemImage: "square.and.arrow.down") }
-                Button { exporting = true } label: { Label("Export partners (CSV)…", systemImage: "square.and.arrow.up") }
-            } label: {
-                IconTile(symbol: "ellipsis", size: 36)
-            }
-            .accessibilityLabel("More")
-        }
-    }
-
-    // MARK: Partners
-
-    @ViewBuilder
-    private func partnerRows(_ i: Insights) -> some View {
-        PartnersSummary(insights: i, settings: settings)
-            .brutalRow(top: 2, bottom: 6)
-        BrutalSearchField(text: $search, prompt: "Find a name")
-            .brutalRow(top: 2, bottom: 4)
-        let sections = groups(i)
-        ForEach(sections) { group in
-            SectionHeader(group.title, count: group.partners.count)
-                .brutalRow(top: 12, bottom: 0)
-            ForEach(group.partners) { p in
-                partnerRow(p, reason: group.title == Self.needsYou ? reason(p, i) : nil,
-                           first: p.id == group.partners.first?.id, last: p.id == group.partners.last?.id)
-            }
-        }
-        if sections.isEmpty {
-            BrutalEmptyState(symbol: "person.2.fill", title: partners.isEmpty ? "No names yet" : "No one here",
-                             message: partners.isEmpty
-                                ? "Tap ••• and choose \"Add many names\" to write down everyone you know."
-                                : "Nobody matches \"\(search)\".",
-                             accent: .pink, ollie: partners.isEmpty ? .hug : nil)
-                .brutalRow()
-        }
-    }
-
-    private func partnerRow(_ p: Partner, reason: String?, first: Bool, last: Bool) -> some View {
-        CardLink { PartnerDetail(partner: p) } label: {
-            PartnerRow(partner: p, reason: reason, first: first, last: last)
-        }
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listRowInsets(EdgeInsets(top: 0, leading: Metrics.l, bottom: 0, trailing: Metrics.l))
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            if let next = p.stageValue.next {
-                Button(next.shortTitle) { withAnimation { p.move(to: next, ctx) } }
-                    .tint(Accent.green.color)
-            }
-        }
-        .swipeActions(edge: .trailing) {
-            Button("Delete", role: .destructive) { Store.delete(p, in: ctx) }
-            if p.stageValue.isOpen {
-                Button("Tomorrow") {
-                    p.nextFollowUp = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: .now))
-                }
-                .tint(Accent.purple.color)
-            }
-        }
-        .contextMenu {
-            Menu("Set stage") {
-                ForEach(PartnerStage.allCases) { s in
-                    Button { p.move(to: s, ctx) } label: { Label(s.title, systemImage: s.symbol) }
-                }
-            }
-            Button("Delete", role: .destructive) { Store.delete(p, in: ctx) }
-        }
-    }
-
-    private func matches(_ p: Partner) -> Bool {
-        search.isEmpty || p.name.localizedCaseInsensitiveContains(search)
-            || p.notes.localizedCaseInsensitiveContains(search) || p.church.localizedCaseInsensitiveContains(search)
-    }
-
-    /// Needs you first (follow-ups due and thanks owed), then the rest by where they are.
-    private func groups(_ i: Insights) -> [PartnerGroup] {
-        let shown = partners.filter(matches)
-        let shownIDs = Set(shown.map(\.id))
-        var needs: [Partner] = []
-        for p in i.followUps + i.toThank where shownIDs.contains(p.id) && !needs.contains(where: { $0.id == p.id }) {
-            needs.append(p)
-        }
-        let needIDs = Set(needs.map(\.id))
-        func pick(_ stages: [PartnerStage]) -> [Partner] {
-            shown.filter { stages.contains($0.stageValue) && !needIDs.contains($0.id) }
-        }
-        let all = [
-            PartnerGroup(title: Self.needsYou, partners: needs),
-            PartnerGroup(title: "In conversation", partners: pick([.asked, .thinking])),
-            PartnerGroup(title: "To ask", partners: pick([.toAsk])),
-            PartnerGroup(title: "Partners", partners: pick([.committed, .giving])),
-            PartnerGroup(title: "On my list", partners: pick([.idea])),
-            PartnerGroup(title: "Not now", partners: pick([.declined, .paused])),
-        ]
-        return all.filter { !$0.partners.isEmpty }
-    }
-
-    private func reason(_ p: Partner, _ i: Insights) -> String? {
-        if i.followUps.contains(where: { $0.id == p.id }) {
-            let what = p.nextStep.isEmpty ? "Follow up" : p.nextStep
-            guard let when = p.nextFollowUp else { return what }
-            return "\(what) · \(shortDate(when))"
-        }
-        return p.needsThanks(gifts) ? "Say thanks" : nil
-    }
-
-    // MARK: Contacts
-
-    private var visibleContacts: [Contact] {
-        guard !search.isEmpty else { return contacts }
-        return contacts.filter {
-            $0.name.localizedCaseInsensitiveContains(search) || $0.organisation.localizedCaseInsensitiveContains(search)
-                || $0.role.localizedCaseInsensitiveContains(search) || $0.notes.localizedCaseInsensitiveContains(search)
-        }
-    }
-
-    @ViewBuilder
-    private var contactRows: some View {
-        BrutalSearchField(text: $search, prompt: "Find a contact")
-            .brutalRow(top: 2, bottom: 4)
-        ForEach(visibleContacts) { c in
-            CardLink { ContactDetail(contact: c) } label: { ContactRow(contact: c) }
-                .brutalRow(top: 4, bottom: 6)
-                .swipeActions {
-                    Button("Delete", role: .destructive) { Store.delete(c, in: ctx) }
-                }
-        }
-        if visibleContacts.isEmpty {
-            BrutalEmptyState(symbol: "person.crop.rectangle.stack.fill", title: contacts.isEmpty ? "No contacts yet" : "No match",
-                             message: contacts.isEmpty ? "YWAM Queenstown, the gemeente, your insurer, the GP: everyone you need to reach." : "",
-                             accent: .grey)
-                .brutalRow()
-        }
-        Button { newContact() } label: {
-            Label("New contact", systemImage: "plus").frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.brutalSecondary)
-        .brutalRow(top: 8, bottom: 8)
-    }
-
-    #if DEBUG
-    /// Sample partners for simulator screenshots (debug builds only, and only when there are none).
-    private static func addDemoPartners(_ ctx: ModelContext) {
-        let today = Calendar.current.startOfDay(for: .now)
-        func add(_ name: String, _ stage: PartnerStage, monthly: Int = 0, follow: Int? = nil, step: String = "") {
-            let p = Partner()
-            p.name = name
-            p.stageValue = stage
-            p.monthlyCents = monthly
-            p.phone = "06 12345678"
-            p.nextStep = step
-            p.nextFollowUp = follow.flatMap { Calendar.current.date(byAdding: .day, value: $0, to: today) }
-            ctx.insert(p)
-        }
-        add("Anna Jansen", .thinking, follow: 0, step: "Call about her decision")
-        add("Jan de Vries", .committed, monthly: 2_500)
-        add("Familie Bakker", .giving, monthly: 5_000)
-        add("Sanne Visser", .asked, follow: 2, step: "Coffee on Thursday")
-        add("Pieter Smit", .toAsk)
-        add("Kerk De Rank", .idea)
-        try? ctx.save()
-    }
-    #endif
-
-    // MARK: Actions
 
     private func newPartner() {
         let p = Partner()
+        p.stageValue = .idea
         ctx.insert(p)
-        opened = p
-    }
-
-    private func newContact() {
-        let c = Contact()
-        ctx.insert(c)
-        openedContact = c
+        router.push(.partner(p))
     }
 
     private func importCSV(_ url: URL) {
@@ -323,509 +723,39 @@ struct PeopleView: View {
     }
 }
 
-// MARK: - Summary and rows
-
-private struct PartnersSummary: View {
-    let insights: Insights
-    let settings: MissionSettings
-
-    var body: some View {
-        let stretch = max(settings.supportTargetMonthlyCents, 1)
-        VStack(alignment: .leading, spacing: 4) {
-            Cap("Monthly support")
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(euros(insights.committedMonthlyCents)).font(Typeface.number(26)).foregroundStyle(Palette.ink)
-                Text("of \(euros(settings.supportTargetMonthlyCents)) a month")
-                    .font(Typeface.body(13, weight: .semibold)).foregroundStyle(Palette.muted)
-            }
-            BrutalProgress(value: Double(insights.committedMonthlyCents) / Double(stretch), accent: .yellow,
-                           goal: Double(settings.supportMinimumMonthlyCents) / Double(stretch))
-                .padding(.top, 6)
-            Text(line)
-                .font(Typeface.body(12.5, weight: .semibold))
-                .foregroundStyle(Palette.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .brutalBox()
-        .stitched()
-    }
-
-    private var line: String {
-        let talking = insights.openConversations
-        let conversations = "\(talking) in conversation."
-        guard insights.stillNeededForMinimumCents > 0 else { return "Minimum reached (the green line). \(conversations)" }
-        var text = "\(euros(insights.stillNeededForMinimumCents)) a month to your minimum (the green line)"
-        if insights.partnersStillNeeded > 0 {
-            text += ": about \(insights.partnersStillNeeded) partners at \(euros(settings.averageGiftCents))"
-        }
-        return text + ". " + conversations
-    }
-}
-
-/// A partner as a line: initials, name, amount or next step (or why they need you), and a stage pill.
-struct PartnerRow: View {
-    let partner: Partner
-    var reason: String? = nil
-    var first: Bool = true
-    var last: Bool = true
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Avatar(name: partner.displayTitle, size: 34)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(partner.displayTitle)
-                        .font(Typeface.body(15, weight: .semibold))
-                        .foregroundStyle(Palette.ink)
-                        .lineLimit(1)
-                    Text(reason ?? detail)
-                        .font(Typeface.body(12, weight: .semibold))
-                        .foregroundStyle(isLate ? Palette.danger : (reason != nil ? Accent.pink.color : Palette.tag))
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 4)
-                Pill(text: partner.stageValue.shortTitle, accent: partner.stageValue.accent)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            if !last { Rectangle().fill(Palette.hairline).frame(height: 1).padding(.horizontal, 12) }
-        }
-        .background(UnevenRoundedRectangle(topLeadingRadius: first ? 18 : 0, bottomLeadingRadius: last ? 18 : 0,
-                                           bottomTrailingRadius: last ? 18 : 0, topTrailingRadius: first ? 18 : 0,
-                                           style: .continuous).fill(Palette.paper))
-    }
-
-    private var isLate: Bool {
-        guard partner.stageValue.isOpen, let d = partner.nextFollowUp else { return false }
-        return d < Calendar.current.startOfDay(for: .now)
-    }
-
-    private var detail: String {
-        if partner.monthlyCents > 0 && partner.stageValue.countsAsSupport {
-            return "\(Money.text(partner.monthlyCents, partner.currency)) a month"
-        }
-        var parts: [String] = []
-        if partner.stageValue.isOpen {
-            if !partner.nextStep.isEmpty { parts.append(partner.nextStep) }
-            if let d = partner.nextFollowUp { parts.append(shortDate(d)) }
-        }
-        if parts.isEmpty { parts.append(partner.category.isEmpty ? partner.stageValue.title : "Category \(partner.category)") }
-        return parts.joined(separator: " · ")
-    }
-}
-
-// MARK: - Detail: the next action first, details folded below
-
-struct PartnerDetail: View {
-    @Environment(\.modelContext) private var ctx
-    @Bindable var partner: Partner
-    @Query private var gifts: [Gift]
-    @State private var recordingGift = false
-
-    init(partner: Partner) {
-        self.partner = partner
-        let pid = partner.id
-        _gifts = Query(filter: #Predicate<Gift> { $0.partnerID == pid }, sort: \Gift.date, order: .reverse)
-    }
-
-    var body: some View {
-        Form {
-            FormHeroRow {
-                PartnerHero(partner: partner, needsThanks: partner.needsThanks(gifts)) { recordingGift = true }
-            }
-            if partner.stageValue.isOpen { nextStepSection }
-            if partner.stageValue.countsAsSupport || !gifts.isEmpty { giftsSection }
-            messagesSection
-            detailsSection
-            Section {
-                TextField("What you talked about, prayer requests, family names…", text: $partner.notes, axis: .vertical)
-                    .lineLimit(3...12)
-            } header: { FormHeader("Notes") }
-            .listRowBackground(Palette.paper)
-            LinksSection(record: .partner(partner))
-            Section { DeleteRecordButton(item: partner) }
-            .listRowBackground(Palette.paper)
-        }
-        .brutalForm()
-        .navigationTitle(partner.displayTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .captureContext(.task, linkTo: .partner(partner))
-        .sheet(isPresented: $recordingGift) { RecordGiftSheet(partner: partner) }
-    }
-
-    private var nextStepSection: some View {
-        Section {
-            TextField("What's next (call, coffee, send pitch…)", text: $partner.nextStep)
-            OptionalDatePicker(title: "Follow up on", date: $partner.nextFollowUp)
-            QuickDateChips(date: $partner.nextFollowUp,
-                           options: [.init(title: "Tomorrow", days: 1), .init(title: "In 3 days", days: 3),
-                                     .init(title: "Next week", days: 7), .init(title: "In 2 weeks", days: 14)])
-            OptionalDatePicker(title: "Last contact", date: $partner.lastContact)
-        } header: {
-            FormHeader("Next step")
-        } footer: {
-            Text("From three days before the follow-up date, they show under Needs you and on Today.")
-        }
-        .listRowBackground(Palette.paper)
-    }
-
-    private var giftsSection: some View {
-        Section {
-            ForEach(gifts) { g in
-                NavigationLink { GiftDetail(gift: g) } label: { GiftRow(gift: g) }
-            }
-            Button { recordingGift = true } label: {
-                Label("Record a gift", systemImage: "plus.circle.fill")
-            }
-        } header: {
-            FormHeader("Gifts received")
-        }
-        .listRowBackground(Palette.paper)
-    }
-
-    private var messagesSection: some View {
-        Section {
-            ForEach(MessageTemplate.suggested(for: partner)) { t in
-                ShareLink(item: t.text(for: partner)) {
-                    Label(t.title, systemImage: "text.bubble.fill")
-                }
-            }
-            Menu {
-                ForEach(MessageTemplate.allCases) { t in
-                    ShareLink(t.title, item: t.text(for: partner))
-                }
-            } label: {
-                Label("All templates", systemImage: "ellipsis.bubble")
-            }
-        } header: {
-            FormHeader("Messages")
-        } footer: {
-            Text("From your partners guide, with their name filled in. Fill in the [brackets] before sending.")
-        }
-        .listRowBackground(Palette.paper)
-    }
-
-    private var detailsSection: some View {
-        Section {
-            DisclosureGroup {
-                MoneyField(title: "Monthly", cents: $partner.monthlyCents, currency: partner.currency)
-                MoneyField(title: "One-off", cents: $partner.oneOffCents, currency: partner.currency)
-                BrutalSelect("Currency", selection: $partner.currency) {
-                    Text("Euro").tag("EUR")
-                    Text("NZ dollar").tag("NZD")
-                }
-                OptionalDatePicker(title: "Giving since", date: $partner.startDate)
-                Toggle("Thanked", isOn: Binding(get: { partner.thankedAt != nil }, set: { on in
-                    if on { partner.markThanked(ctx) } else { partner.thankedAt = nil }
-                }))
-                Toggle("Prays for you", isOn: $partner.prayer)
-                Toggle("Gets the newsletter", isOn: $partner.newsletter)
-            } label: {
-                DetailLabel(title: "Giving", summary: givingSummary)
-            }
-            DisclosureGroup {
-                TextField("Phone", text: $partner.phone)
-                    .keyboardType(.phonePad)
-                TextField("Email", text: $partner.email)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                TextField("Church", text: $partner.church)
-                TextField("Postal address (for cards)", text: $partner.address, axis: .vertical)
-                OptionalDatePicker(title: "Birthday", date: $partner.birthday)
-            } label: {
-                DetailLabel(title: "Contact", summary: contactSummary)
-            }
-        } header: {
-            FormHeader("Details")
-        }
-        .listRowBackground(Palette.paper)
-    }
-
-    private var givingSummary: String {
-        var parts: [String] = []
-        if partner.monthlyCents > 0 { parts.append("\(Money.text(partner.monthlyCents, partner.currency)) a month") }
-        if partner.oneOffCents > 0 { parts.append("\(Money.text(partner.oneOffCents, partner.currency)) one-off") }
-        if partner.thankedAt != nil { parts.append("thanked") }
-        if partner.prayer { parts.append("prays") }
-        return parts.isEmpty ? "Nothing yet" : parts.joined(separator: " · ")
-    }
-
-    private var contactSummary: String {
-        let parts = [partner.phone, partner.email, partner.church].filter { !$0.isEmpty }
-        return parts.isEmpty ? "No details yet" : parts.prefix(2).joined(separator: " · ")
-    }
-}
-
-private struct DetailLabel: View {
-    let title: String
-    let summary: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(Typeface.body(15, weight: .semibold)).foregroundStyle(Palette.ink)
-            Text(summary).font(Typeface.body(12.5)).foregroundStyle(Palette.muted).lineLimit(1)
-        }
-    }
-}
-
-/// Name, category, call / WhatsApp / email, where they are on the path, and the one thing to do next.
-private struct PartnerHero: View {
-    @Environment(\.modelContext) private var ctx
-    @Environment(\.openURL) private var openURL
-    @Bindable var partner: Partner
-    let needsThanks: Bool
-    let onRecordGift: () -> Void
-
-    var body: some View {
-        TextField("Name", text: $partner.name)
-            .font(Typeface.heading(24))
-            .foregroundStyle(Palette.ink)
-        HStack(spacing: 6) {
-            Menu {
-                Picker("Category", selection: Binding(get: { partner.categoryValue }, set: { partner.categoryValue = $0 })) {
-                    ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
-                }
-            } label: {
-                Chip(text: partner.category.isEmpty ? "Category" : "Category \(partner.category)", accent: .sand,
-                     symbol: "chevron.down", selected: false)
-            }
-            .accessibilityLabel("Category \(partner.category)")
-            if partner.monthlyCents > 0 {
-                Chip(text: "\(Money.text(partner.monthlyCents, partner.currency)) a month", accent: .green)
-            }
-            Spacer(minLength: 0)
-            if let url = PhoneLinks.call(partner.phone) {
-                IconButton(symbol: "phone.fill", accent: .green, size: 38, label: "Call") { openURL(url) }
-            }
-            if let url = PhoneLinks.whatsApp(partner.phone) {
-                IconButton(symbol: "message.fill", accent: .lime, size: 38, label: "WhatsApp") { openURL(url) }
-            }
-            if let url = PhoneLinks.email(partner.email) {
-                IconButton(symbol: "envelope.fill", accent: .yellow, size: 38, label: "Email") { openURL(url) }
-            }
-        }
-        StagePath(stage: partner.stageValue) { picked in
-            withAnimation(.easeOut(duration: 0.2)) { partner.move(to: picked, ctx) }
-        }
-        .padding(.top, 4)
-        PartnerNextAction(partner: partner, needsThanks: needsThanks, onRecordGift: onRecordGift)
-    }
-}
-
-/// The path from "on my list" to "giving" as dots on a line. Tap a dot to set the stage.
-private struct StagePath: View {
-    let stage: PartnerStage
-    let onPick: (PartnerStage) -> Void
-    private let path: [PartnerStage] = [.idea, .toAsk, .asked, .thinking, .committed, .giving]
-
-    var body: some View {
-        let reached = path.firstIndex(of: stage) ?? -1
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(Array(path.enumerated()), id: \.offset) { index, s in
-                    if index > 0 {
-                        Capsule()
-                            .fill(index <= reached ? Accent.yellow.color : Palette.chip)
-                            .frame(height: 3)
-                    }
-                    Button { onPick(s) } label: {
-                        ZStack {
-                            Circle()
-                                .fill(index <= reached ? Accent.yellow.color : Palette.chip)
-                                .frame(width: s == stage ? 24 : 12, height: s == stage ? 24 : 12)
-                            if s == stage {
-                                Image(systemName: s.symbol)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(Palette.onAccent)
-                            }
-                        }
-                        .frame(width: 32, height: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(s.title)
-                    .accessibilityAddTraits(s == stage ? .isSelected : [])
-                }
-            }
-            HStack(alignment: .firstTextBaseline) {
-                Text(stage.title).font(Typeface.body(14, weight: .bold)).foregroundStyle(Palette.ink)
-                Spacer()
-                Menu {
-                    ForEach([PartnerStage.declined, .paused]) { s in
-                        Button { onPick(s) } label: { Label(s.title, systemImage: s.symbol) }
-                    }
-                } label: {
-                    Text("Not now…")
-                        .font(Typeface.body(12.5, weight: .semibold))
-                        .foregroundStyle(Palette.muted)
-                        .frame(minHeight: 32)
-                }
-            }
-        }
-    }
-}
-
-/// One clear next step for where this partner is, with the matching message template beside it.
-private struct PartnerNextAction: View {
-    @Environment(\.modelContext) private var ctx
-    let partner: Partner
-    let needsThanks: Bool
-    let onRecordGift: () -> Void
-
-    private var who: String { partner.firstName.isEmpty ? "them" : partner.firstName }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(hint)
-                .font(Typeface.body(13))
-                .foregroundStyle(Palette.muted)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) { buttons }
-        }
-        .padding(.top, 2)
-    }
-
-    private var hint: String {
-        switch partner.stageValue {
-        case .idea: "On your list. Ready to ask \(who)?"
-        case .toAsk: "Invite \(who) for coffee or a call."
-        case .asked: "After you've met, log it: a follow-up call is planned for you."
-        case .thinking: partner.nextFollowUp.map { "Thinking it over. Next follow-up \(shortDate($0, midSentence: true))." } ?? "Thinking it over."
-        case .committed: needsThanks ? "Committed, and not thanked yet." : "Committed. Waiting for the first gift."
-        case .giving: needsThanks ? "A gift came in that you haven't thanked \(who) for yet." : "Giving. Record gifts as they come in."
-        case .declined, .paused: "Not now. You can ask again later."
-        }
-    }
-
-    @ViewBuilder
-    private var buttons: some View {
-        switch partner.stageValue {
-        case .idea:
-            primary("Plan to ask", "paperplane") { partner.move(to: .toAsk, ctx) }
-        case .toAsk:
-            share("Send invite", .invite, primary: true)
-            secondary("I asked") { partner.move(to: .asked, ctx) }
-        case .asked:
-            primary("Log the meeting", "cup.and.saucer") {
-                partner.lastContact = Calendar.current.startOfDay(for: .now)
-                partner.move(to: .thinking, ctx)
-            }
-            share("Thanks text", .thanksAfterMeeting, primary: false)
-        case .thinking:
-            primary("They're in", "hand.thumbsup") { partner.move(to: .committed, ctx) }
-            share("Follow-up", .followUp, primary: false)
-        case .committed, .giving:
-            if needsThanks {
-                primary("Mark thanked", "checkmark") { partner.markThanked(ctx) }
-                share("Thank-you text", MessageTemplate.suggested(for: partner).first ?? .thankYouCard, primary: false)
-            } else {
-                primary("Record a gift", "gift", action: onRecordGift)
-            }
-        case .declined, .paused:
-            secondary("Ask again") { partner.move(to: .toAsk, ctx) }
-        }
-    }
-
-    private func primary(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.2)) { action() }
-        } label: {
-            Label(title, systemImage: symbol)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(BrutalButtonStyle(kind: .primary))
-    }
-
-    private func secondary(_ title: String, action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.2)) { action() }
-        } label: {
-            Text(title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.brutalSecondary)
-    }
-
-    private func share(_ title: String, _ template: MessageTemplate, primary: Bool) -> some View {
-        ShareLink(item: template.text(for: partner)) {
-            Label(title, systemImage: "text.bubble")
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(BrutalButtonStyle(kind: primary ? .primary : .secondary))
-    }
-}
-
-struct GiftRow: View {
-    let gift: Gift
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Money.text(gift.amountCents, gift.currency))
-                    .font(Typeface.body(16, weight: .bold))
-                Text("\(longDate(gift.date))\(gift.recurring ? " · monthly" : "")\(gift.via.isEmpty ? "" : " · \(gift.via)")")
-                    .font(Typeface.body(13))
-                    .foregroundStyle(Palette.muted)
-            }
-            Spacer()
-            if gift.thankedAt != nil {
-                Chip(text: "Thanked", accent: .green, symbol: "checkmark")
-            }
-        }
-    }
-}
+// MARK: - Gifts
 
 struct GiftDetail: View {
+    @Environment(Router.self) private var router
     @Bindable var gift: Gift
     @Query private var partners: [Partner]
 
     var body: some View {
-        Form {
-            Section {
-                MoneyField(title: "Amount", cents: $gift.amountCents, currency: gift.currency)
-                BrutalSelect("Currency", selection: $gift.currency) {
+        DetailPage(aside: "A gift", title: Money.text(gift.amountCents, gift.currency)) {
+            FormBlock("Gift") {
+                MoneyRow(title: "Amount", cents: $gift.amountCents, currency: gift.currency)
+                SelectRow("Currency", selection: $gift.currency) {
                     Text("Euro").tag("EUR")
                     Text("NZ dollar").tag("NZD")
                 }
-                BrutalDateRow(title: "Date", date: $gift.date)
-                Toggle("Part of a monthly gift", isOn: $gift.recurring).tint(Accent.green.color)
-                TextField("Via (bank, YWAM, cash…)", text: $gift.via)
-                OptionalDatePicker(title: "Thanked", date: $gift.thankedAt, defaultDate: .now)
-            } header: { FormHeader("Gift") }
-            .listRowBackground(Palette.paper)
-
-            if let p = partners.first(where: { $0.id == gift.partnerID }) {
-                Section {
-                    NavigationLink { PartnerDetail(partner: p) } label: { Label(p.displayTitle, systemImage: "person.fill") }
-                } header: { FormHeader("From") }
-                .listRowBackground(Palette.paper)
+                DateRow(title: "Date", date: $gift.date)
+                ToggleRow("Part of a monthly gift", isOn: $gift.recurring)
+                TextRow("Via (bank, YWAM, cash…)", text: $gift.via)
+                OptionalDateRow(title: "Thanked", date: $gift.thankedAt, defaultDate: .now)
             }
-
-            Section {
-                TextField("Notes", text: $gift.notes, axis: .vertical).lineLimit(2...8)
-            } header: { FormHeader("Notes") }
-            .listRowBackground(Palette.paper)
-
-            LinksSection(record: .gift(gift))
-            Section { DeleteRecordButton(item: gift) }
-            .listRowBackground(Palette.paper)
+            if let p = partners.first(where: { $0.id == gift.partnerID }) {
+                FormBlock("From") { LinkedRow(record: .partner(p), rule: false) }
+            }
+            FormBlock("Notes") {
+                TextRow("Notes", text: $gift.notes, vertical: true, lines: 2...8)
+            }
+            LinksBlock(record: .gift(gift))
+            DeleteButton(item: gift)
         }
-        .brutalForm()
-        .navigationTitle("Gift")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
+/// Record a gift that came in (a sheet).
 private struct RecordGiftSheet: View {
     @Environment(\.modelContext) private var ctx
     @Environment(\.dismiss) private var dismiss
@@ -834,24 +764,13 @@ private struct RecordGiftSheet: View {
     @State private var recurring = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    MoneyField(title: "Amount", cents: $cents, currency: partner.currency)
-                    Toggle("Part of a monthly gift", isOn: $recurring).tint(Accent.green.color)
-                } header: {
-                    FormHeader("Gift from \(partner.displayTitle)")
-                } footer: {
-                    Text("Recording a gift adds a thank-you task when it's needed.")
-                }
-                .listRowBackground(Palette.paper)
-            }
-            .brutalForm()
-            .navigationTitle("Record a gift")
-            .navigationBarTitleDisplayMode(.inline)
-            .brutalSheetToolbar(cancel: { dismiss() }, save: "Save", saveDisabled: cents <= 0) {
-                Automations.recordGift(for: partner, cents: cents, recurring: recurring, ctx)
-                dismiss()
+        CreamSheet(title: "Gift from \(partner.displayTitle)", save: "Save", saveDisabled: cents <= 0, onSave: {
+            Automations.recordGift(for: partner, cents: cents, recurring: recurring, ctx)
+            dismiss()
+        }) {
+            FormBlock("", footer: "Recording a gift adds a thank-you task when it's needed.") {
+                MoneyRow(title: "Amount", cents: $cents, currency: partner.currency)
+                ToggleRow("Part of a monthly gift", isOn: $recurring)
             }
         }
         .onAppear {
@@ -869,27 +788,20 @@ struct BulkAddPartners: View {
     @State private var category: PartnerCategory = .b
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextEditor(text: $text).frame(minHeight: 240)
-                } header: {
-                    FormHeader("One name per line")
-                } footer: {
-                    Text("Family, church, friends, school, work, sport, neighbours, YWAM, your phone contacts. Write everyone down; you don't decide for someone else whether they'll give.")
-                }
-                .listRowBackground(Palette.paper)
-                Section {
-                    BrutalSelect("Category for all", selection: $category) {
-                        ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
-                    }
-                }
-                .listRowBackground(Palette.paper)
+        CreamSheet(title: "Add names", save: "Add", onSave: add) {
+            FormBlock("One name per line",
+                      footer: "Family, church, friends, school, work, sport, neighbours, YWAM, your phone contacts. Write everyone down; you don't decide for someone else whether they'll give.") {
+                TextEditor(text: $text)
+                    .type(.bodyBold)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 240)
+                    .padding(8)
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.chipRule, lineWidth: 1.6))
+                    .padding(.vertical, 8)
             }
-            .brutalForm()
-            .navigationTitle("Add names")
-            .navigationBarTitleDisplayMode(.inline)
-            .brutalSheetToolbar(cancel: { dismiss() }, save: "Add", onSave: add)
+            SelectRow("Category for all", selection: $category) {
+                ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
+            }
         }
     }
 
@@ -903,3 +815,32 @@ struct BulkAddPartners: View {
         dismiss()
     }
 }
+
+#if DEBUG
+/// Sample partners for simulator screenshots (debug builds only, and only when there are none).
+enum DemoData {
+    static func addPartners(_ ctx: ModelContext) {
+        let today = Calendar.current.startOfDay(for: .now)
+        func add(_ name: String, _ stage: PartnerStage, _ category: PartnerCategory, monthly: Int = 0, follow: Int? = nil,
+                 step: String = "") {
+            let p = Partner()
+            p.name = name
+            p.stageValue = stage
+            p.categoryValue = category
+            p.monthlyCents = monthly
+            p.phone = "06 12345678"
+            p.nextStep = step
+            p.nextFollowUp = follow.flatMap { Calendar.current.date(byAdding: .day, value: $0, to: today) }
+            if stage.countsAsSupport { p.thankedAt = today }
+            ctx.insert(p)
+        }
+        add("Anna Jansen", .thinking, .a, follow: -1, step: "Check in about her decision")
+        add("Familie Bakker", .giving, .a, monthly: 5_000)
+        add("Kerk De Ark", .giving, .k, monthly: 40_000)
+        add("Mark & Lisa de Boer", .giving, .b, monthly: 2_500)
+        add("Pieter de Vries", .toAsk, .b, follow: 0)
+        add("Sophie Ouwens", .idea, .c)
+        try? ctx.save()
+    }
+}
+#endif
