@@ -144,7 +144,7 @@ enum Capture {
 
     private static func defaultArea(for record: AnyRecord?) -> Area {
         guard let record else { return .other }
-        switch record {
+        return switch record {
         case .partner, .gift: .support
         case .checklist(let c): c.areaValue
         case .newsletter: .newsletter
