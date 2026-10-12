@@ -34,8 +34,8 @@ A personal mission-preparation companion, not a generic to-do or CRM: partner st
 
 ## Brand Commitments
 
-- Keep the "Mocha & Ollie" palette (`Shared/Design/Tokens.swift`, `design/tokens.json`) and fonts: DM Sans for UI, Lora Medium Italic for thanks and prayer.
-- Ollie, from Ruben's own character sheet (`Resources/Ollie`), is never redrawn in code.
+- The look is "Tomato Flood" (`DESIGN.md`, `design/tokens.json`, `design/tomato-flood/HANDOFF.md`): tomato posters with one big thing, cream sheets, Archivo and Caveat, line art that draws itself, motion that answers what you do.
+- Ollie, from Ruben's own character sheet (`Resources/Ollie`), is never redrawn in code. He appears once, asleep, on Today's All done.
 - App name: hesent.me. Copy is short and plain, English UI, Dutch partner templates.
 
 ## Product Principles

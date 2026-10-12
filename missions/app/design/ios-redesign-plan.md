@@ -1,5 +1,7 @@
 # iPhone redesign plan (Oct 2026)
 
+> **Superseded** by Tomato Flood (`tomato-flood/HANDOFF.md`, `DESIGN.md`). Kept for its history: the flows it describes (Capture, the partner path, Move) carried over; the Mocha look did not.
+
 Keeps the Mocha & Ollie colours, DM Sans and Lora, Ollie, and every model, sync and automation. Changes the layout and flows only.
 Built around the confirmed answers: the moments that matter are the morning check-in and partner work, and the pain points are adding things, partner follow-up and finding things.
 

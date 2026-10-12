@@ -1,68 +1,62 @@
-/* Generated from tokens.json. Look: app-sketch.html */
+/* Generated from tokens.json (Tomato Flood). Look: tomato-flood/prototype.html */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Caveat:wght@700&display=swap');
+
 :root {
-  --bg: linear-gradient(180deg, #65493D 0%, #53403A 100%);
-  --background: #5C443B;
-  --paper: #735648;
-  --ink: #FCEEE2;
-  --muted: #D9BFAC;
-  --hairline: rgba(255,244,232,0.10);
-  --altRow: #6B5043;
-  --chip: rgba(255,244,232,0.14);
-  --ring: rgba(255,244,232,0.35);
-  --stitch: rgba(205,225,214,0.38);
-  --onAccent: #24302C;
-  --tag: #B3C9BD;
-  --tabBar: #4E392F;
-  --tabIcon: #BFA390;
-  --cream: #FFF4E8;
-  --cream-ink: #4A3329;
-  --cream-sub: #8A6C5C;
-  --cream-tag: #2F7D74;
-  --cream-button: #F3E3D3;
-  --cream-stitch: rgba(74,51,41,0.22);
-  --accent-yellow: #B3C9BD;
-  --accent-pink: #EDB3AE;
-  --accent-green: #AFBC6A;
-  --accent-lime: #C9D19A;
-  --accent-purple: #C7B8DD;
-  --accent-sand: #F3D9A0;
-  --accent-grey: #BFA390;
-  --soft-yellow: #7A5E4E;
-  --soft-pink: #7D5450;
-  --danger: #E8907F;
-  --ok: #AFBC6A;
-  --warning: #F3D9A0;
-  --ollie-fur: #A9BCB0;
-  --ollie-furDark: #7E968A;
-  --ollie-ear: #ECDCBB;
-  --ollie-dots: #93AAA0;
-  --ollie-toes: #98A35F;
-  --radius-card: 20px;
-  --radius-small: 14px;
+  --tomato: #D2462B;
+  --tomato-ink: #B23A22;
+  --cream: #FBF1E3;
+  --ink: #2E1C16;
+  --marigold: #E8A13A;
+  --plum: #4B3B52;
+  --blush: #F0A58F;
+  --rule: rgba(210,70,43,0.16);
+  --tile-rule: rgba(210,70,43,0.35);
+  --chip-rule: rgba(46,28,22,0.22);
+  --ink-soft: rgba(46,28,22,0.68);
+  --ink-faint: rgba(46,28,22,0.55);
+  --cream-soft: rgba(251,241,227,0.82);
+  --cream-faint: rgba(251,241,227,0.72);
+
+  --radius-sheet: 30px;
+  --radius-tile: 20px;
+  --radius-doc: 13px;
+  --radius-stamp: 8px;
   --radius-pill: 999px;
-  --radius-tabBar: 27px;
-  --radius-sheet: 24px;
-  --space-xs: 4px;
-  --space-s: 8px;
-  --space-m: 12px;
-  --space-l: 16px;
-  --space-xl: 24px;
-  --space-xxl: 32px;
-  --text-h1: 28px;
-  --text-h2: 20px;
-  --text-h3: 18px;
-  --text-body: 15px;
-  --text-caption: 12px;
-  --text-number: 26px;
-  --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --serif: 'Lora', Georgia, serif;
-  --motion-press: 80ms;
-  --motion: 180ms;
+
+  --line-art: 2.4px;
+  --line-rule: 1.5px;
+  --line-outline: 1.6px;
+
+  --gutter: 24px;
+  --sheet-top: 22px;
+  --sheet-side: 20px;
+  --top-bar: 48px;
+
+  --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --hand: 'Caveat', 'Segoe Print', cursive;
+
+  --ease-flood: cubic-bezier(.7, 0, .2, 1);
+  --ease-indicator: cubic-bezier(.3, 1.3, .5, 1);
+  --ease-slide: cubic-bezier(.2, .85, .25, 1);
+  --ease-fold: cubic-bezier(.4, 0, .2, 1);
+  --ease-draw: cubic-bezier(.6, 0, .3, 1);
 }
 
-/* Cards: mocha, no outline. One focal card per screen is cream with a stitch. */
-.box { background: var(--paper); color: var(--ink); border-radius: var(--radius-card); }
-.box.small { border-radius: var(--radius-small); }
-.focal { background: var(--cream); color: var(--cream-ink); }
-.stitch { outline: 1.5px dashed var(--stitch); outline-offset: -6px; }
-.focal.stitch { outline-color: var(--cream-stitch); }
+/* Type */
+.disp { font-family: var(--font); font-stretch: 64%; font-weight: 900; text-transform: uppercase; line-height: .88; }
+.hand { font-family: var(--hand); font-weight: 700; line-height: .95; }
+.cap { font-family: var(--font); font-stretch: 70%; font-weight: 800; font-size: 21px; letter-spacing: .06em; text-transform: uppercase; }
+.kicker { font-family: var(--font); font-weight: 800; font-size: 15px; letter-spacing: .11em; text-transform: uppercase; }
+.section { font-family: var(--font); font-weight: 800; font-size: 13px; letter-spacing: .13em; text-transform: uppercase; color: var(--tomato-ink); }
+
+/* The poster floods tomato; the sheet holds the rest. */
+.poster { background: var(--tomato); color: var(--cream); }
+.sheet { background: var(--cream); color: var(--ink); border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; padding: var(--sheet-top) var(--sheet-side) 0; }
+.row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: var(--line-rule) solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+
+/* Capsule buttons */
+.btn { height: 44px; padding: 0 20px; border-radius: var(--radius-pill); font: 800 15px var(--font); border: 0; }
+.btn.filled { background: var(--tomato); color: var(--cream); }
+.btn.outlined { background: none; color: var(--tomato); box-shadow: inset 0 0 0 1.7px var(--tomato); }
+.tile { height: 70px; border-radius: var(--radius-tile); border: var(--line-outline) solid var(--tile-rule); }

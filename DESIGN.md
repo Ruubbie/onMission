@@ -1,27 +1,28 @@
-# Design: Mocha & Ollie (iPhone)
+# Design: Tomato Flood (iPhone)
 
-Token values live in `missions/app/design/tokens.json` (source of truth), mirrored in `missions/app/ios/OnMission/Shared/Design/Tokens.swift` and `tokens.css`. `missions/app/design/design-system.md` is the older neo-brutalist spec; where it disagrees, tokens.json and this file win.
+Token values live in `missions/app/design/tokens.json` (source of truth), mirrored in `missions/app/ios/OnMission/Shared/Design/Tokens.swift` and `tokens.css`. The full spec, with every screen and moment, is `missions/app/design/tomato-flood/HANDOFF.md`, and the clickable reference is `tomato-flood/prototype.html`. The Windows helper still uses the older Mocha look.
 
 ## World
 
-- **Ground:** a mocha gradient (`#65493D` → `#53403A`), dark appearance only. Cards are a lighter mocha (`paper #735648`) with no outlines and no shadows.
-- **Focal card:** one cream card per screen (`#FFF4E8`, cream ink `#4A3329`) with a dashed stitch inset 6pt. On Today it holds the top task card; on Prayer, the top prayer.
-- **Accents** keep their slot names: `yellow` is Ollie's sage `#B3C9BD` and is the primary. Pink is for people, purple for papers and prayer, green for money and done, lime for packing and checklists, sand for selling and notes. Text on an accent is always `onAccent #24302C`.
-- **Type:** DM Sans for everything (18pt max except big numbers). Lora Medium Italic only for the gratitude question and prayer text. Every size scales with the iPhone's text size (`Typeface` maps each size to a system text style).
-- **Ollie** comes only from the PNG poses in `Resources/Ollie`: sit on the task deck, sleep for empty days, hug for partners, stand on Prayer, side on Move.
+- **One idea per screen.** Every tab and page leads with one big thing on tomato (`#D2462B`): days to go, money raised, one prayer, how packed the bag is. Never two hero numbers on one screen.
+- **Poster and sheet.** The poster never scrolls: a handwritten aside, the big thing in condensed display type, a cap line under it, and a line drawing that draws itself in. Everything else sits on a cream sheet (`#FBF1E3`, ink `#2E1C16`, top corners 30) with three or four items at most.
+- **Colours with a job.** Marigold `#E8A13A` is only for Answered! and the Thinking check-in; plum `#4B3B52` only for Not now. `tomatoInk #B23A22` is for late and small tomato text on cream.
+- **Type.** Archivo (variable: condensed display at wdth 64 / wght 900, cap lines at wdth 70, prayer and hero text at wdth 78–80) and Caveat Bold for the asides, tilted −2° to −9°. Sizes follow Dynamic Type, except the posters, which scale with the phone.
+- **Line art.** One weight (2.4pt), round caps; closed shapes knock out to tomato or glow cream. Drawings draw themselves in when a screen appears.
+- **Ollie** appears once: asleep, small, on Today's All done.
 
 ## Navigation
 
-- **Tabs:** Today · Tasks · People · Prayer · Move. The tab bar is a floating mocha pill with icons and labels. The selected tab sits on a soft chip, and a pink dot marks tabs that need you (overdue tasks; partners to follow up or thank).
-- **Capture:** the sage round + beside the tab bar, the same on every tab. It opens one sheet, "Add or find". What you type picks the kind (`pray:`, `thanks:`, `sell:`, `pack:`, `note:`, `@Name`, or a natural-language task), the chips override it, and matching records show below. Screens register a default kind with `.captureContext(_:linkTo:)`; a partner screen links new tasks to that partner.
-- **Screen-level "new":** a + icon button in the navigation bar (`addButton` / `addMenu`) for things Capture can't make in one line: checklists, budget lines, documents, newsletters, contacts.
+- **Tabs:** Today · Tasks · People · Prayer · Move. The tab bar runs edge to edge and takes the colour of what sits at the bottom: cream under a sheet, tomato on a full poster (Prayer, All done), marigold while Answered is up. The active tab grows into a pill with its name; a dot marks tabs that need you.
+- **Pages flood out of what you tap.** A pushed page grows as a circle from the tile, row or avatar you tapped (0.62s) and folds back into it. The left edge swipes it back, shrinking the circle under your finger. Pages stack (Task → Linked to → Vault).
+- **Capture:** the cream + in the top bar floods a cream cover over everything. What you type picks the kind (`pray:`, `thanks:`, `sell:`, `pack:`, `note:`, `@Name`, or a natural-language task), the chips override it, and matching records show below. Screens register a default kind with `.captureContext(_:linkTo:)`. Adding folds the cover back, shows a toast and pops the destination tab's icon.
+- **Overlays:** the check-in after a call (a slider whose colour runs plum → marigold → tomato), the Answered! flood, and the toast (an ink capsule under the top bar).
 
 ## Patterns
 
-- **Grouped by what's next:** lists group by the action they need, not alphabetically. People puts "Needs you" first, then In conversation, To ask, Partners, On my list, Not now. Tasks runs Overdue, Today, Tomorrow, Next 7 days, Later, No date.
-- **One next action:** detail screens open with the single most likely action as the primary sage button and its message template as the secondary one. Rarely used fields fold into `DisclosureGroup`s under Details, with a one-line summary.
-- **Stage path:** six dots on a line from On my list to Giving. Tap a dot to set the stage; "Not now…" sits off the path.
-- **Swipes:** leading = progress (Done, or the next stage, in green). Trailing = reschedule (Tomorrow purple, Next week sand), then Delete.
-- **Quick dates:** chips under a date field (Today, Tomorrow, In 3 days, Next week).
-- **Hub rows:** Move lists the sections in grouped mocha cards. Each row carries a live status line, in coral (`danger`) when something needs attention.
-- **Touch:** 44pt targets everywhere. Small ticks keep their 28pt look and get padding for the tap area.
+- **Moments.** When you do something, the screen answers: a ring ticks and the row folds, a candle lights, ALL IN and SOLD stamps land, an item flies into the suitcase, a letter flies off. Each has a Reduce Motion fallback and a haptic (HANDOFF.md §9, §11).
+- **One next action:** the hero card holds the single most likely action as the filled button; detail pages put rarely used fields under the sheet's later sections.
+- **Rows:** 12pt above and below, a 1.5pt tomato rule between them, a 28pt ring to tick, the "when" on the right (in `tomatoInk` when late).
+- **Segments and pills:** underline segments for 2–4 views of one list; tomato pills for filters. Lists slide in the direction of travel.
+- **Detail pages** (records not in the prototype) use the same pattern: the aside by hand, the record's name in display type, its fields on the sheet, links and Delete at the end.
+- **Touch:** 44pt targets everywhere. Every gesture has a button or an accessibility action.
