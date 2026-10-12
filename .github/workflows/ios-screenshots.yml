@@ -39,6 +39,8 @@ jobs:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.ContinuousPath EnableContinuousPathIntroduction -bool false || true
+          xcrun simctl spawn "$UDID" defaults write com.apple.Preferences DidShowContinuousPathIntroduction -bool true || true
           xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/OnMission.app
           BUNDLE=nl.rubenonmission.onmission

@@ -109,7 +109,10 @@ struct PeopleView: View {
         .task {
             // `-startPartner YES` opens someone in conversation (for screenshots).
             if UserDefaults.standard.bool(forKey: "startPartner"), opened == nil {
-                opened = partners.first { $0.stageValue == .thinking || $0.stageValue == .asked } ?? partners.first
+                #if DEBUG
+                if partners.isEmpty { Self.addDemoPartners(ctx) }
+                #endif
+                opened = Store.all(Partner.self, ctx).first { $0.stageValue == .thinking } ?? partners.first
             }
         }
         .navigationDestination(item: $opened) { PartnerDetail(partner: $0) }
@@ -272,6 +275,30 @@ struct PeopleView: View {
         .buttonStyle(.brutalSecondary)
         .brutalRow(top: 8, bottom: 8)
     }
+
+    #if DEBUG
+    /// Sample partners for simulator screenshots (debug builds only, and only when there are none).
+    private static func addDemoPartners(_ ctx: ModelContext) {
+        let today = Calendar.current.startOfDay(for: .now)
+        func add(_ name: String, _ stage: PartnerStage, monthly: Int = 0, follow: Int? = nil, step: String = "") {
+            let p = Partner()
+            p.name = name
+            p.stageValue = stage
+            p.monthlyCents = monthly
+            p.phone = "06 12345678"
+            p.nextStep = step
+            p.nextFollowUp = follow.flatMap { Calendar.current.date(byAdding: .day, value: $0, to: today) }
+            ctx.insert(p)
+        }
+        add("Anna Jansen", .thinking, follow: 0, step: "Call about her decision")
+        add("Jan de Vries", .committed, monthly: 2_500)
+        add("Familie Bakker", .giving, monthly: 5_000)
+        add("Sanne Visser", .asked, follow: 2, step: "Coffee on Thursday")
+        add("Pieter Smit", .toAsk)
+        add("Kerk De Rank", .idea)
+        try? ctx.save()
+    }
+    #endif
 
     // MARK: Actions
 

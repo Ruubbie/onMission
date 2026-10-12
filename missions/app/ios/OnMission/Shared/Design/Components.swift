@@ -533,12 +533,15 @@ struct BrutalEmptyState: View {
 
 // MARK: - Small helpers used on many screens
 
-/// "Today", "Tomorrow", or "Fri 9 Oct".
-func shortDate(_ d: Date) -> String {
+/// "Today", "Tomorrow", or "Fri 9 Oct". `midSentence` gives "today" for "Was due today".
+func shortDate(_ d: Date, midSentence: Bool = false) -> String {
     let cal = Calendar.current
-    if cal.isDateInToday(d) { return "Today" }
-    if cal.isDateInTomorrow(d) { return "Tomorrow" }
-    if cal.isDateInYesterday(d) { return "Yesterday" }
+    let relative: String?
+    if cal.isDateInToday(d) { relative = "Today" }
+    else if cal.isDateInTomorrow(d) { relative = "Tomorrow" }
+    else if cal.isDateInYesterday(d) { relative = "Yesterday" }
+    else { relative = nil }
+    if let relative { return midSentence ? relative.lowercased() : relative }
     return d.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
 }
 

@@ -285,6 +285,9 @@ struct FloatingTabBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityShowsLargeContentViewer {
+                    Label(t.title, systemImage: t.selectedSymbol)
+                }
                 .accessibilityLabel(badges.contains(t) ? "\(t.title), needs attention" : t.title)
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
@@ -292,6 +295,9 @@ struct FloatingTabBar: View {
         .padding(.horizontal, 4)
         .frame(height: Self.height)
         .background(Capsule().fill(Palette.tabBar).shadow(color: .black.opacity(0.3), radius: 12, y: 6))
+        // Like the system tab bar: the labels stop growing at large text sizes
+        // (a long press shows them big instead).
+        .dynamicTypeSize(...DynamicTypeSize.large)
     }
 }
 

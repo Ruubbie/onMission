@@ -50,14 +50,14 @@ struct TodayView: View {
                     } else {
                         TaskDeck(tasks: deck)
                     }
-                    if !upcoming.isEmpty {
-                        UpcomingCard(tasks: upcoming) { selectTab(.tasks) }
-                    }
                 }
                 if !i.followUps.isEmpty || !i.toThank.isEmpty {
                     PeopleWaitingCard(followUps: i.followUps, toThank: i.toThank, gifts: gifts)
                 }
                 SupportStrip(insights: i, settings: settings) { selectTab(.people) }
+                if !upcoming.isEmpty {
+                    UpcomingCard(tasks: upcoming) { selectTab(.tasks) }
+                }
                 if !i.warnings.isEmpty {
                     WarningsCard(warnings: i.warnings, showAll: $showAllWarnings) { selectTab(.tasks) }
                 }
@@ -83,23 +83,39 @@ private struct TodayHeader: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: Metrics.m) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                    .font(Typeface.body(13, weight: .semibold))
-                    .foregroundStyle(Palette.muted)
-                Text(greeting).font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+        // Side by side, or stacked when large text doesn't fit.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: Metrics.m) {
+                greetingBlock.fixedSize()
+                Spacer(minLength: 8)
+                countdown(alignment: .trailing).fixedSize()
             }
-            Spacer(minLength: 8)
-            if daysToGo > 0 {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(daysToGo)").font(Typeface.number(30)).foregroundStyle(Palette.ink)
-                    Text("days to Queenstown").font(Typeface.body(11, weight: .semibold)).foregroundStyle(Palette.muted)
-                }
-                .accessibilityElement(children: .combine)
-            } else {
-                Text("Kia ora!").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+            VStack(alignment: .leading, spacing: Metrics.s) {
+                greetingBlock
+                countdown(alignment: .leading)
             }
+        }
+    }
+
+    private var greetingBlock: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .font(Typeface.body(13, weight: .semibold))
+                .foregroundStyle(Palette.muted)
+            Text(greeting).font(Typeface.heading(18)).foregroundStyle(Palette.ink)
+        }
+    }
+
+    @ViewBuilder
+    private func countdown(alignment: HorizontalAlignment) -> some View {
+        if daysToGo > 0 {
+            VStack(alignment: alignment, spacing: 0) {
+                Text("\(daysToGo)").font(Typeface.number(30)).foregroundStyle(Palette.ink)
+                Text("days to Queenstown").font(Typeface.body(11, weight: .semibold)).foregroundStyle(Palette.muted)
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            Text("Kia ora!").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
         }
     }
 }
@@ -215,7 +231,7 @@ private struct RestCard: View {
             Ollie(pose: .sleep, height: 56)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Nothing due today").font(Typeface.body(14, weight: .bold)).foregroundStyle(Palette.ink)
-                Text(hasUpcoming ? "Ollie's napping. Here's what's coming later this week."
+                Text(hasUpcoming ? "Ollie's napping. What's coming later this week is further down."
                                  : "Ollie's taking a nap. Tap + when something comes up.")
                     .font(Typeface.body(12.5)).foregroundStyle(Palette.muted)
             }
@@ -262,7 +278,7 @@ private struct TopCard: View {
 
     private var when: String {
         guard let due = task.dueDate else { return "Today" }
-        if task.isOverdue { return "Was due \(shortDate(due))" }
+        if task.isOverdue { return "Was due \(shortDate(due, midSentence: true))" }
         return Calendar.current.isDateInToday(due) ? "Due today" : "Due \(shortDate(due))"
     }
 
@@ -360,14 +376,36 @@ private struct UpcomingCard: View {
                 }
                 .buttonStyle(.plain)
             }
-            ForEach(tasks.prefix(4)) { t in
-                TaskRow(task: t, opensDetail: true)
+            ForEach(tasks.prefix(3)) { t in
+                NavigationLink { TaskDetail(task: t) } label: {
+                    HStack(spacing: 10) {
+                        Circle().fill(t.areaValue.accent.color).frame(width: 8, height: 8)
+                        Text(t.displayTitle)
+                            .font(Typeface.body(14, weight: .semibold))
+                            .foregroundStyle(Palette.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 6)
+                        if let due = t.dueDate {
+                            Text(shortDate(due))
+                                .font(Typeface.body(12, weight: .semibold))
+                                .foregroundStyle(Palette.muted)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(minHeight: 36)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
-            if tasks.count > 4 {
-                Text("and \(tasks.count - 4) more")
-                    .font(Typeface.body(12.5))
-                    .foregroundStyle(Palette.muted)
-                    .padding(.leading, 38)
+            if tasks.count > 3 {
+                Button(action: onSeeAll) {
+                    Text("and \(tasks.count - 3) more")
+                        .font(Typeface.body(12.5, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                        .frame(minHeight: 32)
+                        .padding(.leading, 18)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 14)
