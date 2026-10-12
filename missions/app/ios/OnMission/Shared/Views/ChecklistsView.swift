@@ -1,198 +1,214 @@
 import SwiftUI
 import SwiftData
 
-/// Checklists, grouped by when they matter. Their items are tasks with a checklistID.
-struct ChecklistsView: View {
+/// The four stops on the Checklists page. Ongoing lists sit with Arrival.
+enum ChecklistStop: String, CaseIterable, Hashable {
+    case now, before, leaving, arrival
+
+    var title: String {
+        switch self {
+        case .now: "Now"
+        case .before: "Before"
+        case .leaving: "Leaving"
+        case .arrival: "Arrival"
+        }
+    }
+
+    func contains(_ phase: ChecklistPhase) -> Bool {
+        switch self {
+        case .now: phase == .now
+        case .before: phase == .beforeDeparture
+        case .leaving: phase == .departureWeek
+        case .arrival: phase == .arrival || phase == .ongoing
+        }
+    }
+}
+
+// MARK: - Checklists (handoff §7): things left, lists with rings that fill
+
+struct ChecklistsPage: View {
     @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     @Query(sort: \Checklist.order) private var lists: [Checklist]
     @Query private var tasks: [Todo]
-    @State private var opened: Checklist?
+    @State private var stop: ChecklistStop = .now
+    @State private var openID: String?
+    @State private var slide = 0
+    @State private var direction: CGFloat = 1
     @State private var showArchived = false
+    @State private var chosen = false
 
-    private var shown: [Checklist] { lists.filter { showArchived || !$0.archived } }
+    private var items: [Todo] { tasks.filter { !$0.checklistID.isEmpty } }
+
+    private func left(_ stop: ChecklistStop?) -> Int {
+        let ids = Set(lists.filter { list in !list.archived && (stop?.contains(list.phaseValue) ?? true) }.map(\.id))
+        return items.filter { ids.contains($0.checklistID) && !$0.isDone }.count
+    }
+
+    private func shown(_ stop: ChecklistStop) -> [Checklist] {
+        lists.filter { (showArchived || !$0.archived) && stop.contains($0.phaseValue) }
+    }
 
     var body: some View {
-        List {
-            ForEach(ChecklistPhase.allCases) { phase in
-                let inPhase = shown.filter { $0.phaseValue == phase }
-                if !inPhase.isEmpty {
-                    SectionHeader(phase.title, count: inPhase.count, accent: .lime)
-                        .brutalRow(top: 14, bottom: 2)
-                    ForEach(inPhase) { list in
-                        CardLink {
-                            ChecklistDetail(list: list)
-                        } label: {
-                            ChecklistCard(list: list, items: tasks.filter { $0.checklistID == list.id })
-                        }
-                        .brutalRow()
-                        .swipeActions {
-                            Button("Delete", role: .destructive) { delete(list) }
-                            Button(list.archived ? "Unarchive" : "Archive") { list.archived.toggle() }
-                                .tint(Palette.muted)
+        let active = lists.filter { !$0.archived }
+        let all = left(nil)
+        let archived = lists.count - active.count
+        let segments = ChecklistStop.allCases.map { Segments<ChecklistStop>.Item(value: $0, title: $0.title, count: left($0)) }
+        let visible = shown(stop)
+        let byList = Dictionary(grouping: items, by: \.checklistID)
+        // Three digits at 184 run into the aside and the stones.
+        let size: CGFloat = all >= 100 ? 150 : 184
+        Screen(posterHeight: 306, sheetTop: 10) {
+            Hand("Before you fly").rise(0).at(24, 106)
+            Text("\(all)")
+                .type(.disp(size))
+                .contentTransition(.numericText(value: Double(all)))
+                .animation(.easeOut(duration: 0.48), value: all)
+                .lineLimit(1)
+                .offset(y: FontMetrics.shift(.archivo, size: size, lineHeight: 0.78) + (184 - size) * 0.5)
+                .rise(1)
+                .at(18, 136)
+            CapLine("Things left\non \(active.count) list\(active.count == 1 ? "" : "s")").rise(2).at(24, 292)
+            LineArt(drawing: Art.stones).at(200, 120)
+        } sheet: {
+            Segments(items: segments, selection: $stop, tight: true)
+            SheetScroll {
+                Group {
+                    ForEach(visible) { list in
+                        ChecklistBox(list: list,
+                                     items: (byList[list.id] ?? []).sorted { $0.order < $1.order },
+                                     open: openID == list.id) { toggle(list) }
+                    }
+                    if visible.isEmpty {
+                        EmptyRow(title: "Nothing for this stop", message: "Start a list below, or pick another stop.")
+                    }
+                }
+                .slideIn(slide, direction: direction)
+                FormBlock("") {
+                    ActionRow(title: "New checklist", icon: .plus) { newList() }
+                    if archived > 0 {
+                        ActionRow(title: showArchived ? "Hide archived" : "Show archived · \(archived)", icon: .archive) {
+                            withAnimation(Motion.fold.rm) { showArchived.toggle() }
                         }
                     }
                 }
             }
-            if shown.isEmpty {
-                BrutalEmptyState(symbol: "checklist", title: "No checklists yet",
-                                 message: "Packing, deregistration, health before you leave… tap + to start one.", accent: .lime)
-                    .brutalRow()
-            }
-            Color.clear.frame(height: 80).brutalRow()
         }
-        .brutalList()
-        .navigationTitle("Checklists")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                IconButton(symbol: "archivebox", accent: showArchived ? .lime : nil, size: 36,
-                           label: showArchived ? "Hide archived" : "Show archived") { showArchived.toggle() }
+        .onAppear {
+            if !chosen {
+                chosen = true
+                stop = ChecklistStop.allCases.first { left($0) > 0 } ?? .now
             }
+            // The first list opens itself.
+            Motion.after(0.62) { openFirst() }
         }
-        .addButton(newList)
-        .navigationDestination(item: $opened) { ChecklistDetail(list: $0) }
+        .onChange(of: stop) { old, new in
+            direction = Segments<ChecklistStop>.direction(from: old, to: new, in: segments)
+            slide += 1
+            openID = nil
+            Motion.after(0.25) { openFirst() }
+        }
+        .captureContext(.task)
+    }
+
+    private func openFirst() {
+        guard openID == nil, let first = shown(stop).first else { return }
+        withAnimation(.curve(0.3, 0.9, 0.3, 1, 0.42).rm) { openID = first.id }
+    }
+
+    private func toggle(_ list: Checklist) {
+        withAnimation(.curve(0.3, 0.9, 0.3, 1, 0.42).rm) {
+            openID = openID == list.id ? nil : list.id
+        }
     }
 
     private func newList() {
         let list = Checklist()
         list.title = "New checklist"
         list.order = (lists.map(\.order).max() ?? 0) + 1
+        list.phaseValue = switch stop {
+        case .now: .now
+        case .before: .beforeDeparture
+        case .leaving: .departureWeek
+        case .arrival: .arrival
+        }
         ctx.insert(list)
-        opened = list
-    }
-
-    private func delete(_ list: Checklist) {
-        for item in tasks where item.checklistID == list.id { Store.delete(item, in: ctx) }
-        Store.delete(list, in: ctx)
+        router.push(.checklist(list))
     }
 }
 
-private struct ChecklistCard: View {
+/// A list as a row: its ring and "3 of 5 done"; tap to show its items.
+private struct ChecklistBox: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     let list: Checklist
     let items: [Todo]
-
-    var body: some View {
-        let done = items.filter(\.isDone).count
-        VStack(alignment: .leading, spacing: Metrics.s) {
-            HStack(spacing: Metrics.m) {
-                AccentSquareIcon(symbol: list.areaValue.symbol, accent: list.areaValue.accent, size: 34)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(list.displayTitle)
-                        .font(Typeface.heading(17))
-                        .foregroundStyle(Palette.ink)
-                    if !list.desc.isEmpty {
-                        Text(list.desc).font(Typeface.body(13)).foregroundStyle(Palette.muted).lineLimit(1)
-                    }
-                }
-                Spacer(minLength: 4)
-                Text("\(done)/\(items.count)")
-                    .font(Typeface.heading(17))
-                    .foregroundStyle(Palette.ink)
-            }
-            BrutalProgress(value: items.isEmpty ? 0 : Double(done) / Double(items.count), accent: .lime, height: 12)
-        }
-        .padding(Metrics.m)
-        .brutalBox(fill: list.archived ? Palette.altRow : Palette.paper, radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall)
-    }
-}
-
-struct ChecklistDetail: View {
-    @Environment(\.modelContext) private var ctx
-    @Environment(\.dismiss) private var dismiss
-    @Bindable var list: Checklist
-    @Query private var items: [Todo]
+    let open: Bool
+    let toggle: () -> Void
     @State private var newText = ""
-    @State private var hideDone = false
-    @State private var editing = false
-    @State private var confirmDelete = false
-    @State private var showLinks = false
-
-    init(list: Checklist) {
-        self.list = list
-        let id = list.id
-        _items = Query(filter: #Predicate<Todo> { $0.checklistID == id }, sort: \Todo.order)
-    }
-
-    private var shownItems: [Todo] { items.filter { !(hideDone && $0.isDone) } }
+    @State private var pop = 0
+    @State private var chev = 0
 
     var body: some View {
-        List {
-            header.brutalRow(top: 10, bottom: 10)
-            if editing { editor.brutalRow() }
-            ForEach(shownItems) { item in
-                ChecklistItemRow(item: item)
-                    .brutalRow(top: 3, bottom: 5)
-                    .swipeActions {
-                        Button("Delete", role: .destructive) { Store.delete(item, in: ctx) }
-                    }
-            }
-            .onMove(perform: move)
-            QuickAddField(prompt: "Add an item", text: $newText, onSubmit: add)
-                .brutalRow(top: 10, bottom: 10)
-            Color.clear.frame(height: 40).brutalRow()
-        }
-        .brutalList()
-        .navigationTitle(list.displayTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Toggle("Hide ticked items", isOn: $hideDone)
-                    Toggle("Edit checklist", isOn: $editing)
-                    Button("Untick everything") { untickAll() }
-                    Button { showLinks = true } label: { Label("Links", systemImage: "link") }
-                    Button("Delete checklist", role: .destructive) { confirmDelete = true }
-                } label: {
-                    IconTile(symbol: "ellipsis", size: 36)
-                }
-                .toggleStyle(.automatic)
-            }
-        }
-        .navigationDestination(isPresented: $showLinks) {
-            LinksScreen(record: .checklist(list), title: list.displayTitle)
-        }
-        .brutalDialog("Delete \(list.displayTitle) and its items?", isPresented: $confirmDelete,
-                      confirm: "Delete", action: deleteList)
-    }
-
-    private var header: some View {
         let done = items.filter(\.isDone).count
-        let progress = items.isEmpty ? 0 : Double(done) / Double(items.count)
-        return HStack(spacing: Metrics.m) {
-            ZStack {
-                Circle().stroke(Palette.chip, lineWidth: 7)
-                Circle().trim(from: 0, to: progress)
-                    .stroke(Accent.green.color, style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-            }
-            .frame(width: 52, height: 52)
-            .padding(4)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(list.displayTitle).font(Typeface.body(16, weight: .bold)).foregroundStyle(Palette.ink)
-                Text("\(done) of \(items.count) done · \(list.phaseValue.title.lowercased())")
-                    .font(Typeface.body(12)).foregroundStyle(Palette.muted)
-                if !list.desc.isEmpty && !editing {
-                    Text(list.desc).font(Typeface.body(13)).foregroundStyle(Palette.muted).padding(.top, 2)
+        let n = items.count
+        let full = n > 0 && done == n
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                chev += 1
+                toggle()
+            } label: {
+                HStack(spacing: 14) {
+                    ProgressRing(fraction: n == 0 ? 0 : Double(done) / Double(n))
+                        .pop(pop, to: 1.3)
+                    RowText(title: list.displayTitle,
+                            subtitle: n == 0 ? "No items yet" : (full ? "All done" : "\(done) of \(n) done"))
+                    AnimatedIcon(.chev, size: 20, trigger: chev)
+                        .foregroundStyle(Palette.tomato)
+                        .rotationEffect(.degrees(open ? 90 : 0))
                 }
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+                .opacity(list.archived ? 0.55 : 1)
             }
-            Spacer(minLength: 0)
+            .buttonStyle(.plain)
+            .accessibilityHint(open ? "Hides the items" : "Shows the items")
+            if open {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(items) { item in
+                        ChecklistItemRow(item: item)
+                    }
+                    HStack(spacing: 12) {
+                        AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                        TextField("", text: $newText, prompt: Text("Add an item").foregroundStyle(Palette.inkFaint))
+                            .type(.bodyBold)
+                            .submitLabel(.done)
+                            .onSubmit(add)
+                    }
+                    .padding(.vertical, 10)
+                    Button { router.push(.checklist(list)) } label: {
+                        HStack(spacing: 6) {
+                            Text("Edit list").type(.buttonSmall)
+                            AnimatedIcon(.arrow, size: 15)
+                        }
+                        .foregroundStyle(Palette.tomatoInk)
+                        .frame(minHeight: 40)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.press)
+                    .padding(.bottom, 6)
+                }
+                .padding(.leading, 50)
+                .transition(.opacity.combined(with: .offset(y: -8)))
+            }
         }
-    }
-
-    private var editor: some View {
-        BrutalCard {
-            TextField("Title", text: $list.title).textFieldStyle(.brutal)
-            TextField("Description", text: $list.desc, axis: .vertical).textFieldStyle(.brutal)
-            HStack {
-                BrutalSelect("Phase", selection: Binding(get: { list.phaseValue }, set: { list.phaseValue = $0 })) {
-                    ForEach(ChecklistPhase.allCases) { Text($0.title).tag($0) }
-                }
-                Spacer()
-                BrutalSelect("Area", selection: Binding(get: { list.areaValue }, set: { list.areaValue = $0 })) {
-                    ForEach(Area.allCases) { Text($0.title).tag($0) }
-                }
-            }
-            .tint(Palette.ink)
-            Toggle("Archived", isOn: $list.archived).tint(Accent.green.color)
+        .overlay(alignment: .bottom) { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
+        .clipped()
+        .sensoryFeedback(.success, trigger: pop)
+        .onChange(of: full) { was, now in
+            guard now && !was else { return }
+            Motion.after(0.38) { pop += 1 }
+            router.showToast("\(list.displayTitle) · all done")
         }
     }
 
@@ -204,71 +220,116 @@ struct ChecklistDetail: View {
         item.checklistID = list.id
         item.areaValue = list.areaValue
         item.order = (items.map(\.order).max() ?? 0) + 1
-        ctx.insert(item)
+        withAnimation(Motion.arrive.rm) { ctx.insert(item) }
         newText = ""
-    }
-
-    private func untickAll() {
-        for item in items where item.isDone { item.setDone(false) }
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        var ordered = shownItems
-        ordered.move(fromOffsets: source, toOffset: destination)
-        for (index, item) in ordered.enumerated() { item.order = Double(index + 1) }
-    }
-
-    private func deleteList() {
-        let doomed = list
-        let doomedItems = items
-        let context = ctx
-        dismiss()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            for item in doomedItems { Store.delete(item, in: context) }
-            Store.delete(doomed, in: context)
-        }
     }
 }
 
-/// One checklist item: tick box and text; tap the text to open it as a task.
-private struct ChecklistItemRow: View {
+/// One checklist item: a ring to tick and its words; tap the words to open it as a task.
+struct ChecklistItemRow: View {
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     let item: Todo
 
     var body: some View {
-        CardLink {
-            TaskDetail(task: item)
-        } label: {
-            HStack(spacing: Metrics.m) {
-                TaskCheckbox(task: item)
-                Text(item.displayTitle)
-                    .font(Typeface.body(16, weight: .medium))
-                    .foregroundStyle(item.isDone ? Palette.muted : Palette.ink)
-                    .strikethrough(item.isDone)
-                Spacer(minLength: 0)
-                if let due = item.dueDate {
-                    Text(shortDate(due))
-                        .font(Typeface.body(12, weight: .semibold))
-                        .foregroundStyle(item.isOverdue ? Palette.danger : Palette.muted)
-                }
+        HStack(spacing: 12) {
+            RingButton(ticked: item.isDone, size: 22) { tick() }
+            Text(item.displayTitle)
+                .type(.bodyBold)
+                .strikethrough(item.isDone, color: Palette.ink)
+                .opacity(item.isDone ? 0.5 : 1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { router.push(.record(.task(item))) }
+            if let due = item.dueDate, !item.isDone {
+                WhenText(text: whenText(due), late: item.isOverdue)
             }
-            .padding(.horizontal, Metrics.m)
-            .padding(.vertical, 10)
-            .brutalBox(radius: Metrics.radiusSmall, shadow: Metrics.shadowSmall, border: Metrics.borderThin)
+        }
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityAction { router.push(.record(.task(item))) }
+        .accessibilityAction(named: item.isDone ? "Untick" : "Tick") { tick() }
+    }
+
+    private func tick() {
+        withAnimation(.easeOut(duration: 0.22)) {
+            item.setDone(!item.isDone)
+            Automations.taskDone(item, ctx)
         }
     }
 }
 
-/// The Links section on its own screen, for screens that aren't a Form.
-struct LinksScreen: View {
-    let record: AnyRecord
-    let title: String
+// MARK: - One checklist
+
+struct ChecklistDetail: View {
+    @Environment(\.modelContext) private var ctx
+    @Bindable var list: Checklist
+    @Query private var items: [Todo]
+    @State private var newText = ""
+
+    init(list: Checklist) {
+        self.list = list
+        let id = list.id
+        _items = Query(filter: #Predicate<Todo> { $0.checklistID == id }, sort: \Todo.order)
+    }
 
     var body: some View {
-        Form {
-            LinksSection(record: record)
+        let done = items.filter(\.isDone).count
+        DetailPage(aside: list.phaseValue.title, title: list.displayTitle,
+                   cap: items.isEmpty ? "No items yet" : "\(done) of \(items.count) done") {
+            HStack(spacing: 14) {
+                ProgressRing(fraction: items.isEmpty ? 0 : Double(done) / Double(items.count))
+                SectionHeader("Items", count: items.count)
+            }
+            .padding(.bottom, 4)
+            ForEach(items) { item in
+                ChecklistItemRow(item: item)
+                    .contextMenu {
+                        Button("Delete", role: .destructive) { Store.delete(item, in: ctx) }
+                    }
+            }
+            FieldRow {
+                AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                TextField("", text: $newText, prompt: Text("Add an item").foregroundStyle(Palette.inkFaint))
+                    .type(.bodyBold)
+                    .submitLabel(.done)
+                    .onSubmit(add)
+            }
+            FormBlock("Details") {
+                TextRow("Title", text: $list.title)
+                TextRow("Description", text: $list.desc, vertical: true, lines: 1...6)
+                SelectRow("When", selection: Binding(get: { list.phaseValue }, set: { list.phaseValue = $0 })) {
+                    ForEach(ChecklistPhase.allCases) { Text($0.title).tag($0) }
+                }
+                SelectRow("Area", selection: Binding(get: { list.areaValue }, set: { list.areaValue = $0 })) {
+                    ForEach(Area.allCases) { Text($0.title).tag($0) }
+                }
+                ToggleRow("Archived", isOn: $list.archived)
+            }
+            if done > 0 {
+                ActionRow(title: "Untick everything", icon: .undo) {
+                    withAnimation(Motion.fold.rm) {
+                        for item in items where item.isDone { item.setDone(false) }
+                    }
+                }
+            }
+            LinksBlock(record: .checklist(list))
+            DeleteButton(item: list, extra: { [items, ctx] in
+                for item in items { Store.delete(item, in: ctx) }
+            })
         }
-        .brutalForm()
-        .navigationTitle("Links")
-        .navigationBarTitleDisplayMode(.inline)
+        .captureContext(.task, linkTo: .checklist(list))
+    }
+
+    private func add() {
+        let text = newText.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+        let item = Todo()
+        item.title = text
+        item.checklistID = list.id
+        item.areaValue = list.areaValue
+        item.order = (items.map(\.order).max() ?? 0) + 1
+        withAnimation(Motion.arrive.rm) { ctx.insert(item) }
+        newText = ""
     }
 }

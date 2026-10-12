@@ -1,7 +1,6 @@
 import Foundation
 
 // Value lists from the API contract (app/api/openapi.yaml). Raw values are what goes over the wire.
-// `accent` names a colour from design/tokens.json (see Design/Tokens.swift).
 
 enum Area: String, CaseIterable, Identifiable {
     case visa, admin, finance, support, newsletter, selling, packing, housing, health, insurance, church, travel, ywam, personal, other
@@ -10,36 +9,6 @@ enum Area: String, CaseIterable, Identifiable {
         switch self {
         case .ywam: "YWAM"
         default: rawValue.prefix(1).uppercased() + rawValue.dropFirst()
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .visa: "airplane.departure"
-        case .admin: "building.columns"
-        case .finance: "eurosign.circle"
-        case .support: "person.2"
-        case .newsletter: "envelope.open"
-        case .selling: "tag"
-        case .packing: "suitcase"
-        case .housing: "house"
-        case .health: "cross.case"
-        case .insurance: "shield.lefthalf.filled"
-        case .church: "building"
-        case .travel: "map"
-        case .ywam: "globe.asia.australia"
-        case .personal: "person"
-        case .other: "circle.grid.2x2"
-        }
-    }
-    var accent: Accent {
-        switch self {
-        case .visa, .insurance: .purple
-        case .admin, .other: .grey
-        case .finance: .green
-        case .support, .newsletter, .health: .pink
-        case .selling, .housing, .personal: .sand
-        case .packing, .travel: .lime
-        case .church, .ywam: .yellow
         }
     }
 }
@@ -91,28 +60,6 @@ enum PartnerStage: String, CaseIterable, Identifiable {
         case .giving: "Giving"
         case .declined: "Not now"
         case .paused: "Paused"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .idea: "circle.dashed"
-        case .toAsk: "paperplane"
-        case .asked: "cup.and.saucer"
-        case .thinking: "hourglass"
-        case .committed: "hand.thumbsup"
-        case .giving: "heart.fill"
-        case .declined: "moon.zzz"
-        case .paused: "pause.circle"
-        }
-    }
-    var accent: Accent {
-        switch self {
-        case .idea, .declined, .paused: .grey
-        case .toAsk: .sand
-        case .asked: .yellow
-        case .thinking: .purple
-        case .committed: .lime
-        case .giving: .green
         }
     }
     /// Still needs something from you.
@@ -168,17 +115,6 @@ enum SellStatus: String, CaseIterable, Identifiable {
         case .store: "Storage"
         }
     }
-    var accent: Accent {
-        switch self {
-        case .decide: .grey
-        case .toList: .sand
-        case .listed: .yellow
-        case .reserved: .purple
-        case .sold: .green
-        case .givenAway: .lime
-        case .keep, .store: .pink
-        }
-    }
     /// Has a final place.
     var isSettled: Bool { [.sold, .givenAway, .keep, .store].contains(self) }
 }
@@ -210,15 +146,6 @@ enum NoteKind: String, CaseIterable, Identifiable {
         case .idea: "Idea"
         }
     }
-    var symbol: String {
-        switch self {
-        case .note: "note.text"
-        case .prayer: "hands.and.sparkles"
-        case .journal: "book.closed"
-        case .meeting: "person.2.wave.2"
-        case .idea: "lightbulb"
-        }
-    }
 }
 
 enum DocumentKind: String, CaseIterable {
@@ -229,35 +156,10 @@ enum DocumentKind: String, CaseIterable {
         default: rawValue.capitalized
         }
     }
-    var symbol: String {
-        switch self {
-        case .passport: "person.text.rectangle"
-        case .visa: "doc.badge.ellipsis"
-        case .insurance: "shield.lefthalf.filled"
-        case .ticket: "airplane"
-        case .id: "person.crop.rectangle"
-        case .bank: "eurosign.circle"
-        case .medical: "heart.text.square"
-        case .diploma: "graduationcap"
-        case .reference: "text.quote"
-        case .contract: "signature"
-        case .receipt: "receipt"
-        case .letter: "envelope"
-        case .other: "doc"
-        }
-    }
 }
 
 enum NewsletterStatus: String, CaseIterable, Identifiable {
     case idea, draft, ready, sent
     var id: String { rawValue }
     var title: String { rawValue.capitalized }
-    var accent: Accent {
-        switch self {
-        case .idea: .grey
-        case .draft: .sand
-        case .ready: .yellow
-        case .sent: .green
-        }
-    }
 }

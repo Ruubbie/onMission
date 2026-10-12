@@ -5,7 +5,10 @@ An iPhone app for getting to YWAM Queenstown. Everything you need is in one plac
 > This code has not been compiled yet, because there was no Mac or Swift compiler available while writing it. The first cloud build will show any compile errors. Send them to Claude and they'll be fixed.
 
 ## What's in it
-- **Today:** a countdown to departure, quick add ("call Jan friday #support"), a heads-up list (overdue tasks, expiring documents, partners to follow up or thank), this week's tasks, and your support compared with the target.
+- **Tabs:** Today, Tasks, People (partners and contacts), Prayer, and Move (checklists, vault, packing, budget, selling, newsletters, notes, guides, search and settings).
+- **Capture:** the round + next to the tab bar adds or finds anything from any tab. Type it like you'd say it: "Call Jan friday #support", "pray: the visa interview", "thanks: coffee with Jan", "sell: Bike 150", "pack: charger", "@Anna Jansen".
+- **Today:** a countdown to departure, thanks, today's cards (Done, or Tomorrow to move one on), the people waiting on you (call, WhatsApp or mark thanked right there), your support compared with the target, and a heads-up list (expiring documents, overdue tasks).
+- **People:** partners grouped by what they need from you, with "Needs you" first. Each partner screen leads with where they are on the path and the one thing to do next.
 - **Smart links:** any item can link to any other, for example a task to a partner, a document to a checklist, or a gift to a partner. Links show on both sides and sync to Windows.
 - **Automations:**
   - Moving a partner to "committed" adds a thank-you task.

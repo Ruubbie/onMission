@@ -1,158 +1,103 @@
 import SwiftUI
 import SwiftData
 
+/// Tasks (handoff §5): "TASKS" on tomato, the sheet starts high because the list is the point.
+/// Today · This week · Later, with the existing swipe actions.
 struct TasksView: View {
-    enum Grouping: String, CaseIterable, Identifiable {
-        case week = "This week", area = "By area", done = "Done"
-        var id: String { rawValue }
-    }
-
-    /// A titled group of tasks.
-    struct TaskSection: Identifiable {
-        let title: String
-        let tasks: [Todo]
-        var id: String { title }
+    enum Bucket: String, CaseIterable {
+        case today, week, later
+        var title: String {
+            switch self {
+            case .today: "Today"
+            case .week: "This week"
+            case .later: "Later"
+            }
+        }
     }
 
     @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     @Query(sort: [SortDescriptor(\Todo.order)]) private var tasks: [Todo]
-    @State private var grouping: Grouping = .week
-    @State private var areaFilter: Area?
-    @State private var search = ""
-    @State private var quick = ""
-    @State private var opened: Todo?
+    @State private var bucket: Bucket = .today
+    @State private var slide = 0
+    @State private var direction: CGFloat = 1
 
     /// Checklist items without a date live in their checklist, not here.
-    private var visible: [Todo] {
-        tasks.filter { t in
-            (t.checklistID.isEmpty || t.dueDate != nil)
-                && (grouping == .done ? t.isDone : !t.isDone)
-                && (areaFilter == nil || t.areaValue == areaFilter)
-                && (search.isEmpty || t.title.localizedCaseInsensitiveContains(search)
-                    || t.notes.localizedCaseInsensitiveContains(search))
-        }
+    private var open: [Todo] {
+        tasks.filter { !$0.isDone && ($0.checklistID.isEmpty || $0.dueDate != nil) }
     }
 
-    private var groups: [TaskSection] {
-        let list = visible
-        switch grouping {
-        case .area:
-            return Area.allCases.compactMap { a in
-                let ts = list.filter { $0.areaValue == a }.sorted(by: Insights.byDue)
-                return ts.isEmpty ? nil : TaskSection(title: a.title, tasks: ts)
-            }
-        case .done:
-            let sorted = list.sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
-            return sorted.isEmpty ? [] : [TaskSection(title: "Done", tasks: sorted)]
-        case .week:
-            return Self.byWeek(list)
-        }
-    }
-
-    static func byWeek(_ list: [Todo]) -> [TaskSection] {
+    /// Today = overdue + today; This week = tomorrow + the next 7 days; Later = later + no date.
+    static func bucket(of t: Todo) -> Bucket {
+        guard let due = t.dueDate else { return .later }
         let cal = Calendar.current
         let today = cal.startOfDay(for: .now)
-        var weeks: [Date: [Todo]] = [:]
-        var overdue: [Todo] = []
-        var someday: [Todo] = []
-        for t in list {
-            guard let due = t.dueDate else { someday.append(t); continue }
-            if due < today { overdue.append(t); continue }
-            let week = cal.dateInterval(of: .weekOfYear, for: due)?.start ?? due
-            weeks[week, default: []].append(t)
-        }
-        var out: [TaskSection] = []
-        if !overdue.isEmpty { out.append(TaskSection(title: "Overdue", tasks: overdue.sorted(by: Insights.byDue))) }
-        for week in weeks.keys.sorted() {
-            let title = cal.isDate(week, equalTo: today, toGranularity: .weekOfYear)
-                ? "This week" : "Week of \(week.formatted(.dateTime.day().month(.abbreviated)))"
-            out.append(TaskSection(title: title, tasks: (weeks[week] ?? []).sorted(by: Insights.byDue)))
-        }
-        if !someday.isEmpty { out.append(TaskSection(title: "No date", tasks: someday)) }
-        return out
+        if due < (cal.date(byAdding: .day, value: 1, to: today) ?? today) { return .today }
+        if due < (cal.date(byAdding: .day, value: 8, to: today) ?? today) { return .week }
+        return .later
     }
 
     var body: some View {
-        List {
-            controls
-            ForEach(groups) { group in
-                SectionHeader(group.title, count: group.tasks.count)
-                    .brutalRow(top: 12, bottom: 0)
-                ForEach(group.tasks) { t in
-                    TaskCardRow(task: t, showArea: grouping != .area, first: t.id == group.tasks.first?.id,
-                                last: t.id == group.tasks.last?.id)
+        let all = open
+        let groups = Dictionary(grouping: all, by: Self.bucket)
+        let rows = (groups[bucket] ?? []).sorted(by: Insights.byDue)
+        let items = Bucket.allCases.map { Segments<Bucket>.Item(value: $0, title: $0.title, count: groups[$0]?.count ?? 0) }
+        Screen(posterHeight: 186, sheetTop: 10) {
+            Lines("Tasks", .disp(92)).rise(0).at(22, 114)
+            Hand(all.isEmpty ? "All clear" : "\(all.count) left, you got this", size: 30, tilt: -5).rise(1).at(28, 212)
+            LineArt(drawing: Art.clipboard).at(268, 104)
+        } sheet: {
+            Segments(items: items, selection: $bucket)
+            List {
+                ForEach(rows) { t in
+                    TaskRow(task: t, subtitle: t.areaValue.title, when: whenText(t.dueDate), late: t.isOverdue,
+                            rule: t.id != rows.last?.id)
+                        .listRowInsets(EdgeInsets(top: 0, leading: Metrics.sheetSide, bottom: 0, trailing: Metrics.sheetSide))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 0, leading: Metrics.l, bottom: 0, trailing: Metrics.l))
                         .swipeActions(edge: .leading) {
-                            Button(t.isDone ? "Undo" : "Done") { toggle(t) }.tint(Palette.ok)
+                            Button("Done") { toggle(t) }.tint(Palette.tomato)
                         }
                         .swipeActions {
                             Button("Delete", role: .destructive) { Store.delete(t, in: ctx) }
-                            Button("Tomorrow") { move(t, days: 1) }.tint(Accent.purple.color)
+                            Button("Next week") { reschedule(t, days: 7) }.tint(Palette.plum)
+                            Button("Tomorrow") { reschedule(t, days: 1) }.tint(Palette.marigold)
                         }
                         .contextMenu { menu(for: t) }
                 }
-            }
-            if groups.isEmpty {
-                BrutalEmptyState(symbol: "checkmark", title: grouping == .done ? "Nothing done yet" : "All clear",
-                                 message: grouping == .done ? "Ticked tasks show up here." : "Ollie naps when the week is done.",
-                                 ollie: grouping == .done ? nil : .sleep)
-                    .brutalRow()
-            }
-            Color.clear.frame(height: 80).brutalRow()
-        }
-        .brutalList()
-        .toolbar(.hidden, for: .navigationBar)
-        .addButton(newTask)
-        .navigationDestination(item: $opened) { TaskDetail(task: $0) }
-    }
-
-    @ViewBuilder
-    private var controls: some View {
-        HStack {
-            Text("Tasks").font(Typeface.heading(18)).foregroundStyle(Palette.ink)
-            Spacer()
-            Cap("\(tasks.filter { !$0.isDone && ($0.checklistID.isEmpty || $0.dueDate != nil) }.count) open")
-            areaMenu
-        }
-        .brutalRow(top: 8, bottom: 4)
-        BrutalSegmented(options: Grouping.allCases.map { ($0, $0.rawValue) }, selection: $grouping)
-            .brutalRow(top: 2, bottom: 4)
-        BrutalSearchField(text: $search, prompt: "Search tasks")
-            .brutalRow(top: 2, bottom: 4)
-        QuickAddField(prompt: "New task (try \"Book GP friday #health\")", text: $quick, onSubmit: add)
-            .brutalRow(top: 2, bottom: 4)
-        if let a = areaFilter {
-            HStack {
-                FilterChip(text: a.title, accent: a.accent, symbol: "xmark", selected: true) { areaFilter = nil }
-                Spacer()
-            }
-            .brutalRow(top: 2, bottom: 2)
-        }
-    }
-
-    private var areaMenu: some View {
-        Menu {
-            Picker("Area", selection: $areaFilter) {
-                Text("All areas").tag(Area?.none)
-                ForEach(Area.allCases) { a in
-                    Label(a.title, systemImage: a.symbol).tag(Area?.some(a))
+                if rows.isEmpty {
+                    EmptyRow(title: bucket == .today ? "Nothing due today" : "Nothing here",
+                             message: "Add one with the + at the top.")
+                        .listRowInsets(EdgeInsets(top: 0, leading: Metrics.sheetSide, bottom: 0, trailing: Metrics.sheetSide))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
+                Color.clear.frame(height: 24)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             }
-        } label: {
-            IconTile(symbol: "line.3.horizontal.decrease", accent: areaFilter == nil ? nil : .yellow, size: 32)
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 1)
+            .padding(.horizontal, -Metrics.sheetSide)
+            .padding(.top, 4)
+            .slideIn(slide, direction: direction)
         }
+        .onChange(of: bucket) { old, new in
+            direction = Segments<Bucket>.direction(from: old, to: new, in: items)
+            slide += 1
+        }
+        .captureContext(.task)
     }
 
     @ViewBuilder
     private func menu(for t: Todo) -> some View {
         Button(t.isDone ? "Mark not done" : "Mark done") { toggle(t) }
         Menu("Move to") {
-            Button("Today") { t.dueDate = Calendar.current.startOfDay(for: .now) }
-            Button("Tomorrow") { move(t, days: 1) }
-            Button("Next week") { move(t, days: 7) }
-            Button("No date") { t.dueDate = nil }
+            Button("Today") { reschedule(t, days: 0) }
+            Button("Tomorrow") { reschedule(t, days: 1) }
+            Button("Next week") { reschedule(t, days: 7) }
+            Button("No date") { withAnimation { t.dueDate = nil } }
         }
         Menu("Status") {
             ForEach(TaskStatus.allCases) { s in
@@ -167,225 +112,284 @@ struct TasksView: View {
     }
 
     private func toggle(_ t: Todo) {
-        withAnimation {
+        withAnimation(Motion.fold.rm) {
             t.setDone(!t.isDone)
             Automations.taskDone(t, ctx)
         }
     }
 
-    private func move(_ t: Todo, days: Int) {
-        let base = max(t.dueDate ?? .now, Calendar.current.startOfDay(for: .now))
-        t.dueDate = Calendar.current.date(byAdding: .day, value: days, to: Calendar.current.startOfDay(for: base))
-    }
-
-    private func add() {
-        let parsed = QuickAdd.parse(quick)
-        guard !parsed.title.isEmpty else { return }
-        let t = Automations.addTask(parsed.title, due: parsed.due, area: parsed.area ?? areaFilter ?? .other, ctx)
-        if let p = parsed.priority { t.priorityValue = p }
-        quick = ""
-    }
-
-    private func newTask() {
-        let t = Automations.addTask("", due: nil, area: areaFilter ?? .other, ctx)
-        opened = t
-    }
-}
-
-// MARK: - Rows
-
-/// The tick box for a task.
-struct TaskCheckbox: View {
-    @Environment(\.modelContext) private var ctx
-    let task: Todo
-
-    var body: some View {
-        Button {
-            withAnimation {
-                task.setDone(!task.isDone)
-                Automations.taskDone(task, ctx)
-            }
-        } label: {
-            Image(systemName: "checkmark")
-                .font(.system(size: 10, weight: .black))
-                .foregroundStyle(task.isDone ? Palette.doneInk : Color.clear)
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(task.isDone ? Accent.green.color : Color.clear))
-                .overlay(Circle().strokeBorder(task.isDone ? Accent.green.color : Palette.ring, lineWidth: 2))
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
+    /// Due a number of days from today (overdue tasks move forward from today, not from their old date).
+    private func reschedule(_ t: Todo, days: Int) {
+        withAnimation(Motion.fold.rm) {
+            t.dueDate = Calendar.current.date(byAdding: .day, value: days, to: Calendar.current.startOfDay(for: .now))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(task.isDone ? "Mark not done" : "Mark done")
+        router.showToast(days == 0 ? "Moved to today" : (days == 1 ? "Moved to tomorrow" : "Moved to next week"))
     }
 }
 
-/// Checkbox, area tag, title and the day on the right. With `opensDetail` the text opens the task (for use outside Lists).
+// MARK: - A task as a row
+
+/// Ring, title, subtitle and when. Tap the ring to tick it (the check draws, the title strikes through,
+/// the row folds away); tap the row to open the task.
 struct TaskRow: View {
-    let task: Todo
-    var showArea: Bool = true
-    var opensDetail: Bool = false
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            TaskCheckbox(task: task)
-            if opensDetail {
-                NavigationLink { TaskDetail(task: task) } label: { text }
-                    .buttonStyle(.plain)
-            } else {
-                text
-            }
-        }
-    }
-
-    private var text: some View {
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 1) {
-                if showArea || task.priorityValue == .high || task.statusValue == .waiting || task.statusValue == .doing {
-                    Text(tag)
-                        .font(Typeface.body(11.5, weight: .semibold))
-                        .foregroundStyle(Palette.tag)
-                        .lineLimit(1)
-                }
-                Text(task.displayTitle)
-                    .font(Typeface.body(14, weight: .semibold))
-                    .foregroundStyle(task.isDone ? Palette.muted : Palette.ink)
-                    .strikethrough(task.isDone, color: Palette.ring)
-                    .multilineTextAlignment(.leading)
-            }
-            Spacer(minLength: 4)
-            if let due = task.dueDate {
-                Text(shortDate(due))
-                    .font(Typeface.body(11.5, weight: .semibold))
-                    .foregroundStyle(task.isOverdue ? Palette.danger : Palette.muted)
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-
-    private var tag: String {
-        var parts: [String] = []
-        if showArea { parts.append(task.areaValue.title) }
-        if task.statusValue == .doing || task.statusValue == .waiting { parts.append(task.statusValue.title) }
-        if task.priorityValue == .high { parts.append("High") }
-        return parts.joined(separator: " · ")
-    }
-}
-
-/// A task as a line in one soft card per group (rounded at the group's top and bottom).
-struct TaskCardRow: View {
-    let task: Todo
-    var showArea: Bool = true
-    var first: Bool = true
-    var last: Bool = true
-
-    var body: some View {
-        CardLink {
-            TaskDetail(task: task)
-        } label: {
-            VStack(spacing: 0) {
-                TaskRow(task: task, showArea: showArea)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                if !last { Rectangle().fill(Palette.hairline).frame(height: 1).padding(.horizontal, 12) }
-            }
-            .background(UnevenRoundedRectangle(topLeadingRadius: first ? 18 : 0, bottomLeadingRadius: last ? 18 : 0,
-                                               bottomTrailingRadius: last ? 18 : 0, topTrailingRadius: first ? 18 : 0,
-                                               style: .continuous).fill(Palette.paper))
-        }
-    }
-}
-
-// MARK: - Detail
-
-struct TaskDetail: View {
     @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
+    let task: Todo
+    var subtitle: String = ""
+    var when: String? = nil
+    var late = false
+    var rule = true
+    @State private var ticked = false
+
+    var body: some View {
+        Row(rule: rule) {
+            RingButton(ticked: ticked || task.isDone) { tick() }
+            RowText(title: task.displayTitle, subtitle: subtitle, late: late && when == nil, struck: ticked || task.isDone)
+                .contentShape(Rectangle())
+                .onTapGesture { router.push(.task(task)) }
+            if let when {
+                WhenText(text: when, late: late)
+                    .contentShape(Rectangle())
+                    .onTapGesture { router.push(.task(task)) }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAction { router.push(.task(task)) }
+        .accessibilityAction(named: "Mark done") { tick() }
+    }
+
+    private func tick() {
+        guard !ticked, !task.isDone else { return }
+        ticked = true
+        let t = task
+        let context = ctx
+        Motion.after(0.56) {
+            withAnimation(Motion.fold.rm) {
+                t.setDone(true)
+                Automations.taskDone(t, context)
+            }
+        }
+    }
+}
+
+// MARK: - The Task page
+
+/// Its area by hand, its title big, when it's due; pick when, jump to what it's linked to, mark it done.
+struct TaskPage: View {
+    enum When: String, CaseIterable {
+        case today, tomorrow, week, none
+        var title: String {
+            switch self {
+            case .today: "Today"
+            case .tomorrow: "Tomorrow"
+            case .week: "Next week"
+            case .none: "No date"
+            }
+        }
+        var days: Int? {
+            switch self {
+            case .today: 0
+            case .tomorrow: 1
+            case .week: 7
+            case .none: nil
+            }
+        }
+    }
+
+    @Environment(\.modelContext) private var ctx
+    @Environment(Router.self) private var router
     @Bindable var task: Todo
     @Query private var checklists: [Checklist]
+    @State private var when: When = .today
+    @State private var donePlay = 0
+    @State private var done = false
+    @State private var showDetails = false
+
+    init(task: Todo) {
+        self.task = task
+        _when = State(initialValue: Self.when(of: task.dueDate))
+    }
 
     var body: some View {
-        Form {
-            FormHeroRow {
-                TextField("Task", text: $task.title, axis: .vertical)
-                    .font(Typeface.heading(22))
-                    .foregroundStyle(Palette.ink)
-                HStack(spacing: Metrics.s) {
-                    TaskCheckbox(task: task)
-                    Text(task.isDone ? "Done" : "Not done yet")
-                        .font(Typeface.body(15, weight: .semibold))
-                    Spacer()
-                    Chip(text: task.areaValue.title, accent: task.areaValue.accent, symbol: task.areaValue.symbol)
-                }
+        let size: CGFloat = task.displayTitle.count > 22 ? 58 : 68
+        Screen(posterHeight: 306) {
+            Hand(task.areaValue.title).rise(0).at(24, 106)
+            VStack(alignment: .leading, spacing: 0) {
+                Lines(wrapLines(task.displayTitle, .disp(size), width: 346, maxLines: 3), .disp(size), lineHeight: 0.9, minScale: 0.6)
+                CapLine(dueLine)
+                    .id(dueLine)
+                    .transition(.asymmetric(insertion: .offset(y: 14).combined(with: .opacity), removal: .offset(y: -14).combined(with: .opacity)))
+                    .padding(.top, 16)
+                    .padding(.leading, 2)
             }
-
-            Section {
-                BrutalSelect("Status", selection: statusBinding) {
-                    ForEach(TaskStatus.allCases) { Text($0.title).tag($0) }
-                }
-                if task.statusValue == .waiting {
-                    TextField("Waiting on (person, office…)", text: $task.waitingOn)
-                }
-                BrutalSelect("Area", selection: Binding(get: { task.areaValue }, set: { task.areaValue = $0 })) {
-                    ForEach(Area.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
-                }
-                BrutalSelect("Priority", selection: Binding(get: { task.priorityValue }, set: { task.priorityValue = $0 })) {
-                    ForEach(Priority.allCases) { Text($0.title).tag($0) }
-                }
-                OptionalDatePicker(title: "Due date", date: $task.dueDate)
-            } header: { FormHeader("Task") }
-
-            Section {
-                Toggle("Remind me", isOn: Binding(
-                    get: { task.remindAt != nil },
-                    set: { task.remindAt = $0 ? (task.remindAt ?? defaultReminder) : nil }
-                ))
-                if let remind = task.remindAt {
-                    BrutalDateRow(title: "At", date: Binding(get: { remind }, set: { task.remindAt = $0 }), components: [.date, .hourAndMinute])
-                }
-            } header: { FormHeader("Reminder") }
-
-            if let list = checklists.first(where: { $0.id == task.checklistID }) {
-                Section {
-                    NavigationLink { ChecklistDetail(list: list) } label: {
-                        Label(list.displayTitle, systemImage: "checklist")
-                    }
-                } header: { FormHeader("In checklist") }
-            }
-
-            Section {
-                TextField("Anything you want to remember", text: $task.notes, axis: .vertical)
-                    .lineLimit(3...12)
-                TextField("Link (website, form…)", text: $task.sourceURL)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                if let url = URL(string: task.sourceURL), !task.sourceURL.isEmpty, url.scheme != nil {
-                    Link(destination: url) { Label("Open link", systemImage: "safari") }
-                }
-            } header: { FormHeader("Notes") }
-
-            LinksSection(record: .task(task))
-
-            Section { DeleteRecordButton(item: task) }
+            .frame(width: 346, alignment: .leading)
+            .rise(1)
+            .at(22, 146)
+        } sheet: {
+            SheetScroll { sheet }
         }
-        .brutalForm()
-        .navigationTitle(task.displayTitle)
-        .navigationBarTitleDisplayMode(.inline)
+        .captureContext(.task, linkTo: .task(task))
         .onDisappear { Task { await Reminders.refresh(ctx) } }
     }
 
-    private var statusBinding: Binding<TaskStatus> {
-        Binding(get: { task.statusValue }, set: { new in
-            task.statusValue = new
-            task.completedAt = task.isDone ? (task.completedAt ?? Date.now) : nil
-            Automations.taskDone(task, ctx)
-        })
+    private var dueLine: String {
+        if task.isDone { return "Done" }
+        guard let due = task.dueDate else { return "No date" }
+        if task.isOverdue { return "Was due \(shortDate(due, midSentence: true))" }
+        return "Due \(shortDate(due, midSentence: true))"
+    }
+
+    static func when(of date: Date?) -> When {
+        guard let date else { return .none }
+        let cal = Calendar.current
+        if date < (cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: .now)) ?? .now) { return .today }
+        if cal.isDateInTomorrow(date) { return .tomorrow }
+        return .week
+    }
+
+    @ViewBuilder
+    private var sheet: some View {
+        SectionHeader("When")
+        Pills(items: When.allCases.map { Pills<When>.Item(value: $0, title: $0.title) }, selection: $when, tight: true)
+            .padding(.top, 10)
+            .onChange(of: when) { _, new in move(to: new) }
+
+        let linked = Links.linked(to: .task(task), ctx)
+        if !linked.isEmpty {
+            SectionHeader("Linked to").padding(.top, 6)
+            ForEach(Array(linked.enumerated()), id: \.element.id) { index, rec in
+                LinkedRow(record: rec, rule: index < linked.count - 1)
+            }
+        }
+
+        Button {
+            markDone()
+        } label: {
+            ButtonLabel(title: done || task.isDone ? "Done" : "Mark done", icon: .check, trigger: donePlay)
+        }
+        .buttonStyle(.wide)
+        .pop(donePlay)
+        .padding(.top, 16)
+        .disabled(done)
+        .sensoryFeedback(.success, trigger: donePlay)
+
+        MoreLink(title: showDetails ? "Fewer details" : "More details") {
+            withAnimation(.easeOut(duration: 0.25)) { showDetails.toggle() }
+        }
+        if showDetails { details.transition(.opacity) }
+    }
+
+    private func move(to w: When) {
+        let target = w.days.flatMap { Calendar.current.date(byAdding: .day, value: $0, to: Calendar.current.startOfDay(for: .now)) }
+        if Self.when(of: task.dueDate) == w { return }
+        withAnimation(.curve(0.2, 0.85, 0.25, 1, 0.34).rm) { task.dueDate = target }
+        router.showToast(w == .none ? "Moved to no date" : "Moved to \(w.title.lowercased())")
+    }
+
+    private func markDone() {
+        guard !done else { return }
+        done = true
+        donePlay += 1
+        Motion.after(0.65) {
+            router.back()
+            Motion.after(0.56, always: true) {
+                withAnimation(Motion.fold.rm) {
+                    task.setDone(true)
+                    Automations.taskDone(task, ctx)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var details: some View {
+        FormBlock("Task") {
+            TitleField(placeholder: "Task", text: $task.title)
+            SelectRow("Status", selection: Binding(get: { task.statusValue }, set: { new in
+                task.statusValue = new
+                task.completedAt = task.isDone ? (task.completedAt ?? .now) : nil
+                Automations.taskDone(task, ctx)
+            })) {
+                ForEach(TaskStatus.allCases) { Text($0.title).tag($0) }
+            }
+            if task.statusValue == .waiting {
+                TextRow("Waiting on (person, office…)", text: $task.waitingOn)
+            }
+            SelectRow("Area", selection: Binding(get: { task.areaValue }, set: { task.areaValue = $0 })) {
+                ForEach(Area.allCases) { Text($0.title).tag($0) }
+            }
+            SelectRow("Priority", selection: Binding(get: { task.priorityValue }, set: { task.priorityValue = $0 })) {
+                ForEach(Priority.allCases) { Text($0.title).tag($0) }
+            }
+            OptionalDateRow(title: "Due date", date: $task.dueDate)
+        }
+        FormBlock("Reminder") {
+            ToggleRow("Remind me", isOn: Binding(
+                get: { task.remindAt != nil },
+                set: { task.remindAt = $0 ? (task.remindAt ?? defaultReminder) : nil }
+            ))
+            if let remind = task.remindAt {
+                DateRow(title: "At", date: Binding(get: { remind }, set: { task.remindAt = $0 }), components: [.date, .hourAndMinute])
+            }
+        }
+        if let list = checklists.first(where: { $0.id == task.checklistID }) {
+            FormBlock("In checklist") {
+                ActionRow(title: list.displayTitle, icon: .list) { router.push(.checklist(list)) }
+            }
+        }
+        FormBlock("Notes") {
+            TextRow("Anything you want to remember", text: $task.notes, vertical: true, lines: 3...12)
+            TextRow("Link (website, form…)", text: $task.sourceURL, keyboard: .URL, plain: true)
+            if let url = URL(string: task.sourceURL), !task.sourceURL.isEmpty, url.scheme != nil {
+                Link(destination: url) {
+                    FieldRow { AnimatedIcon(.link, size: 20).foregroundStyle(Palette.tomato); Text("Open link").type(.bodyBold) }
+                }
+            }
+        }
+        LinksBlock(record: .task(task))
+        DeleteButton(item: task)
     }
 
     private var defaultReminder: Date {
         let base = task.dueDate ?? Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
         return Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: base) ?? base
+    }
+}
+
+/// A linked record as a row: an avatar for a person, a document box for anything else. Opens its page.
+struct LinkedRow: View {
+    @Environment(Router.self) private var router
+    let record: AnyRecord
+    var rule = true
+    @State private var play = 0
+
+    var body: some View {
+        Button {
+            play += 1
+            router.open(record)
+        } label: {
+            Row(rule: rule) {
+                switch record {
+                case .partner(let p): Avatar(name: p.displayTitle)
+                case .contact(let c): Avatar(name: c.displayTitle)
+                default: DocBox(icon: record.icon, trigger: play)
+                }
+                RowText(title: record.title, subtitle: record.typeLabel)
+                AnimatedIcon(.chev, size: 20, trigger: play).foregroundStyle(Palette.tomato)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+extension Router {
+    /// Opens the right page for any record.
+    func open(_ record: AnyRecord) {
+        switch record {
+        case .partner(let p): push(.partner(p))
+        case .task(let t) where t.checklistID.isEmpty: push(.task(t))
+        case .checklist(let c): push(.checklist(c))
+        default: push(.record(record))
+        }
     }
 }

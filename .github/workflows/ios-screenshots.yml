@@ -1,0 +1,72 @@
+# Screenshots of the iPhone app from the simulator, for reviewing redesign branches without a Mac.
+# Runs on pushes to redesign/** branches (and by hand). Download them under the run's Artifacts.
+name: iOS screenshots
+
+on:
+  push:
+    branches: ["redesign/**"]
+    paths: ["missions/app/ios/**", ".github/workflows/ios-screenshots.yml"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: missions/app/ios
+
+jobs:
+  shots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project OnMission.xcodeproj -scheme OnMission -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && ok=0 || ok=$?
+          grep -E "error:" build.log | sort -u | head -n 100 || true
+          tail -n 20 build.log
+          exit $ok
+      - name: Take screenshots
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          print([x['udid'] for k, v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone 16')][0])")
+          echo "Simulator: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance light
+          xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.ContinuousPath EnableContinuousPathIntroduction -bool false || true
+          xcrun simctl spawn "$UDID" defaults write com.apple.Preferences DidShowContinuousPathIntroduction -bool true || true
+          xcrun simctl spawn "$UDID" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool true || true
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/OnMission.app
+          BUNDLE=nl.rubenonmission.onmission
+          mkdir -p shots
+          shot() {
+            name=$1; shift
+            xcrun simctl terminate "$UDID" $BUNDLE 2>/dev/null || true
+            xcrun simctl launch "$UDID" $BUNDLE "$@"
+            sleep 8
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          shot partner -startTab people -startPartner YES
+          shot today -startTab today
+          shot tasks -startTab tasks
+          shot people -startTab people
+          shot prayer -startTab prayer
+          shot move -startTab move
+          shot capture -startTab people -startCapture YES
+          for page in checklists vault packing budget selling newsletters notes guides settings allpeople; do
+            shot "page-$page" -startTab move -startPage $page
+          done
+          xcrun simctl ui "$UDID" content_size accessibility-medium
+          shot today-large-text -startTab today
+          shot people-large-text -startTab people
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: missions/app/ios/shots
