@@ -123,6 +123,10 @@ struct PeopleView: View {
     @Query private var gifts: [Gift]
     @Query private var settingsList: [MissionSettings]
     @State private var giving = false
+    @State private var showAllWaiting = false
+
+    /// How many people waiting on you show before "Show all".
+    private static let waitingShown = 5
 
     private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
 
@@ -143,7 +147,6 @@ struct PeopleView: View {
             SheetScroll {
                 HStack(spacing: 8) {
                     ActionButton(title: "Someone gives", icon: .heart, style: .filledSmall) { giving = true }
-                    ActionButton(title: "All \(partners.count) people", style: .outlinedSmall) { router.push(.allPeople) }
                     Spacer(minLength: 0)
                 }
                 .padding(.bottom, 16)
@@ -151,13 +154,20 @@ struct PeopleView: View {
                     SectionHeader("Waiting on you")
                     EmptyRow(title: "Nobody's waiting on you", message: "Nice. Nothing needs you right now.")
                 } else {
-                    // Everyone, not the first few: the sheet rises to the top bar when the list is long.
+                    // The first few; the rest behind "Show all", so the sheet stays short until asked.
+                    let shown = showAllWaiting ? waiting : Array(waiting.prefix(Self.waitingShown))
                     SectionHeader("Waiting on you", count: waiting.count)
-                    ForEach(Array(waiting.enumerated()), id: \.element.id) { index, p in
-                        WaitingRow(partner: p, gifts: gifts, rule: index < waiting.count - 1)
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, p in
+                        WaitingRow(partner: p, gifts: gifts, rule: index < shown.count - 1)
                             .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .trailing).combined(with: .opacity)))
                     }
+                    if waiting.count > Self.waitingShown {
+                        MoreLink(title: showAllWaiting ? "Show fewer" : "Show all \(waiting.count)") {
+                            withAnimation(.easeOut(duration: 0.25)) { showAllWaiting.toggle() }
+                        }
+                    }
                 }
+                MoreLink(title: "All \(partners.count) people") { router.push(.allPeople) }
             }
         }
         .captureContext(.partner)

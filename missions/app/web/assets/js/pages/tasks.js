@@ -5,7 +5,7 @@ import { store } from "../store.js";
 import { I, anim } from "../motion.js";
 import { esc, ring, fold, slideIn, placeBar, isDesk } from "../ui.js";
 import { todayStr } from "../util.js";
-import { bucketTasks, setTaskDone, whenLabel } from "./common.js";
+import { bucketTasks, setTaskDone, whenLabel, isDone } from "./common.js";
 
 export const title = "Tasks";
 
@@ -19,10 +19,16 @@ export function build() {
     <div class="abs disp ttl in">Tasks</div>
     <div class="abs hand note in">${left} left, you got this</div>
     <img class="abs art pic in" src="assets/art/tasks.webp" alt="" style="left:252px;top:96px;width:128px">
-    <div class="sheet">${isDesk() ? board(buckets) : `
+    <div class="sheet">${checklistsLink()}${isDesk() ? board(buckets) : `
       <div class="seg" id="seg">${SEGS.map(([id, label]) => `<button data-seg="${id}" class="${id === seg ? "on" : ""}">${label}<i>${buckets[id].length}</i></button>`).join("")}<i class="bar"></i></div>
       <div class="tlist" id="tlist">${rows(buckets[seg])}</div>`}
     </div>`;
+}
+
+/** The entry to Checklists (their items are tasks too, so they are reached from here, not from Move). */
+function checklistsLink() {
+  const left = store.list("tasks").filter((t) => t.checklistId && !isDone(t)).length;
+  return `<a class="more" href="#/checklists" style="padding-top:0;margin-bottom:12px">Checklists · ${left} left ${I.arrow}</a>`;
 }
 
 /** On a desktop the three segments sit side by side as a board. */

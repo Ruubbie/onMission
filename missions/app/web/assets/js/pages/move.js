@@ -1,4 +1,5 @@
-// Move: the readiness for the move on tomato, and eight tiles to the pages that get you there.
+// Move: the readiness for the move on tomato, and seven tiles, in three groups, to the pages that get you there.
+// Checklists live on the Tasks tab (one link there), so they are not repeated here.
 // Port of prototype.html #s-move. Readiness is the average of checklist progress, papers in the
 // Vault and packing (HANDOFF.md §13 proposes this; it is a choice to confirm with Ruben).
 
@@ -11,16 +12,21 @@ import { guideProgress } from "./guides.js";
 
 export const title = "Move";
 
-const HUBS = [
-  { route: "checklists", icon: "list", name: "Checklists" },
-  { route: "vault", icon: "lock", name: "Vault" },
-  { route: "packing", icon: "case", name: "Packing" },
-  { route: "budget", icon: "euro", name: "Budget" },
-  { route: "selling", icon: "tag", name: "Selling" },
-  { route: "newsletter", icon: "mail", name: "Newsletters" },
-  { route: "notes", icon: "note", name: "Notes" },
-  { route: "guides", icon: "book", name: "Guides" },
-];
+const HUBS = {
+  "Papers & money": [
+    { route: "vault", icon: "lock", name: "Vault" },
+    { route: "budget", icon: "euro", name: "Budget" },
+    { route: "selling", icon: "tag", name: "Selling" },
+  ],
+  "Packing & guides": [
+    { route: "packing", icon: "case", name: "Packing" },
+    { route: "guides", icon: "book", name: "Guides" },
+  ],
+  "Writing": [
+    { route: "newsletter", icon: "mail", name: "Newsletters" },
+    { route: "notes", icon: "note", name: "Notes" },
+  ],
+};
 
 /** Readiness: the average of checklist progress, papers in the Vault and packing (0–100). */
 export function readiness() {
@@ -37,10 +43,6 @@ export function readiness() {
 function status(route) {
   const today = todayStr();
   switch (route) {
-    case "checklists": {
-      const left = store.list("tasks").filter((t) => t.checklistId && t.status !== "done" && t.status !== "skipped").length;
-      return { text: `${left} left`, alert: false };
-    }
     case "vault": {
       const missing = store.list("documents").filter((d) => !d.fileId).length;
       return { text: missing ? `${missing} missing` : "All in", alert: missing > 0 };
@@ -90,10 +92,12 @@ export function build() {
       <text x="34" y="134" text-anchor="middle" font-family="Archivo" font-weight="800" font-size="12" letter-spacing="1.5" fill="#1E1A17">AMS</text>
       <text x="356" y="134" text-anchor="middle" font-family="Archivo" font-weight="800" font-size="12" letter-spacing="1.5" fill="#1E1A17">ZQN</text>
     </svg>
-    <div class="sheet"><div class="grid" id="grid">${HUBS.map((h) => {
-      const st = status(h.route);
-      return `<button class="tile" data-route="${h.route}">${I[h.icon]}<span class="nm">${h.name}</span><span class="st ${st.alert ? "alert" : ""}">${esc(st.text)}</span></button>`;
-    }).join("")}</div>${isDesk() ? panels() : ""}</div>`;
+    <div class="sheet">${Object.entries(HUBS).map(([name, hubs], i) => `
+      <div class="sec" style="margin-top:${i ? 18 : 0}px">${esc(name)}</div>
+      <div class="grid">${hubs.map((h) => {
+        const st = status(h.route);
+        return `<button class="tile" data-route="${h.route}">${I[h.icon]}<span class="nm">${h.name}</span><span class="st ${st.alert ? "alert" : ""}">${esc(st.text)}</span></button>`;
+      }).join("")}</div>`).join("")}${isDesk() ? panels() : ""}</div>`;
 }
 
 /** Desktop only: what's next on the checklists and which papers are still missing, under the tiles. */
@@ -118,10 +122,10 @@ function panels() {
 export function init(root) {
   const arc = root.querySelector("#arc"), plane = root.querySelector("#plane");
   if (arc && plane) along(arc, plane, pctFromReadiness(), 1600);
-  const grid = root.querySelector("#grid");
-  grid.querySelectorAll(".tile").forEach((t, i) => anim(t, [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 420, delay: 140 + i * 35, easing: "cubic-bezier(.2,.85,.25,1)" }));
-  grid.querySelectorAll(".tile svg[data-la]").forEach((sv, i) => playIcon(sv, 260 + i * 70));
-  grid.addEventListener("click", (e) => {
+  const sheet = root.querySelector(".sheet");
+  sheet.querySelectorAll(".tile").forEach((t, i) => anim(t, [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 420, delay: 140 + i * 35, easing: "cubic-bezier(.2,.85,.25,1)" }));
+  sheet.querySelectorAll(".tile svg[data-la]").forEach((sv, i) => playIcon(sv, 260 + i * 70));
+  sheet.addEventListener("click", (e) => {
     const t = e.target.closest(".tile");
     if (t) location.hash = `#/${t.dataset.route}`;
   });

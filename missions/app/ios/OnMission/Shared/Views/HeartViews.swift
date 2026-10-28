@@ -532,6 +532,7 @@ struct NotesPage: View {
                         ActionRow(title: "New \(k.title.lowercased())", icon: k.icon) { newNote(k) }
                     }
                 }
+                MoreLink(title: "Prayers & thanks are on the Prayer tab") { router.select(.prayer) }
             }
         }
         .onChange(of: kind) { old, new in

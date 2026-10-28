@@ -30,12 +30,23 @@ struct MoveView: View {
         var alert: Bool = false
     }
 
+    /// Checklists are on the Tasks tab (one link there), so they are not a tile here.
     enum Hub: CaseIterable {
-        case checklists, vault, packing, budget, selling, newsletters, notes, guides
+        case vault, budget, selling, packing, guides, newsletters, notes
+
+        /// The three groups on the sheet, in order. Checklists moved to Tasks.
+        static let groups = ["Papers & money", "Packing & guides", "Writing"]
+
+        var group: String {
+            switch self {
+            case .vault, .budget, .selling: Self.groups[0]
+            case .packing, .guides: Self.groups[1]
+            case .newsletters, .notes: Self.groups[2]
+            }
+        }
 
         var title: String {
             switch self {
-            case .checklists: "Checklists"
             case .vault: "Vault"
             case .packing: "Packing"
             case .budget: "Budget"
@@ -48,7 +59,6 @@ struct MoveView: View {
 
         var icon: Icon {
             switch self {
-            case .checklists: .list
             case .vault: .lock
             case .packing: .bag
             case .budget: .euro
@@ -61,7 +71,6 @@ struct MoveView: View {
 
         var page: Page {
             switch self {
-            case .checklists: .checklists
             case .vault: .vault
             case .packing: .packing
             case .budget: .budget
@@ -112,13 +121,18 @@ struct MoveView: View {
             ArcArt(fraction: ready, trigger: entry, from: "AMS", to: airport).at(0, 236)
         } sheet: {
             SheetScroll {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)], spacing: 9) {
-                    ForEach(Array(Hub.allCases.enumerated()), id: \.offset) { index, hub in
-                        let s = status(for: hub)
-                        Tile(icon: hub.icon, title: hub.title, status: s.text, alert: s.alert, trigger: tilePlay[index]) {
-                            router.push(hub.page)
+                ForEach(Hub.groups, id: \.self) { group in
+                    SectionHeader(group)
+                        .padding(.top, group == Hub.groups.first ? 0 : 14)
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)], spacing: 9) {
+                        ForEach(Hub.allCases.filter { $0.group == group }, id: \.self) { hub in
+                            let index = Hub.allCases.firstIndex(of: hub) ?? 0
+                            let s = status(for: hub)
+                            Tile(icon: hub.icon, title: hub.title, status: s.text, alert: s.alert, trigger: tilePlay[index]) {
+                                router.push(hub.page)
+                            }
+                            .rise(index)
                         }
-                        .rise(index)
                     }
                 }
                 MoreLink(title: "Find anything") { router.push(.search) }
@@ -146,11 +160,6 @@ struct MoveView: View {
 
     private func status(for hub: Hub) -> Status {
         switch hub {
-        case .checklists:
-            let items = tasks.filter { !$0.checklistID.isEmpty }
-            let left = items.filter { !$0.isDone }.count
-            if items.isEmpty { return Status(text: "Start one") }
-            return Status(text: left == 0 ? "All done" : "\(left) left")
         case .vault:
             let soon = documents.filter { d in d.expiresAt.map(Document.expiresSoon) ?? false }.count
             let missing = documents.filter { !$0.hasFile }.count

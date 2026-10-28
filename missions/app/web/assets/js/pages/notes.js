@@ -3,6 +3,7 @@
 
 import { store } from "../store.js";
 import { esc, slideIn, mkPills } from "../ui.js";
+import { I } from "../motion.js";
 
 export const title = "Notes";
 export const parent = "move";
@@ -29,6 +30,7 @@ export function build() {
     <div class="sheet" style="padding-top:16px">
       <div class="pills" id="kinds"></div>
       <div class="scroll" data-list>${list()}</div>
+      <a class="more" href="#/prayer">Prayers &amp; thanks are on the Prayer tab ${I.arrow}</a>
     </div>`;
 }
 

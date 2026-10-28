@@ -27,6 +27,11 @@ struct TasksView: View {
         tasks.filter { !$0.isDone && ($0.checklistID.isEmpty || $0.dueDate != nil) }
     }
 
+    /// Checklist items still to tick. Checklists are reached from the link above the list.
+    private var checklistsLeft: Int {
+        tasks.filter { !$0.checklistID.isEmpty && !$0.isDone }.count
+    }
+
     /// Today = overdue + today; This week = tomorrow + the next 7 days; Later = later + no date.
     static func bucket(of t: Todo) -> Bucket {
         guard let due = t.dueDate else { return .later }
@@ -47,6 +52,7 @@ struct TasksView: View {
             Hand(all.isEmpty ? "All clear" : "\(all.count) left, you got this", size: 30, tilt: -5).rise(1).at(28, 212)
             Picture(.tasks, height: 153).rise(2).at(252, 96)
         } sheet: {
+            MoreLink(title: "Checklists · \(checklistsLeft) left") { router.push(.checklists) }
             Segments(items: items, selection: $bucket)
             List {
                 ForEach(rows) { t in
