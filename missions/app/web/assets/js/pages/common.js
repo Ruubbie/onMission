@@ -70,36 +70,90 @@ export function whenLabel(dueDate, today = todayStr()) {
   return new Date(`${dueDate}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-/** The partner stages in the order of the stage path (the Partner page). */
-export const PATH = [
-  { stage: "idea", label: "List" },
-  { stage: "to-ask", label: "Ask" },
-  { stage: "asked", label: "Asked" },
-  { stage: "thinking", label: "Thinking" },
-  { stage: "committed", label: "Yes" },
-  { stage: "giving", label: "Giving" },
-];
-
 export const STAGE_LABEL = {
   idea: "On the list", "to-ask": "To ask", asked: "Asked", thinking: "Thinking about it",
   committed: "Committed", giving: "Giving", declined: "Declined", paused: "Not now",
 };
 
-/** The index on the path for a stage (-1 when it is off the path, e.g. declined). */
-export function pathIndex(stage) {
-  return PATH.findIndex((p) => p.stage === stage);
+// ---------- how someone is with you ----------
+// Not a ladder: people give, pray, read the letters or want to meet, in any mix, and none of it is further along than
+// another. Gives is the stage (committed or giving, which the server counts as support); prays and letters are the
+// prayer and newsletter flags; wants to meet is the extra field wantsToMeet.
+
+export const WAYS = [
+  { id: "gives", label: "Gives" },
+  { id: "prays", label: "Prays" },
+  { id: "letters", label: "Gets letters" },
+  { id: "meet", label: "Wants to meet" },
+];
+
+export function gives(p) {
+  return p.stage === "committed" || p.stage === "giving";
 }
 
-/** Partners who need a step from you: ask them, check in, or thank them. */
-/** People with a message from hesent.me come first, whatever their stage; newest message first. */
+/** Whether a way is on for someone. */
+export function hasWay(p, id) {
+  if (id === "gives") return gives(p);
+  if (id === "prays") return p.prayer === true;
+  if (id === "letters") return p.newsletter === true;
+  return p.wantsToMeet === true;
+}
+
+/** The changes that switch a way on or off. Gives on is "giving" (the amount is set beside it); off is back on the list. */
+export function wayChanges(p, id, on) {
+  if (id === "gives") return on ? { stage: "giving", startDate: p.startDate ?? todayStr() } : { stage: "idea", monthlyCents: undefined };
+  if (id === "prays") return { prayer: on };
+  if (id === "letters") return { newsletter: on };
+  return { wantsToMeet: on ? true : undefined };
+}
+
+/** "Gives €50 a month · prays", or "In your people" when nothing is set. */
+export function involvement(p, money = (c) => `€${Math.round(c / 100)}`) {
+  const bits = [];
+  if (gives(p)) bits.push(p.monthlyCents ? `Gives ${money(p.monthlyCents)} a month` : p.oneOffCents ? `Gave ${money(p.oneOffCents)}` : "Gives");
+  if (p.prayer) bits.push(bits.length ? "prays" : "Prays");
+  if (p.newsletter) bits.push(bits.length ? "gets letters" : "Gets letters");
+  if (p.wantsToMeet) bits.push(bits.length ? "wants to meet" : "Wants to meet");
+  return bits.join(" · ") || "In your people";
+}
+
+/** A follow-up you planned yourself is due (from three days before, as on the iPhone). */
+export function followUpDue(p, today = todayStr()) {
+  return !!p.nextFollowUp && dayDiff(p.nextFollowUp, today) <= 3;
+}
+
+/** Gives but was never thanked. */
+export function needsThanks(p) {
+  return gives(p) && p.thankedAt == null;
+}
+
+/**
+ * The people who need something from you, and only them: a message from hesent.me (newest first), a thank-you
+ * owed, a follow-up you planned, or someone who wants to meet and has no time planned yet. Nobody is listed just
+ * for being on the list.
+ */
 export function waitingOnYou(partners) {
-  const today = todayStr();
   const messages = partners.filter((p) => p.replyWaiting === true)
     .sort((a, b) => (latestMessage(b)?.at ?? "").localeCompare(latestMessage(a)?.at ?? ""));
-  const rest = partners.filter((p) => p.replyWaiting !== true && (["to-ask", "asked", "thinking"].includes(p.stage)
-    || (p.stage === "giving" && p.thankedAt == null && p.lastContactAt !== today)))
-    .sort((a, b) => (a.lastContactAt ?? "").localeCompare(b.lastContactAt ?? ""));
+  const rest = partners.filter((p) => p.replyWaiting !== true
+    && (needsThanks(p) || followUpDue(p) || (p.wantsToMeet === true && !p.nextFollowUp)))
+    .sort((a, b) => (a.nextFollowUp ?? "9999").localeCompare(b.nextFollowUp ?? "9999"));
   return [...messages, ...rest];
+}
+
+/** Why someone is waiting on you, and the one button for it: reply, thanks, checkin or plan. */
+export function waitingReason(p, today = todayStr()) {
+  if (p.replyWaiting === true) {
+    const m = latestMessage(p);
+    return { action: "reply", late: true, sub: m ? `Wrote ${messageDay(m)} on hesent.me: “${m.text.replace(/\n/g, " ")}”` : "Wrote to you on hesent.me" };
+  }
+  if (needsThanks(p)) return { action: "thanks", sub: `${involvement(p)}, not thanked yet` };
+  if (followUpDue(p, today)) {
+    const d = dayDiff(p.nextFollowUp, today);
+    const when = d < 0 ? `was due ${whenLabel(p.nextFollowUp, today).replace(" late", " ago")}` : d === 0 ? "today" : whenLabel(p.nextFollowUp, today).toLowerCase();
+    return { action: "checkin", late: d < 0, sub: `${p.nextStep || "Follow up"} · ${when}` };
+  }
+  return { action: "plan", sub: "Would like to meet. Pick a time." };
 }
 
 // ---------- messages from hesent.me (data.siteMessages and data.replyWaiting, written by the server) ----------

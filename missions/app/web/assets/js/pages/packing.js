@@ -27,16 +27,7 @@ export function build() {
     <div class="abs hand hi in" data-hi>${esc(BAG_LABEL[bag])}</div>
     <div class="abs disp in" data-n style="left:18px;top:138px;font-size:122px;line-height:.8">${pctOf(items)}%</div>
     <div class="abs cap in" data-cp style="left:24px;top:272px">${esc(kgText(kg, limit))}</div>
-    <svg class="abs art" data-case style="left:244px;top:108px;transform-origin:50% 100%" width="140" height="272" viewBox="0 0 140 272">
-      <defs><clipPath id="caseIn"><rect x="12" y="62" width="116" height="186" rx="16"/></clipPath></defs>
-      <g clip-path="url(#caseIn)" class="nodraw"><path data-fill fill="#8BA374" opacity=".55" d=""/><path data-lvl class="ln" d=""/></g>
-      <g class="ln">
-        <path d="M50 62 L50 34 C 50 28, 54 24, 60 24 L80 24 C 86 24, 90 28, 90 34 L90 62"/>
-        <rect x="12" y="62" width="116" height="186" rx="16"/>
-        <path d="M44 62 L44 248 M96 62 L96 248"/>
-        <circle cx="34" cy="258" r="7"/><circle cx="106" cy="258" r="7"/>
-      </g>
-    </svg>
+    <img class="abs art pic in" src="assets/art/packing.webp" alt="" data-case style="left:216px;top:112px;width:168px">
     <div class="sheet" style="padding-top:10px">
       <div class="seg" id="seg">${BAGS.map((b) => `<button data-bag="${b}" class="${b === bag ? "on" : ""}">${SEG_LABEL[b]}<i>${itemsIn(b).length}</i></button>`).join("")}<i class="bar"></i></div>
       <div class="scroll" data-list>${items.map(row).join("") || `<div class="rw"><div class="tx"><div class="t1">Nothing in this bag yet</div><div class="t2">Add an item with + and "pack: passport".</div></div></div>`}</div>

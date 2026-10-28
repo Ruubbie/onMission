@@ -6,7 +6,7 @@ import { store } from "../store.js";
 import { I, tween, ease, anim, draw } from "../motion.js";
 import { esc, ring, fold, toast, plural, isDesk } from "../ui.js";
 import { addDays, dayDiff, todayStr } from "../util.js";
-import { bucketTasks, setTaskDone, patch, whenLabel, waitingOnYou, initials, STAGE_LABEL, latestMessage, messageDay } from "./common.js";
+import { bucketTasks, setTaskDone, patch, whenLabel, waitingOnYou, waitingReason, initials } from "./common.js";
 import { AREAS } from "../util.js";
 import { euroWhole, supportTotals } from "./money.js";
 import { readiness } from "./move.js";
@@ -25,33 +25,12 @@ export function build(ctx) {
       <div class="abs hand hi in">${greeting()}</div>
       <div class="abs disp big in" data-count>${days == null ? "—" : Math.max(0, days)}</div>
       <div class="abs cap cp in">${days == null ? "Set your departure<br>date in Settings" : `Days till ${destination(s)}`}</div>
-      <svg class="abs art" style="left:208px;top:140px" width="170" height="182" viewBox="0 0 170 182">
-        <g class="ln">
-          <path class="dots" stroke-dasharray="1 7" d="M8 84 C 2 52, 40 38, 52 58 C 62 74, 36 84, 40 64 C 44 40, 90 28, 118 34"/>
-          <path class="bgf" d="M120 34 L162 14 L148 46 L142 34 Z"/><path d="M142 34 L162 14"/>
-          <path d="M2 178 L44 120 L62 140 L96 86 L150 178"/>
-          <path d="M33 135 L38 131 L42 136 L47 129 L52 134"/>
-          <path d="M84 104 L89 99 L96 105 L102 98 L108 104"/>
-          <path d="M96 86 L96 62"/><path class="crf" d="M96 62 L114 68 L96 75"/>
-          <path d="M2 178 L164 178"/>
-        </g>
-      </svg>
+      <img class="abs art pic in" src="assets/art/traveller-walk.webp" alt="" style="left:254px;top:122px;height:214px">
     </div>
     <div class="done-art">
       <div class="abs disp bigd">All<br>done.</div>
       <div class="abs hand note">Go enjoy the evening</div>
-      <svg class="abs art" style="left:80px;top:430px" width="230" height="210" viewBox="0 0 230 210">
-        <g class="ln">
-          <circle cx="170" cy="40" r="20"/>
-          <path d="M170 8v-6M196 18l5-4M144 18l-5-4M202 40h7M131 40h-7"/>
-          <path d="M40 200 L40 96"/><path class="bgf" d="M40 64 C 18 70, 14 96, 24 110 C 30 120, 50 120, 56 110 C 66 96, 62 70, 40 64 Z"/>
-          <path d="M196 200 L196 112"/><path class="bgf" d="M196 84 C 178 88, 172 110, 180 122 C 186 132, 206 132, 212 122 C 220 110, 214 88, 196 84 Z"/>
-          <path d="M40 132 C 80 176, 156 178, 196 140"/>
-          <path d="M40 132 C 84 162, 152 164, 196 140"/>
-          <path d="M92 150 L108 140 L122 156"/>
-          <path d="M8 200 C 80 196, 160 203, 226 199"/>
-        </g>
-      </svg>
+      <img class="abs art pic" src="assets/art/traveller-read.webp" alt="" style="left:112px;top:420px;height:236px">
     </div>
     <div class="sheet">${isDesk() ? deskHtml(list, today) : sheetHtml(list, today)}</div>`;
 }
@@ -60,13 +39,10 @@ export function build(ctx) {
  * The desktop dashboard: today's tasks (or the all-done note) beside the week ahead, the people
  * waiting on you, and how support and the move are going.
  */
-/** Under a name waiting on you: their message from hesent.me, or their stage. */
+/** Under a name waiting on you: why (their message from hesent.me, a thank-you owed, a follow-up, a coffee). */
 function waitingSub(p) {
-  const m = p.replyWaiting === true ? latestMessage(p) : null;
-  if (p.replyWaiting === true) {
-    return `<div class="t2 late clamp">${esc(m ? `Wrote ${messageDay(m)}: “${m.text.replace(/\n/g, " ")}”` : "Wrote to you on hesent.me")}</div>`;
-  }
-  return `<div class="t2">${esc(STAGE_LABEL[p.stage] ?? p.stage)}</div>`;
+  const why = waitingReason(p);
+  return `<div class="t2${why.late ? " late" : ""} clamp">${esc(why.sub)}</div>`;
 }
 
 function deskHtml(list, today) {

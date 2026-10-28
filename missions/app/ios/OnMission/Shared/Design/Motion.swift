@@ -135,6 +135,8 @@ enum Motion {
     static let snap = Animation.curve(0.3, 1.5, 0.5, 1, 0.42)
     /// The Today sheet dropping away.
     static let drop = Animation.curve(0.6, 0, 0.25, 1, 0.6)
+    /// The sheet rising over the poster to the top bar, or dropping back (the web's .sheet.up).
+    static let sheetLift = Animation.curve(0.3, 1.15, 0.4, 1, 0.5)
 
     /// Runs `work` on the main actor after `seconds` (at once with Reduce Motion, unless `always`).
     @MainActor static func after(_ seconds: Double, always: Bool = false, _ work: @escaping @MainActor () -> Void) {

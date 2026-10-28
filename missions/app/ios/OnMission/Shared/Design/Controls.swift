@@ -399,7 +399,7 @@ struct TitleField: View {
 
     var body: some View {
         TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkFaint), axis: .vertical)
-            .type(TypeStyle(size: 26, wght: 820, tracking: -0.04, relativeTo: .title))
+            .type(TypeStyle(size: 26, wght: 820, tracking: -0.02, relativeTo: .title))
             .foregroundStyle(Palette.ink)
             .lineLimit(1...4)
             .padding(.vertical, 6)

@@ -30,15 +30,7 @@ export function build() {
     <div class="abs hand hi in">Selling up</div>
     <div class="abs disp in" data-n style="left:20px;top:140px;font-size:104px">${euroWhole(soldTotal())}</div>
     <div class="abs cap in" data-cp style="left:24px;top:252px">Sold so far<br>${listed} ${listed === 1 ? "thing" : "things"} listed</div>
-    <svg class="abs art" style="left:262px;top:204px;overflow:visible" width="110" height="160" viewBox="0 0 110 160"><g class="ln">
-      <circle class="crf" cx="55" cy="6" r="4.5"/>
-      <g class="swing" data-tag>
-        <path d="M55 6 L55 46"/>
-        <path class="bgf" d="M28 56 L55 38 L82 56 L82 146 C 82 151, 78 154, 73 154 L37 154 C 32 154, 28 151, 28 146 Z"/>
-        <circle cx="55" cy="56" r="5"/>
-        <text x="55" y="124" text-anchor="middle" font-family="Archivo" font-weight="900" font-size="42" fill="#F4EDE1" stroke="none">€</text>
-      </g>
-    </g></svg>
+    <img class="abs art pic in" src="assets/art/selling.webp" alt="" style="left:224px;top:196px;width:158px">
     <div class="sheet"><div class="sec">On the market <b>${items.length}</b></div><div class="scroll" data-list>${items.map(row).join("") || `<div class="rw"><div class="tx"><div class="t1">Nothing on the market</div><div class="t2">Items you're selling appear here.</div></div></div>`}</div></div>`;
 }
 

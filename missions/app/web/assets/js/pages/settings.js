@@ -20,10 +20,7 @@ export function build() {
     <div class="abs hand hi in">Your mission</div>
     <div class="abs disp in" style="left:18px;top:134px;font-size:150px;line-height:.8">${esc(dep)}</div>
     <div class="abs cap in" style="left:24px;top:272px">Leaving for<br>Queenstown, NZ</div>
-    <svg class="abs art" style="left:236px;top:266px" width="140" height="110" viewBox="0 0 140 110"><g class="ln">
-      <path class="dots" stroke-dasharray="1 7" d="M6 100 C 30 96, 40 70, 28 62 C 16 54, 10 76, 34 80 C 60 84, 80 60, 92 50"/>
-      <path class="crf" d="M96 46 L136 12 L122 62 L110 52 Z"/><path d="M110 52 L136 12 L102 56"/>
-    </g></svg>
+    <img class="abs art pic in" src="assets/art/mountains.webp" alt="" style="left:206px;top:290px;width:170px">
     <div class="sheet"><div class="scroll">
       <div class="sec">Mission</div>
       <label class="set"><span class="lbl">Departure date</span><input type="date" data-dep value="${esc(s.departureDate ?? "")}"></label>

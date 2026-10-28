@@ -141,23 +141,23 @@ struct TypeStyle {
 
     /// Display: the one big thing, Archivo narrowed to 75 and set tight, in sentence case (.disp on the web).
     static func disp(_ size: CGFloat) -> TypeStyle {
-        TypeStyle(size: size, wdth: 75, wght: 820, tracking: -0.045, relativeTo: nil)
+        TypeStyle(size: size, wdth: 75, wght: 820, tracking: -0.02, relativeTo: nil)
     }
     /// Asides. Once a handwriting face; like the web app it is Archivo 650 at the handwriting's x-height,
     /// so `size` is still the handwriting size and the letters come out at about two thirds of it.
     static func hand(_ size: CGFloat) -> TypeStyle {
-        TypeStyle(size: (size * handScale * 2).rounded() / 2, wght: 650, tracking: -0.02, relativeTo: nil)
+        TypeStyle(size: (size * handScale * 2).rounded() / 2, wght: 650, tracking: 0, relativeTo: nil)
     }
     /// Archivo's x-height (0.526 em) brought to the handwriting's 0.34 em (font-size-adjust: .34 on the web).
     static let handScale: CGFloat = 0.34 / 0.526
     /// The line under each big number.
     static let cap = TypeStyle(size: 19, wght: 650, tracking: -0.01, relativeTo: nil)
-    static let heroTitle = TypeStyle(size: 27, wght: 820, tracking: -0.035, relativeTo: .title)
-    static let prayer = TypeStyle(size: 32, wght: 820, tracking: -0.04, relativeTo: nil)
-    static let entry = TypeStyle(size: 32, wght: 820, tracking: -0.04, relativeTo: .largeTitle)
+    static let heroTitle = TypeStyle(size: 27, wght: 820, tracking: -0.015, relativeTo: .title)
+    static let prayer = TypeStyle(size: 32, wght: 820, tracking: -0.02, relativeTo: nil)
+    static let entry = TypeStyle(size: 32, wght: 820, tracking: -0.02, relativeTo: .largeTitle)
     static let kicker = TypeStyle(size: 15, wght: 650, relativeTo: nil)
     /// "Next up", "This week": a bold heading in sentence case.
-    static let section = TypeStyle(size: 17, wght: 820, tracking: -0.02, relativeTo: .headline)
+    static let section = TypeStyle(size: 17, wght: 820, tracking: -0.01, relativeTo: .headline)
     static let count = TypeStyle(size: 13, wght: 600, relativeTo: .footnote)
     static let rowTitle = TypeStyle(size: 16.5, wght: 700, relativeTo: .body)
     static let rowSub = TypeStyle(size: 13, wght: 500, relativeTo: .footnote)
@@ -304,6 +304,8 @@ enum Illustration: String {
     case travellerWave = "traveller-wave"
     case mountains
     case flowerPink = "flower-pink"
+    // Made in Canva for the pages that had none, in the same sketchbook style.
+    case tasks, people, partner, checklists, vault, packing, budget, selling, notes, guides, contacts
 }
 
 /// An illustration at a height, its width following the picture. It rises in with the poster.

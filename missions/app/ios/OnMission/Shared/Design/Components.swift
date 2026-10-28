@@ -47,6 +47,8 @@ struct Screen<Poster: View, Sheet: View>: View {
 
     @Environment(\.chrome) private var chrome
     @Environment(\.dynamicTypeSize) private var dts
+    /// The sheet has risen over the poster to the top bar (see `SheetLift`).
+    @State private var raised = false
 
     init(posterHeight: CGFloat, background: Color = Palette.flood, sheetTop: CGFloat = Metrics.sheetTop,
          dropped: Bool = false, @ViewBuilder poster: () -> Poster, @ViewBuilder sheet: () -> Sheet) {
@@ -61,27 +63,79 @@ struct Screen<Poster: View, Sheet: View>: View {
 
     var body: some View {
         let k = chrome.posterScale(dts)
-        VStack(spacing: 0) {
-            Color.clear.frame(height: chrome.top + Metrics.topBar)
-            PosterCanvas(height: posterHeight, scale: k) { poster }
-                .accessibilityElement(children: .combine)
-                .opacity(dropped ? 0 : 1)
-                .offset(y: dropped ? -18 : 0)
-                .animation(.curve(0.3, 0, 0.2, 1, 0.45).rm, value: dropped)
-                .allowsHitTesting(!dropped)
-            if hasSheet {
-                SheetSurface(top: sheetTop) { sheet }
-                    .riseSheet()
-                    .offset(y: dropped ? chrome.height : 0)
-                    .animation(Motion.drop.rm, value: dropped)
-            } else {
+        let up = raised && hasSheet && !dropped
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: chrome.top + Metrics.topBar)
+                PosterCanvas(height: posterHeight, scale: k) { poster }
+                    .accessibilityElement(children: .combine)
+                    .opacity(dropped ? 0 : 1)
+                    .offset(y: dropped ? -18 : 0)
+                    .animation(.curve(0.3, 0, 0.2, 1, 0.45).rm, value: dropped)
+                    .allowsHitTesting(!dropped && !up)
+                    .accessibilityHidden(up)
                 Spacer(minLength: 0)
             }
-            Color.clear.frame(height: chrome.bar)
+            if hasSheet {
+                // The sheet sits under the poster and rises over it to the top bar when you scroll its list.
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: chrome.top + Metrics.topBar + (up ? 0 : posterHeight * k))
+                        .allowsHitTesting(false)
+                    SheetSurface(top: sheetTop, raised: up) { sheet }
+                        .riseSheet()
+                        .offset(y: dropped ? chrome.height : 0)
+                        .animation(Motion.drop.rm, value: dropped)
+                    Color.clear.frame(height: chrome.bar).allowsHitTesting(false)
+                }
+                .environment(\.sheetLift, SheetLift(raised: up) { on in
+                    guard on != raised else { return }
+                    withAnimation(Motion.sheetLift.rm) { raised = on }
+                })
+            }
         }
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .paper(background, multiply: true)
         .foregroundStyle(Palette.ink)
+        .onChange(of: dropped) { _, now in if now { raised = false } }
+    }
+}
+
+/// The sheet rising over the poster. Scrolling a `SheetScroll` (or a list with `.liftsSheet()`) past its top raises it;
+/// pulling down at the top drops it back. The handle at the sheet's top does both by tap or drag.
+struct SheetLift {
+    var raised = false
+    var set: (Bool) -> Void = { _ in }
+
+    /// Called with how far the list is scrolled (negative while pulled down past its top).
+    func scrolled(_ offset: CGFloat) {
+        if offset > 8 { set(true) } else if offset < -56 { set(false) }
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var sheetLift = SheetLift()
+}
+
+extension View {
+    /// Lets a List in a sheet raise and drop the sheet, as `SheetScroll` does (iOS 18 and later; on iOS 17 the handle does it).
+    @ViewBuilder
+    func liftsSheet() -> some View {
+        if #available(iOS 18.0, *) {
+            modifier(ListLift())
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct ListLift: ViewModifier {
+    @Environment(\.sheetLift) private var lift
+
+    func body(content: Content) -> some View {
+        content.onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
+            lift.scrolled(y)
+        }
     }
 }
 
@@ -121,10 +175,19 @@ extension View {
     }
 }
 
-/// The paper sheet: top corners 30, a fine ink edge along the top, 22/20 padding, everything inside in ink.
+/// The paper sheet: top corners 30, a fine ink edge along the top, 22/20 padding, everything inside in ink,
+/// and a handle along the top edge that raises or drops it.
 struct SheetSurface<Content: View>: View {
     var top: CGFloat = Metrics.sheetTop
+    var raised = false
     @ViewBuilder let content: Content
+    @Environment(\.sheetLift) private var lift
+
+    init(top: CGFloat = Metrics.sheetTop, raised: Bool = false, @ViewBuilder content: () -> Content) {
+        self.top = top
+        self.raised = raised
+        self.content = content()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -133,10 +196,12 @@ struct SheetSurface<Content: View>: View {
         .padding(.top, top)
         .padding(.horizontal, Metrics.sheetSide)
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay(alignment: .top) { handle }
         .background {
             let shape = UnevenRoundedRectangle(topLeadingRadius: Metrics.sheetRadius, topTrailingRadius: Metrics.sheetRadius,
                                                style: .continuous)
-            Paper()
+            // Plain paper: the texture stays on the poster, where no text sits on it.
+            Palette.paper
                 .clipShape(shape)
                 // The web's box-shadow: 0 -1.5px 0: an ink edge that shows above the sheet, not beside it.
                 .background(shape.fill(Palette.sheetEdge).offset(y: -Metrics.rule))
@@ -144,11 +209,34 @@ struct SheetSurface<Content: View>: View {
         }
         .foregroundStyle(Palette.ink)
     }
+
+    /// A short bar centred on the top edge; the strip around it takes a tap or a drag.
+    private var handle: some View {
+        Capsule()
+            .fill(Palette.ink.opacity(0.2))
+            .frame(width: 40, height: 4)
+            .padding(.top, 8)
+            .frame(maxWidth: .infinity, minHeight: max(top, 14), alignment: .top)
+            .contentShape(Rectangle())
+            .onTapGesture { lift.set(!raised) }
+            .gesture(DragGesture(minimumDistance: 8).onEnded { g in
+                if g.translation.height < -20 { lift.set(true) } else if g.translation.height > 20 { lift.set(false) }
+            })
+            .accessibilityElement()
+            .accessibilityLabel(raised ? "Show the top of the screen" : "Show more of the list")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { lift.set(!raised) }
+    }
 }
 
-/// A scroll view inside a sheet that runs edge to edge with the sheet's padding.
+/// A scroll view inside a sheet that runs edge to edge with the sheet's padding. Scrolling it raises the sheet.
 struct SheetScroll<Content: View>: View {
     @ViewBuilder let content: Content
+    @Environment(\.sheetLift) private var lift
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -158,10 +246,21 @@ struct SheetScroll<Content: View>: View {
             .padding(.horizontal, Metrics.sheetSide)
             .padding(.bottom, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(alignment: .top) {
+                // Where the content's top is in the scroll view: below 0 once scrolled, above 0 while pulled down.
+                GeometryReader { g in
+                    Color.clear.onChange(of: g.frame(in: .named(SheetLift.space)).minY) { _, y in lift.scrolled(-y) }
+                }
+            }
         }
+        .coordinateSpace(name: SheetLift.space)
         .padding(.horizontal, -Metrics.sheetSide)
         .scrollDismissesKeyboard(.interactively)
     }
+}
+
+extension SheetLift {
+    static let space = "sheetScroll"
 }
 
 // MARK: - Poster type

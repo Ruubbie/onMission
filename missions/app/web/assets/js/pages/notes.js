@@ -25,12 +25,7 @@ export function build() {
     <div class="abs hand hi in">Notes &amp; journal</div>
     <div class="abs disp bign in">${all.length}</div>
     <div class="abs cap cp in">Written since<br>${esc(month)}</div>
-    <svg class="abs art" style="left:212px;top:124px" width="160" height="220" viewBox="0 0 160 220"><g class="ln">
-      <path class="bgf" d="M20 20 L130 16 C 136 16, 140 20, 140 26 L142 196 C 142 202, 138 206, 132 206 L24 208 C 18 208, 14 204, 14 198 L12 28 C 12 23, 15 20, 20 20 Z"/>
-      <path d="M12 46 L4 46 M12 76 L4 76 M12 106 L4 106 M12 136 L4 136 M12 166 L4 166"/>
-      <path d="M36 62 L116 60 M36 90 L110 89 M36 118 L96 117"/>
-      <path class="crf" d="M96 186 L146 116 L158 126 L108 196 L92 200 Z"/><path d="M146 116 L158 126"/>
-    </g></svg>
+    <img class="abs art pic in" src="assets/art/notes.webp" alt="" style="left:210px;top:120px;width:170px">
     <div class="sheet" style="padding-top:16px">
       <div class="pills" id="kinds"></div>
       <div class="scroll" data-list>${list()}</div>

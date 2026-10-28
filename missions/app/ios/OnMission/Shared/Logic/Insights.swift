@@ -84,7 +84,8 @@ struct Insights {
     var followUps: [Partner] {
         let limit = cal.date(byAdding: .day, value: 3, to: today) ?? today
         return partners
-            .filter { $0.stageValue.isOpen && ($0.nextFollowUp.map { $0 <= limit } ?? false) }
+            // Any follow-up you planned, whatever the stage: people aren't on a path to giving.
+            .filter { $0.nextFollowUp.map { $0 <= limit } ?? false }
             .sorted { ($0.nextFollowUp ?? .distantFuture) < ($1.nextFollowUp ?? .distantFuture) }
     }
 

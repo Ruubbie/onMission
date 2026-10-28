@@ -53,6 +53,23 @@ assets. The API must allow CORS from the site's origin.
   server applies the same rules (`arranged()` in `missions/app/server/src/index.js`).
 - `assets/js/store.js`, `api.js`, `util.js`: the sync store, the API client and the shared rules (unchanged from the first web version).
 
+## People are not a funnel
+
+People give, pray, read the letters or want to meet, in any mix; none of it is further along than another. A person's
+page shows those four as toggles (Gives is the stage `giving`, which the server counts as support; Prays and Gets letters
+are `prayer` and `newsletter`; Wants to meet is the extra field `wantsToMeet`), with the monthly amount beside Gives.
+"Waiting on you" lists only people who need something: a message from hesent.me, a thank-you owed, a follow-up you
+planned yourself, or someone who wants to meet without a time yet. **Someone gives** (People tab, `pages/give.js`)
+saves a name, an amount and monthly or once in one go, and the + does the same for "Jan €50 a month". The iPhone app
+follows the same rules (`Way`, `SomeoneGivesSheet` and `GivingLine` in the iOS sources).
+
+## The sheet rises
+
+On a phone the sheet starts under the poster and rises to the top bar as soon as you scroll it; pull down at its top,
+or tap its handle, to see the poster again (`initSheetLift` in `main.js`, `SheetLift` on the iPhone). The paper texture
+is on the poster only; the sheet is plain paper so text sits on a calm ground. The poster drawings are the illustrations
+in `assets/art/` (the traveller from hesent.me, and one per page made in Canva in the same sketchbook style).
+
 ## Choices to confirm
 
 - **Move readiness** = the average of checklist progress, papers in the Vault and packing (HANDOFF §13, proposal).

@@ -25,17 +25,7 @@ export function build() {
     <div class="abs hand hi in" data-hi>${n ? "Your papers" : "Nice work!"}</div>
     <div class="abs disp bign in" data-n>${n}</div>
     <div class="abs cap cp in" data-cp>${n ? "Papers still<br>missing" : "Nothing missing.<br>You're set."}</div>
-    <svg class="abs art" style="left:206px;top:116px;overflow:visible" width="170" height="240" viewBox="0 0 170 240">
-      <g class="ln">
-        <path class="bgf" d="M22 20 L132 14 C 140 14, 146 19, 146 27 L150 206 C 150 214, 145 219, 137 219 L28 224 C 20 224, 15 219, 15 211 L12 32 C 12 25, 16 20, 22 20 Z"/>
-        <circle cx="80" cy="96" r="30"/><path d="M50 96 L110 96 M80 66 C 66 80, 66 112, 80 126 M80 66 C 94 80, 94 112, 80 126"/>
-        <path d="M46 156 L114 154"/><path d="M58 176 L102 175"/>
-      </g>
-      <g class="vstamp" ${n ? "" : 'style="opacity:1"'}><g transform="rotate(-14 124 192)">
-        <circle cx="124" cy="192" r="36" fill="#E5774A" stroke="#1E1A17" stroke-width="2.6"/>
-        <circle cx="124" cy="192" r="29" fill="none" stroke="#1E1A17" stroke-width="1.6" stroke-dasharray="2 4"/>
-        <text x="124" y="198" text-anchor="middle" font-family="Archivo" font-weight="900" font-size="17" letter-spacing="1" fill="#1E1A17">ALL IN</text></g></g>
-    </svg>
+    <img class="abs art pic in" src="assets/art/vault.webp" alt="" style="left:208px;top:118px;width:170px">
     <div class="sheet">
       <div class="sec">Needed to fly <b>${docs.length - n} of ${docs.length}</b></div>
       <div class="scroll" data-list>${docs.map(row).join("")}<button class="more" data-add>Add a paper ${I.plus}</button></div>

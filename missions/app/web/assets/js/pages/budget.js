@@ -50,17 +50,7 @@ export function build() {
     <div class="abs hand hi in" data-hi>${esc(s.hi)}</div>
     <div class="abs disp in" data-n style="left:20px;top:140px;font-size:104px">${esc(s.big)}</div>
     <div class="abs cap in" data-cp style="left:24px;top:254px">${s.cp}</div>
-    <svg class="abs art" style="left:224px;top:248px;overflow:visible" width="150" height="140" viewBox="0 0 150 140">
-      <g class="ln"><path d="M75 26 L75 128"/><path d="M50 132 L100 132"/></g>
-      <g class="ln nodraw">
-        <g data-beam><path d="M10 22 L140 22"/></g>
-        <g data-pl><path d="M0 0 L-18 44 M0 0 L18 44"/><path class="crf" d="M-24 44 C -24 60, 24 60, 24 44 Z"/></g>
-        <g data-pr><path d="M0 0 L-18 44 M0 0 L18 44"/><path class="bgf" d="M-24 44 C -24 60, 24 60, 24 44 Z"/></g>
-        <circle class="crf" cx="75" cy="22" r="5"/>
-      </g>
-      <text data-tl text-anchor="middle" font-family="Archivo" font-weight="800" font-size="11" letter-spacing="1.5" fill="#1E1A17">IN</text>
-      <text data-tr text-anchor="middle" font-family="Archivo" font-weight="800" font-size="11" letter-spacing="1.5" fill="#1E1A17">OUT</text>
-    </svg>
+    <img class="abs art pic in" src="assets/art/budget.webp" alt="" style="left:228px;top:208px;width:146px">
     <div class="sheet" style="padding-top:10px">
       <div class="seg" id="seg">${PHASES.map(([id, label]) => `<button data-phase="${id}" class="${id === phase ? "on" : ""}">${label}</button>`).join("")}<i class="bar"></i></div>
       <div class="scroll" data-list>${lines(phase).map(rowHtml).join("") || `<div class="rw"><div class="tx"><div class="t1">No lines yet</div><div class="t2">Add a budget line on the iPhone or in the Windows app for now.</div></div></div>`}</div>
