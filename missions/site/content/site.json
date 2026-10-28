@@ -1,0 +1,6 @@
+{
+  "$comment": "Shared settings for both languages. api: the sync server the site reads its live data from (the /v1/public routes). departureDate: the fallback for the departure; build.mjs takes the real one from the server when it can reach it, and site.js keeps the countdown current from it. The giving details for Get involved are set in the app (Settings > Giving) and read live from the server.",
+  "domain": "https://hesent.me",
+  "api": "https://api.hesent.me",
+  "departureDate": "2027-01-05"
+}

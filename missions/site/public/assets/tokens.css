@@ -1,0 +1,139 @@
+/* hesent.me design tokens. Every colour, size, texture and motion value the site uses lives here.
+   Components (components.css) and pages (site.css) read these variables; nothing hard-codes a value. */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("/assets/fonts/archivo.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+:root {
+  /* Palette: paper, ink and the colours of the illustrations */
+  --color-paper: #F4EDE1;
+  --color-paper-deep: #E9DFCE;
+  --color-ink: #1E1A17;
+  --color-sage: #8BA374;
+  --color-sage-deep: #5C7448;
+  --color-sky: #A9CCE0;
+  --color-coral: #E5774A;
+  --color-pink: #EE9AA8;
+  --color-ochre: #D9A13B;
+  /* Only for the flags on the language button */
+  --color-flag-red: #C8432F;
+  --color-flag-blue: #2E4C86;
+
+  /* Semantic colour: components use these names */
+  --color-bg: var(--color-paper);
+  --color-fg: var(--color-ink);
+  --color-muted: rgba(30, 26, 23, 0.74);
+  --color-rule: rgba(30, 26, 23, 0.85);
+  --color-focus: var(--color-coral);
+  --color-accent: var(--color-sage);
+  --color-on-dark: var(--color-paper);
+  --color-on-dark-muted: rgba(244, 237, 225, 0.68);
+  --color-on-dark-rule: rgba(244, 237, 225, 0.22);
+  --color-focus-ring: rgba(229, 119, 74, 0.35);
+  --color-error: #A8481F;
+  --color-shadow: rgba(30, 26, 23, 0.08);
+
+  /* The globe's washes (read by site.js), sampled from the reference illustration: a dusty grey-blue sea,
+     muted olive land, coral dry country */
+  --globe-ocean: #BCCACA;
+  --globe-ocean-deep: #A8BDC4;
+  --globe-ocean-pale: #D6DCD5;
+  --globe-land: #9CA57B;
+  --globe-land-deep: #838C61;
+  --globe-land-light: #B1B891;
+  --globe-coral: #E48E68;
+  --globe-coral-deep: #D67D57;
+
+  /* Texture: a scanned sheet of cotton paper, tiled. Used for the page and, later, the letter card. */
+  --texture-paper: url("/assets/texture/paper.webp");
+  --texture-paper-size: 512px;
+
+  /* Type: Archivo only. Heavy and tight for display, plain for reading. No serif, no handwriting. */
+  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-weight-body: 400;
+  --font-weight-medium: 500;
+  --font-weight-strong: 650;
+  --font-weight-display: 820;
+
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  --text-display: clamp(2.75rem, 0.6rem + 4.45vw, 4.9rem);
+  --text-heading: clamp(2.125rem, 1rem + 2.8vw, 3.5rem);
+  --text-quote: clamp(1.25rem, 1rem + 0.7vw, 1.625rem);
+
+  --leading-tight: 0.98;
+  --leading-body: 1.6;
+  --tracking-display: -0.045em;
+  --tracking-caps: 0.14em;
+
+  /* Space: a 4px base */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  --gutter: 16px;
+  /* The phone's safe area: what a notch, rounded corner or home bar covers (the page runs under them, see
+     viewport-fit in shell.mjs). Content keeps at least the gutter, and never less than the safe area. */
+  --inset: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --edge: max(var(--gutter), var(--inset));
+  --container: 1240px;
+
+  /* Sizes of the recurring parts */
+  --control-h: 48px;
+  --logo-size: 60px;
+  --header-h: 96px;
+  --marker-size: 52px;
+  --section-space: clamp(3.5rem, 1.75rem + 4.5vw, 6.5rem);
+
+  /* Shape and line: an ink line is 1.5px, like a fine pen */
+  --radius-pill: 999px;
+  --line-ink: 1.5px;
+  --line-art: 2px;
+
+  /* Motion. Things move like they have a little weight: a press answers at once, a release settles on a spring.
+     --ease-spring settles with a hair of overshoot (a critically-ish damped spring, damping 0.82); --ease-bounce
+     overshoots enough to read as a pop (damping 0.6), for small things only. Browsers without linear() fall
+     back to --ease-out. --duration-spring is how long each spring takes to settle. */
+  --ease-out: cubic-bezier(.2, .85, .25, 1);
+  --ease-smooth: cubic-bezier(.32, .72, 0, 1);
+  --ease-spring: var(--ease-smooth);
+  --ease-bounce: var(--ease-out);
+  --duration-press: 90ms;
+  --duration-fast: 160ms;
+  --duration-base: 320ms;
+  --duration-spring: 550ms;
+  --duration-bounce: 600ms;
+  --press-scale: 0.96;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(0, 0.037, 0.125, 0.239, 0.361, 0.48, 0.589, 0.684, 0.764, 0.83, 0.882, 0.922, 0.952, 0.974,
+      0.989, 1, 1.006, 1.009, 1.011, 1.011, 1.01, 1.009, 1.008, 1.007, 1.005, 1.004, 1.003, 1.002, 1);
+    --ease-bounce: linear(0, 0.042, 0.148, 0.288, 0.442, 0.592, 0.728, 0.844, 0.936, 1.004, 1.051, 1.079, 1.093, 1.094,
+      1.088, 1.077, 1.063, 1.048, 1.034, 1.022, 1.012, 1.004, 0.998, 0.994, 0.992, 0.991, 0.991, 0.992, 0.993, 0.995,
+      0.996, 0.997, 1);
+  }
+}
+
+@media (min-width: 640px) {
+  :root { --gutter: 32px; }
+}
+@media (min-width: 1024px) {
+  :root { --gutter: 56px; }
+}
+
+/* Only the light scheme is designed. Declare it so browsers don't invert form controls. */
+:root { color-scheme: light; }

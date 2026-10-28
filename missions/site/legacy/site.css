@@ -1,0 +1,117 @@
+/* hesent.me: plain pages. Black on white, system font, one map, no decoration. */
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+  color: #111;
+  background: #fff;
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: #111; }
+h1 { font-size: 2rem; margin: 32px 0 8px; }
+h2 { font-size: 1.3rem; margin: 0 0 12px; }
+p { margin: 0 0 12px; }
+[hidden] { display: none !important; }
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid #ddd;
+}
+.mark { font-weight: 700; text-decoration: none; }
+header nav { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-left: auto; }
+header nav a { text-decoration: none; color: #555; }
+header nav a.on { color: #111; text-decoration: underline; }
+.lang { font-size: 14px; }
+
+.hero { display: grid; gap: 24px; padding: 24px 0 8px; }
+.now { color: #555; margin: 0; }
+.now b { color: #111; }
+.lede { color: #555; font-style: italic; }
+
+.map { margin: 0; }
+.map svg { display: block; width: 100%; height: auto; }
+.land path { fill: #e6e6e6; stroke: #fff; stroke-width: .5; }
+.route { fill: none; stroke: #111; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.pin circle { fill: #111; }
+.pin text { font: 13px system-ui, sans-serif; fill: #111; }
+.plane { fill: #111; }
+
+section.block { padding: 32px 0; border-top: 1px solid #ddd; }
+.prose p { max-width: 62ch; }
+.steps { padding-left: 20px; margin: 0 0 16px; }
+.when { font-weight: 600; margin-right: 6px; }
+.prayer { font-style: italic; margin: 8px 0 16px; max-width: 40ch; }
+.row { display: flex; align-items: center; gap: 12px; }
+.amen { opacity: 0; transition: opacity .4s; }
+.amen.on { opacity: 1; }
+
+.bank { margin: 0 0 16px; }
+.bank div { display: flex; gap: 12px; margin-bottom: 4px; }
+.bank dt { color: #555; min-width: 9ch; }
+.bank dd { margin: 0; font-weight: 600; }
+
+button, .btn {
+  font: inherit;
+  padding: 8px 14px;
+  color: #111;
+  background: #fff;
+  border: 1px solid #111;
+  border-radius: 0;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button:disabled { opacity: .5; cursor: default; }
+
+.signup { max-width: 360px; }
+.field { display: block; margin-bottom: 12px; }
+.field span { display: block; font-size: 14px; color: #555; margin-bottom: 4px; }
+.field input {
+  font: inherit;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #999;
+  border-radius: 0;
+}
+.field input[aria-invalid="true"] { border-color: #b00; }
+.trap { position: absolute; left: -9999px; }
+.msg { min-height: 1.5em; color: #b00; font-size: 14px; }
+.done { margin: 0; }
+
+footer {
+  margin-top: 32px;
+  padding: 16px 0;
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  color: #fff;
+  background: #111;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.toast.on { opacity: 1; }
+
+@media (min-width: 760px) {
+  .hero { grid-template-columns: 1fr 1.2fr; align-items: center; }
+}
