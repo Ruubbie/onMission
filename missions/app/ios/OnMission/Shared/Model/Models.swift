@@ -249,6 +249,34 @@ extension Syncable {
     }
 }
 
+/// A message someone sent from the giving page on hesent.me (one entry of `data.siteMessages`).
+struct SiteMessage: Hashable {
+    var at: Date
+    var name: String
+    var text: String
+    var lang: String
+}
+
+extension Partner {
+    /// Messages from hesent.me, newest first. Only the server writes them, so they stay in `rawData`.
+    var siteMessages: [SiteMessage] {
+        (Fingerprint.decode(rawData)["siteMessages"]?.arrayValue ?? []).compactMap { v in
+            guard let o = v.objectValue, let at = o.time("at"), !o.str("text").isEmpty else { return nil }
+            return SiteMessage(at: at, name: o.str("name"), text: o.str("text"), lang: o.str("lang", "nl"))
+        }
+    }
+
+    /// A message from hesent.me waits for an answer (`data.replyWaiting`, set by the server).
+    var replyWaiting: Bool {
+        get { Fingerprint.decode(rawData).bool("replyWaiting") }
+        set {
+            var d = Fingerprint.decode(rawData)
+            d["replyWaiting"] = newValue ? .bool(true) : nil
+            rawData = Fingerprint.encode(d)
+        }
+    }
+}
+
 // MARK: - gifts (money actually received)
 
 @Model final class Gift: Syncable {
@@ -428,6 +456,8 @@ extension Syncable {
     var pinned: Bool = false
     var kind: String = NoteKind.note.rawValue
     var answeredAt: Date? = nil
+    /// Prayer points only: shown on hesent.me (the title, never the body).
+    var isPublic: Bool = false
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.distantPast
     var syncedFingerprint: String = ""
@@ -449,11 +479,11 @@ extension Syncable {
 
     var known: [String: JSONValue?] {
         ["title": .str(title), "body": .text(body), "area": .str(area), "pinned": pinned ? .flag(true) : nil,
-         "kind": .str(kind), "answeredAt": .day(answeredAt)]
+         "kind": .str(kind), "answeredAt": .day(answeredAt), "public": isPublic ? .flag(true) : nil]
     }
     func read(_ d: JSONObject) {
         title = d.str("title"); body = d.str("body"); area = d.str("area", "personal"); pinned = d.bool("pinned")
-        kind = d.str("kind", "note"); answeredAt = d.day("answeredAt")
+        kind = d.str("kind", "note"); answeredAt = d.day("answeredAt"); isPublic = d.bool("public")
     }
 }
 

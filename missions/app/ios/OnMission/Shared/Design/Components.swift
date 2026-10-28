@@ -2,8 +2,9 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-// The building blocks of Tomato Flood (handoff §3): a poster on tomato that never scrolls, a cream sheet
-// that holds the rest, rows with rules, rings that tick, capsule buttons, tiles, segments, pills and a toast.
+// The building blocks (handoff §3), in the web app's look: a poster on deeper paper that never scrolls, a paper
+// sheet that holds the rest, rows with rules, rings that tick, capsule buttons, tiles, segments, pills and a toast.
+// Everything is drawn in ink; sage marks what is done.
 
 // MARK: - Chrome
 
@@ -32,11 +33,11 @@ extension EnvironmentValues {
 // MARK: - Screen: poster + sheet
 
 /// The layers every tab and page share: room for the top bar, a poster that never scrolls,
-/// a cream sheet (or more tomato), and room for the tab bar.
+/// a paper sheet (or more poster), and room for the tab bar.
 struct Screen<Poster: View, Sheet: View>: View {
     /// The poster's height on the 390 × 844 design (sheet top − 104).
     let posterHeight: CGFloat
-    var background: Color = Palette.tomato
+    var background: Color = Palette.flood
     var sheetTop: CGFloat = Metrics.sheetTop
     /// Today's All done: the sheet drops off the bottom and the poster lifts and fades.
     var dropped = false
@@ -47,7 +48,7 @@ struct Screen<Poster: View, Sheet: View>: View {
     @Environment(\.chrome) private var chrome
     @Environment(\.dynamicTypeSize) private var dts
 
-    init(posterHeight: CGFloat, background: Color = Palette.tomato, sheetTop: CGFloat = Metrics.sheetTop,
+    init(posterHeight: CGFloat, background: Color = Palette.flood, sheetTop: CGFloat = Metrics.sheetTop,
          dropped: Bool = false, @ViewBuilder poster: () -> Poster, @ViewBuilder sheet: () -> Sheet) {
         self.posterHeight = posterHeight
         self.background = background
@@ -79,14 +80,14 @@ struct Screen<Poster: View, Sheet: View>: View {
             Color.clear.frame(height: chrome.bar)
         }
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(background)
-        .foregroundStyle(Palette.cream)
+        .paper(background, multiply: true)
+        .foregroundStyle(Palette.ink)
     }
 }
 
 extension Screen where Sheet == EmptyView {
     /// A screen that is all poster (Prayer, All done).
-    init(posterHeight: CGFloat, background: Color = Palette.tomato, @ViewBuilder poster: () -> Poster) {
+    init(posterHeight: CGFloat, background: Color = Palette.flood, @ViewBuilder poster: () -> Poster) {
         self.posterHeight = posterHeight
         self.background = background
         self.sheetTop = Metrics.sheetTop
@@ -120,7 +121,7 @@ extension View {
     }
 }
 
-/// The cream sheet: top corners 30, 22/20 padding, everything inside on ink.
+/// The paper sheet: top corners 30, a fine ink edge along the top, 22/20 padding, everything inside in ink.
 struct SheetSurface<Content: View>: View {
     var top: CGFloat = Metrics.sheetTop
     @ViewBuilder let content: Content
@@ -132,11 +133,15 @@ struct SheetSurface<Content: View>: View {
         .padding(.top, top)
         .padding(.horizontal, Metrics.sheetSide)
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(
-            UnevenRoundedRectangle(topLeadingRadius: Metrics.sheetRadius, topTrailingRadius: Metrics.sheetRadius, style: .continuous)
-                .fill(Palette.cream)
+        .background {
+            let shape = UnevenRoundedRectangle(topLeadingRadius: Metrics.sheetRadius, topTrailingRadius: Metrics.sheetRadius,
+                                               style: .continuous)
+            Paper()
+                .clipShape(shape)
+                // The web's box-shadow: 0 -1.5px 0: an ink edge that shows above the sheet, not beside it.
+                .background(shape.fill(Palette.sheetEdge).offset(y: -Metrics.rule))
                 .ignoresSafeArea(edges: .bottom)
-        )
+        }
         .foregroundStyle(Palette.ink)
     }
 }
@@ -181,28 +186,20 @@ struct Lines: View {
 
     var body: some View {
         let lines = text.components(separatedBy: "\n")
-        VStack(alignment: alignment, spacing: FontMetrics.lineGap(style.family, size: style.size, lineHeight: lineHeight)) {
+        VStack(alignment: alignment, spacing: FontMetrics.lineGap(size: style.size, lineHeight: lineHeight)) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                Self.text(line, style)
-                    .accessibilityLabel(line)
+                Text(line)
                     .type(style)
                     .lineLimit(1)
                     .minimumScaleFactor(minScale)
                     .fixedSize(horizontal: minScale >= 1, vertical: false)
             }
         }
-        .offset(y: FontMetrics.shift(style.family, size: style.size, lineHeight: lineHeight))
-    }
-
-    /// Caveat's strokes run up to 0.2em past the last letter's advance and Text clips them, so a hand line
-    /// ends in an invisible "!" that makes room for the tail.
-    private static func text(_ line: String, _ style: TypeStyle) -> Text {
-        guard style.family == .caveat, !line.isEmpty else { return Text(line) }
-        return Text(line) + Text("!").foregroundStyle(Color.clear)
+        .offset(y: FontMetrics.shift(size: style.size, lineHeight: lineHeight))
     }
 }
 
-/// A handwritten aside, often tilted.
+/// An aside, often tilted: what was handwriting, now Archivo 650 like the web app (see `TypeStyle.hand`).
 struct Hand: View {
     let text: String
     var size: CGFloat = 33
@@ -215,12 +212,12 @@ struct Hand: View {
     }
 
     var body: some View {
-        Lines(text, .hand(size), lineHeight: 0.95, minScale: 0.6)
+        Lines(text, .hand(size), lineHeight: 1.15, minScale: 0.6)
             .rotationEffect(.degrees(tilt), anchor: .leading)
     }
 }
 
-/// The capitals line under a big number.
+/// The line under a big number. `size` keeps the old capitals size; the line is set at 19/21 of it, as on the web.
 struct CapLine: View {
     let text: String
     var size: CGFloat = 21
@@ -231,25 +228,25 @@ struct CapLine: View {
     }
 
     var body: some View {
-        Lines(text, TypeStyle.cap.with(size: size), lineHeight: 1.05, minScale: 0.6)
+        Lines(text, TypeStyle.cap.with(size: size * 19 / 21), lineHeight: 1.15, minScale: 0.6)
     }
 }
 
 // MARK: - Sections and rows
 
-/// "NEXT UP" in small tracked capitals, with an optional count on the right.
+/// "Next up" in bold ink, with an optional count on the right.
 struct SectionHeader: View {
     let title: String
     var count: String? = nil
-    var color: Color = Palette.tomatoInk
+    var color: Color = Palette.ink
 
-    init(_ title: String, count: String? = nil, color: Color = Palette.tomatoInk) {
+    init(_ title: String, count: String? = nil, color: Color = Palette.ink) {
         self.title = title
         self.count = count
         self.color = color
     }
 
-    init(_ title: String, count: Int?, color: Color = Palette.tomatoInk) {
+    init(_ title: String, count: Int?, color: Color = Palette.ink) {
         self.init(title, count: count.map { "\($0)" }, color: color)
     }
 
@@ -283,7 +280,7 @@ struct RowText: View {
             if !subtitle.isEmpty {
                 Text(subtitle)
                     .type(late ? TypeStyle.rowSub.withWeight(700) : .rowSub)
-                    .foregroundStyle(late ? Palette.tomatoInk : Palette.inkSoft)
+                    .foregroundStyle(late ? Palette.error : Palette.inkSoft)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
             }
@@ -296,7 +293,7 @@ extension TypeStyle {
     func withWeight(_ w: CGFloat) -> TypeStyle { var s = self; s.wght = w; return s }
 }
 
-/// A sheet row: 12pt above and below, a 1.5pt tomato rule under it unless it's the last.
+/// A sheet row: 12pt above and below, a 1.5pt rule under it unless it's the last.
 struct Row<Content: View>: View {
     var rule = true
     @ViewBuilder let content: Content
@@ -322,13 +319,13 @@ struct WhenText: View {
     var body: some View {
         Text(text)
             .type(.when)
-            .foregroundStyle(late ? Palette.tomatoInk : Palette.ink)
+            .foregroundStyle(late ? Palette.error : Palette.ink)
             .lineLimit(1)
             .frame(minWidth: 44, alignment: .trailing)
     }
 }
 
-/// "All 48 people →": tomato, with the arrow that pulls back when tapped.
+/// "All 48 people →": ink, with the arrow that pulls back when tapped.
 struct MoreLink: View {
     let title: String
     let action: () -> Void
@@ -340,10 +337,10 @@ struct MoreLink: View {
             action()
         } label: {
             HStack(spacing: 8) {
-                Text(title).type(.button)
+                Text(title).type(.label)
                 AnimatedIcon(.arrow, size: 18, trigger: play)
             }
-            .foregroundStyle(Palette.tomatoInk)
+            .foregroundStyle(Palette.ink)
             .padding(.top, 16)
             .frame(minHeight: 44, alignment: .bottom)
             .contentShape(Rectangle())
@@ -373,7 +370,7 @@ struct EmptyRow: View {
 
 // MARK: - Ring
 
-/// The 28pt tick ring: fills (0.22s), its check draws (0.32s after 0.12s).
+/// The 28pt tick ring: an ink ring that fills sage (0.22s), its check draws (0.32s after 0.12s).
 struct Ring: View {
     let ticked: Bool
     var size: CGFloat = 28
@@ -381,12 +378,13 @@ struct Ring: View {
     var body: some View {
         let line = size >= 28 ? 2.2 : 2.0
         ZStack {
-            Circle().fill(ticked ? Palette.tomato : Color.clear)
+            Circle().fill(ticked ? Palette.sageDeep : Color.clear)
                 .animation(.easeOut(duration: 0.22), value: ticked)
-            Circle().strokeBorder(Palette.tomato, lineWidth: line)
+            Circle().strokeBorder(ticked ? Palette.sageDeep : Palette.ink, lineWidth: line)
+                .animation(.easeOut(duration: 0.22), value: ticked)
             SVGShape(d: "M4 12 9 17L20 6")
                 .trim(from: 0, to: ticked ? 1 : 0)
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                .stroke(Palette.paper, style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
                 .frame(width: 24, height: 24)
                 .scaleEffect(size * 0.57 / 24)
                 .frame(width: size * 0.57, height: size * 0.57)
@@ -416,7 +414,7 @@ struct RingButton: View {
     }
 }
 
-/// A progress ring (36pt): the arc springs to its fraction; full, it turns solid and its check draws.
+/// A progress ring (36pt): the sage arc springs to its fraction; full, it turns solid and its check draws.
 struct ProgressRing: View {
     let fraction: Double
     var size: CGFloat = 36
@@ -424,19 +422,19 @@ struct ProgressRing: View {
     var body: some View {
         let full = fraction >= 1
         ZStack {
-            Circle().fill(full ? Palette.tomato : Color.clear)
+            Circle().fill(full ? Palette.sageDeep : Color.clear)
                 .animation(.easeOut(duration: 0.3).delay(0.25), value: full)
-            Circle().stroke(full ? Palette.tomato : Palette.tomato.opacity(0.2), lineWidth: 3.2)
+            Circle().stroke(full ? Palette.sageDeep : Palette.ink.opacity(0.2), lineWidth: 3.2)
                 .padding(1.6)
             Circle()
                 .trim(from: 0, to: min(max(fraction, 0), 1))
-                .stroke(Palette.tomato, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
+                .stroke(Palette.sageDeep, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .padding(1.6)
                 .animation(.spring(k: 170, c: 14), value: fraction)
             SVGShape(d: "M11 18.5l4.5 4.5L25 13.5")
                 .trim(from: 0, to: full ? 1 : 0)
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: 2.8, lineCap: .round, lineJoin: .round))
+                .stroke(Palette.paper, style: StrokeStyle(lineWidth: 2.8, lineCap: .round, lineJoin: .round))
                 .frame(width: 36, height: 36)
                 .scaleEffect(size / 36)
                 .frame(width: size, height: size)
@@ -452,21 +450,18 @@ struct ProgressRing: View {
 
 enum ButtonKind { case filled, outlined }
 
-/// Capsule buttons: 44 tall (small 36, wide 54), Archivo 800. On tomato they turn cream.
+/// Capsule buttons: 44 tall (small 36, wide 54), Archivo 500. Filled is ink with paper letters; outlined is an ink ring.
 struct CapsuleStyle: ButtonStyle {
     var kind: ButtonKind = .filled
     var small = false
     var wide = false
-    var onTomato = false
-    /// Overrides the colours (check-in on plum, marigold).
+    /// Overrides the colours (the check-in, the Answered flood).
     var fill: Color? = nil
     var ink: Color? = nil
 
     func makeBody(configuration: Configuration) -> some View {
-        let base = onTomato ? Palette.cream : Palette.tomato
-        let other = onTomato ? Palette.tomato : Palette.cream
-        let bg = fill ?? (kind == .filled ? base : Color.clear)
-        let fg = ink ?? (kind == .filled ? other : base)
+        let bg = fill ?? (kind == .filled ? Palette.ink : Color.clear)
+        let fg = ink ?? (kind == .filled ? Palette.paper : Palette.ink)
         let height: CGFloat = wide ? 54 : (small ? 36 : 44)
         configuration.label
             .type(small ? .buttonSmall : (wide ? TypeStyle.button.with(size: 16) : .button))
@@ -477,7 +472,7 @@ struct CapsuleStyle: ButtonStyle {
             .frame(minHeight: height)
             .background(Capsule().fill(bg))
             .overlay {
-                if kind == .outlined { Capsule().strokeBorder(fg, lineWidth: 1.7) }
+                if kind == .outlined { Capsule().strokeBorder(fg, lineWidth: Metrics.outline) }
             }
             .contentShape(Capsule())
             .scaleEffect(configuration.isPressed ? 0.95 : 1)
@@ -554,7 +549,7 @@ struct RoundButton: View {
             }
                 .frame(width: 44, height: 44)
                 .background { if let filled { Circle().fill(filled) } }
-                .overlay { if filled == nil { Circle().strokeBorder(lineWidth: 1.7) } }
+                .overlay { if filled == nil { Circle().strokeBorder(lineWidth: Metrics.outline) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.press)
@@ -564,7 +559,7 @@ struct RoundButton: View {
 
 // MARK: - Hero card
 
-/// The one most likely action, big: a 29pt title, a subtitle (tomatoInk when late) and one or two buttons.
+/// The one most likely action, big: a 27pt title, a subtitle (rust when late) and one or two buttons.
 struct HeroCard<Buttons: View>: View {
     let title: String
     var subtitle: String = ""
@@ -580,7 +575,7 @@ struct HeroCard<Buttons: View>: View {
             if !subtitle.isEmpty {
                 Text(subtitle)
                     .type(late ? TypeStyle.rowSub.with(size: 14).withWeight(700) : TypeStyle.rowSub.with(size: 14))
-                    .foregroundStyle(late ? Palette.tomatoInk : Palette.inkSoft)
+                    .foregroundStyle(late ? Palette.error : Palette.inkSoft)
                     .padding(.top, 6)
             }
             HStack(spacing: 8) { buttons }
@@ -613,11 +608,11 @@ struct Tile: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     AnimatedIcon(icon, size: 22, trigger: play + trigger)
-                        .foregroundStyle(Palette.tomato)
+                        .foregroundStyle(Palette.sageDeep)
                     Spacer(minLength: 6)
                     Text(status)
                         .type(.tileStatus)
-                        .foregroundStyle(alert ? Palette.tomatoInk : Palette.ink.opacity(0.6))
+                        .foregroundStyle(alert ? Palette.error : Palette.ink.opacity(0.6))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
@@ -628,7 +623,7 @@ struct Tile: View {
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
             .overlay(RoundedRectangle(cornerRadius: Metrics.tileRadius, style: .continuous)
-                .strokeBorder(Palette.tileRule, lineWidth: 1.6))
+                .strokeBorder(Palette.tileRule, lineWidth: Metrics.outline))
             .contentShape(RoundedRectangle(cornerRadius: Metrics.tileRadius, style: .continuous))
         }
         .buttonStyle(.pressTile)
@@ -661,7 +656,7 @@ struct Segments<V: Hashable>: View {
                     withAnimation(Motion.indicator.rm) { selection = item.value }
                 } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(item.title).type(TypeStyle(size: tight ? 15 : 16, wght: 800, relativeTo: .subheadline))
+                        Text(item.title).type(TypeStyle(size: tight ? 15 : 16, wght: 650, relativeTo: .subheadline))
                         if let count = item.count {
                             Text("\(count)").type(TypeStyle(size: tight ? 15 : 16, wght: 600, relativeTo: .subheadline)).opacity(0.8)
                         }
@@ -674,7 +669,7 @@ struct Segments<V: Hashable>: View {
                     .frame(minHeight: 48)
                     .overlay(alignment: .bottom) {
                         if on {
-                            Capsule().fill(Palette.tomato)
+                            Capsule().fill(Palette.ink)
                                 .frame(height: 3)
                                 .padding(.horizontal, 10)
                                 .offset(y: 0.75)
@@ -702,7 +697,7 @@ struct Segments<V: Hashable>: View {
     }
 }
 
-/// Filter pills: a tomato pill slides under the selected one.
+/// Filter pills: an ink pill slides under the selected one.
 struct Pills<V: Hashable>: View {
     struct Item {
         let value: V
@@ -725,20 +720,20 @@ struct Pills<V: Hashable>: View {
                         withAnimation(Motion.indicator.rm) { selection = item.value }
                     } label: {
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text(item.title).type(TypeStyle(size: tight ? 14 : 14.5, wght: 800, relativeTo: .subheadline))
+                            Text(item.title).type(TypeStyle(size: tight ? 14 : 14.5, wght: 650, relativeTo: .subheadline))
                             if let count = item.count {
                                 Text("\(count)").type(TypeStyle(size: tight ? 14 : 14.5, wght: 600, relativeTo: .subheadline)).opacity(0.6)
                             }
                         }
                         .lineLimit(1)
-                        .foregroundStyle(on ? Palette.cream : Palette.ink)
+                        .foregroundStyle(on ? Palette.paper : Palette.ink)
                         .padding(.horizontal, tight ? 11 : 14)
                         .frame(minHeight: 38)
                         .background {
                             if on {
-                                Capsule().fill(Palette.tomato).matchedGeometryEffect(id: "pill", in: ns)
+                                Capsule().fill(Palette.ink).matchedGeometryEffect(id: "pill", in: ns)
                             } else {
-                                Capsule().strokeBorder(Palette.chipRule, lineWidth: 1.6)
+                                Capsule().strokeBorder(Palette.chipRule, lineWidth: Metrics.outline)
                             }
                         }
                         .contentShape(Capsule())
@@ -788,7 +783,7 @@ extension View {
 
 // MARK: - Avatar, document box, search
 
-/// Initials in a 44pt circle with a tomato outline.
+/// Initials in a 44pt circle with an ink outline.
 struct Avatar: View {
     let name: String
     var size: CGFloat = 44
@@ -797,15 +792,15 @@ struct Avatar: View {
         let letters = name.split(separator: " ").filter { $0.first?.isLetter ?? false }.prefix(2)
             .compactMap(\.first).map { String($0) }.joined().uppercased()
         Text(letters.isEmpty ? "?" : letters)
-            .type(TypeStyle(size: 14.5, wght: 800, tracking: 0.02, relativeTo: nil))
-            .foregroundStyle(Palette.tomato)
+            .type(TypeStyle(size: 14.5, wght: 650, tracking: 0.02, relativeTo: nil))
+            .foregroundStyle(Palette.ink)
             .frame(width: size, height: size)
-            .overlay(Circle().strokeBorder(Palette.tomato, lineWidth: 1.7))
+            .overlay(Circle().strokeBorder(Palette.ink, lineWidth: Metrics.outline))
             .accessibilityHidden(true)
     }
 }
 
-/// A 44pt document box: dashed when the paper is missing, solid tomato once it's in.
+/// A 44pt document box: an ink outline, dashed when the paper is missing, solid sage once it's in.
 struct DocBox: View {
     let icon: Icon
     var missing = false
@@ -815,13 +810,14 @@ struct DocBox: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: Metrics.docRadius, style: .continuous)
-                .fill(got ? Palette.tomato : Color.clear)
+                .fill(got ? Palette.sageDeep : Color.clear)
             RoundedRectangle(cornerRadius: Metrics.docRadius, style: .continuous)
-                .strokeBorder(Palette.tomato, style: StrokeStyle(lineWidth: 1.7, dash: missing ? [4, 3] : []))
+                .strokeBorder(got ? Palette.sageDeep : Palette.ink,
+                              style: StrokeStyle(lineWidth: Metrics.outline, dash: missing ? [4, 3] : []))
             if got {
-                AnimatedIcon(.check, size: 22, trigger: trigger).foregroundStyle(Palette.cream)
+                AnimatedIcon(.check, size: 22, trigger: trigger).foregroundStyle(Palette.paper)
             } else {
-                AnimatedIcon(icon, size: 22, trigger: trigger).foregroundStyle(Palette.tomato)
+                AnimatedIcon(icon, size: 22, trigger: trigger).foregroundStyle(Palette.ink)
             }
         }
         .frame(width: 44, height: 44)
@@ -829,7 +825,7 @@ struct DocBox: View {
     }
 }
 
-/// A capsule search field with a tomato magnifier that hops.
+/// A capsule search field with a magnifier that hops.
 struct SearchField: View {
     @Binding var text: String
     var prompt = "Search"
@@ -838,7 +834,7 @@ struct SearchField: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            AnimatedIcon(.search, size: 18, trigger: play).foregroundStyle(Palette.tomato)
+            AnimatedIcon(.search, size: 18, trigger: play).foregroundStyle(Palette.ink)
             TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Palette.inkFaint))
                 .type(TypeStyle(size: 15.5, wght: 600, relativeTo: .body))
                 .foregroundStyle(Palette.ink)
@@ -855,7 +851,7 @@ struct SearchField: View {
         }
         .padding(.horizontal, 16)
         .frame(minHeight: 44)
-        .overlay(Capsule().strokeBorder(Palette.ink.opacity(0.18), lineWidth: 1.6))
+        .overlay(Capsule().strokeBorder(Palette.ink.opacity(0.18), lineWidth: Metrics.outline))
         .contentShape(Capsule())
         .onTapGesture { focused = true }
         .onChange(of: focused) { _, on in if on { play += 1 } }
@@ -865,16 +861,16 @@ struct SearchField: View {
 
 // MARK: - Toast
 
-/// An ink capsule with a blush check: drops in 14pt with an overshoot, holds 2.2s and fades.
+/// An ink capsule with a sage check: drops in 14pt with an overshoot, holds 2.2s and fades.
 struct ToastView: View {
     let text: String
 
     var body: some View {
         HStack(spacing: 8) {
-            AnimatedIcon(.check, size: 18, trigger: text.hashValue).foregroundStyle(Palette.blush)
+            AnimatedIcon(.check, size: 18, trigger: text.hashValue).foregroundStyle(Palette.sage)
             Text(text).type(TypeStyle(size: 14, wght: 700, relativeTo: nil)).lineLimit(1)
         }
-        .foregroundStyle(Palette.cream)
+        .foregroundStyle(Palette.paper)
         .padding(.leading, 12)
         .padding(.trailing, 18)
         .frame(height: 40)
@@ -944,12 +940,23 @@ enum PhoneLinks {
         let trimmed = address.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? nil : URL(string: "mailto:\(trimmed)")
     }
+
+    /// An email with the subject and body filled in.
+    static func email(_ address: String, subject: String, body: String) -> URL? {
+        let trimmed = address.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        // Everything but A-Z a-z 0-9 - . _ ~ is encoded, so & = + and line breaks in the text survive.
+        let plain = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        func enc(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: plain) ?? "" }
+        return URL(string: "mailto:\(trimmed.addingPercentEncoding(withAllowedCharacters: plain.union(["@"])) ?? trimmed)"
+                   + "?subject=\(enc(subject))&body=\(enc(body))")
+    }
 }
 
 /// Breaks display text into lines that fit `width`, so `Lines` can stack them at a CSS line-height
 /// tighter than the font's own.
 func wrapLines(_ text: String, _ style: TypeStyle, width: CGFloat, maxLines: Int = 4) -> String {
-    let font = TF.uiFont(style.family, size: style.size, wdth: style.wdth, wght: style.wght)
+    let font = TF.uiFont(size: style.size, wdth: style.wdth, wght: style.wght)
     let shown = style.uppercase ? text.uppercased() : text
     func measure(_ s: String) -> CGFloat {
         (s as NSString).size(withAttributes: [.font: font, .kern: style.tracking * style.size]).width

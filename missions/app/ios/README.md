@@ -30,7 +30,7 @@ An iPhone app for getting to YWAM Queenstown. Everything you need is in one plac
 Run `brew install xcodegen`, then `xcodegen` in this folder. Open `OnMission.xcodeproj`, pick your team under Signing, and run it on your iPhone.
 
 ## Signing in
-Create your account on the server first (see `../server/README.md`). Then open the app, go to Settings > Sync, and enter the server (now `api.92-5-233-11.sslip.io`, later `api.rubenonmission.nl`), your email and your password. Each device gets its own token, and you can revoke one under Settings > Devices.
+Create your account on the server first (see `../server/README.md`). Then open the app, go to Settings > Sync, and enter the server (`api.hesent.me`), your email and your password. Each device gets its own token, and you can revoke one under Settings > Devices.
 
 ## Privacy
 Data is stored on your phone (SwiftData) and on your own server, and nowhere else. The login token is kept in the iPhone Keychain.
@@ -39,7 +39,7 @@ Data is stored on your phone (SwiftData) and on your own server, and nowhere els
 - `OnMission/Shared/Model`: records, which match `../api/openapi.yaml`. Unknown fields are kept.
 - `OnMission/Shared/Sync`: login, sync and files.
 - `OnMission/Shared/Logic`: insights, automations, reminders, the seeder and backups.
-- `OnMission/Shared/Design` and `Views`: the neo-brutalist style. The colours come from `../design/tokens.json`, shared with Windows.
-- `OnMission/Resources`: the font, the guides and the starter data (`tools/make-seed.mjs`).
+- `OnMission/Shared/Design` and `Views`: the same look as the web app (`../web`): the Tomato Flood screens in hesent.me’s paper and ink, Archivo only, with the paper texture and the traveller drawings. The tokens are in `../design/tokens.json`.
+- `OnMission/Resources`: the font, the paper texture (`Texture`), the illustrations (`Art`, from hesent.me), the guides and the starter data (`tools/make-seed.mjs`).
 - `tools/contract-check.mjs`: checks the app's record shapes against a running server.
 - `INTERFACES.md`: how the layers fit together.

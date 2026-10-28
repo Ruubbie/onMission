@@ -1,8 +1,8 @@
 import SwiftUI
 
-// The single-weight line drawings on the posters, with the prototype's exact geometry.
-// Strokes are 2.4 with round caps and joins; closed shapes fill with the flood colour (they knock out)
-// or with cream (they glow). Each path draws itself in when the screen appears (handoff §9 "draw").
+// The single-weight line drawings on the posters, with the prototype's exact geometry, in ink as the web app
+// draws them. Strokes are 2 with round caps and joins; closed shapes fill with the poster's paper (they knock out)
+// or with the lighter sheet paper (they glow). Each path draws itself in when the screen appears (handoff §9 "draw").
 
 enum ArtFill { case none, flood, glow }
 
@@ -27,21 +27,22 @@ struct Drawing {
     var lineWidth: CGFloat = Metrics.line
 }
 
-/// Colours of a drawing: line, the flood fill (knock out) and the glow fill.
+/// Colours of a drawing: line, the flood fill (knock out) and the glow fill (.bgf and .crf on the web).
 struct ArtInk {
-    var line: Color = Palette.cream
-    var flood: Color = Palette.tomato
-    var glow: Color = Palette.cream
+    var line: Color = Palette.ink
+    var flood: Color = Palette.flood
+    var glow: Color = Palette.paper
 
-    static let onTomato = ArtInk()
-    static let onCream = ArtInk(line: Palette.tomato, flood: Palette.cream, glow: Palette.cream)
-    static let onGold = ArtInk(line: Palette.ink, flood: Palette.marigold, glow: Palette.cream)
+    static let onPoster = ArtInk()
+    static let onPaper = ArtInk(line: Palette.ink, flood: Palette.paper, glow: Palette.paper)
+    /// The Answered flood: the sun fills ochre-gold on ochre, as on the web.
+    static let onGold = ArtInk(line: Palette.ink, flood: Palette.ochre, glow: Palette.paper)
 }
 
 /// Draws a `Drawing`, drawing itself in each time the screen's `entry` changes (or `trigger`, when given).
 struct LineArt: View {
     let drawing: Drawing
-    var ink: ArtInk = .onTomato
+    var ink: ArtInk = .onPoster
     /// Extra delay after the screen's own entry delay.
     var delay: Double = 0.12
     /// Overrides the screen's entry trigger (Capture redraws per kind).
@@ -104,29 +105,6 @@ struct ArtCanvas: View {
 // MARK: - The drawings
 
 enum Art {
-    /// Today: a mountain, a flag and a dotted flight path.
-    static let mountain = Drawing(width: 170, height: 182, paths: [
-        .dots("M8 84 C 2 52, 40 38, 52 58 C 62 74, 36 84, 40 64 C 44 40, 90 28, 118 34"),
-        .flood("M120 34 L162 14 L148 46 L142 34 Z"), .line("M142 34 L162 14"),
-        .line("M2 178 L44 120 L62 140 L96 86 L150 178"),
-        .line("M33 135 L38 131 L42 136 L47 129 L52 134"),
-        .line("M84 104 L89 99 L96 105 L102 98 L108 104"),
-        .line("M96 86 L96 62"), .glow("M96 62 L114 68 L96 75"),
-        .line("M2 178 L164 178"),
-    ])
-
-    /// Today, all done: two trees and a hammock under the sun.
-    static let hammock = Drawing(width: 230, height: 210, paths: [
-        .line(SVG.circle(170, 40, 20)),
-        .line("M170 8v-6M196 18l5-4M144 18l-5-4M202 40h7M131 40h-7"),
-        .line("M40 200 L40 96"), .flood("M40 64 C 18 70, 14 96, 24 110 C 30 120, 50 120, 56 110 C 66 96, 62 70, 40 64 Z"),
-        .line("M196 200 L196 112"), .flood("M196 84 C 178 88, 172 110, 180 122 C 186 132, 206 132, 212 122 C 220 110, 214 88, 196 84 Z"),
-        .line("M40 132 C 80 176, 156 178, 196 140"),
-        .line("M40 132 C 84 162, 152 164, 196 140"),
-        .line("M92 150 L108 140 L122 156"),
-        .line("M8 200 C 80 196, 160 203, 226 199"),
-    ])
-
     /// Tasks: a clipboard with ticks.
     static let clipboard = Drawing(width: 112, height: 150, paths: [
         .flood("M14 22 C 40 20, 72 20, 98 23 C 102 24, 104 27, 104 31 L103 138 C 103 142, 100 145, 96 145 L16 146 C 11 146, 8 143, 8 138 L9 30 C 9 25, 11 23, 14 22 Z"),
@@ -221,14 +199,6 @@ enum Art {
         .line(SVG.circle(34, 258, 7)), .line(SVG.circle(106, 258, 7)),
     ])
 
-    /// Notes: a notebook and a pencil.
-    static let notebook = Drawing(width: 160, height: 220, paths: [
-        .flood("M20 20 L130 16 C 136 16, 140 20, 140 26 L142 196 C 142 202, 138 206, 132 206 L24 208 C 18 208, 14 204, 14 198 L12 28 C 12 23, 15 20, 20 20 Z"),
-        .line("M12 46 L4 46 M12 76 L4 76 M12 106 L4 106 M12 136 L4 136 M12 166 L4 166"),
-        .line("M36 62 L116 60 M36 90 L110 89 M36 118 L96 117"),
-        .glow("M96 186 L146 116 L158 126 L108 196 L92 200 Z"), .line("M146 116 L158 126"),
-    ])
-
     /// Guides: an open book (the turning page is drawn by the screen).
     static let bookRight = "M90 30 C 116 16, 146 14, 172 22 L172 140 C 146 132, 116 134, 90 148 Z"
     static let book = Drawing(width: 180, height: 160, paths: [
@@ -236,20 +206,6 @@ enum Art {
         .flood(bookRight),
         .line("M24 52 C 44 48, 62 50, 76 56 M24 74 C 44 70, 62 72, 76 78 M24 96 C 40 92, 56 94, 70 98"),
         .line("M104 52 C 118 48, 138 46, 156 50 M104 74 C 118 70, 138 68, 156 72"),
-    ])
-
-    /// All people: two people and a heart.
-    static let group = Drawing(width: 180, height: 200, paths: [
-        .line(SVG.circle(58, 66, 24)), .line("M14 180 C 16 132, 34 108, 58 108 S 100 132, 102 180"),
-        .flood(SVG.circle(126, 80, 22)), .flood("M82 186 C 84 142, 102 120, 126 120 S 168 142, 170 186"),
-        .glow("M96 34 C 90 30, 88 26, 90 23 C 92 21, 95 21, 96 24 C 97 21, 100 21, 102 23 C 104 26, 102 30, 96 34 Z"),
-        .line("M4 190 L176 190"),
-    ])
-
-    /// Settings: a plane on a dotted loop.
-    static let planeLoop = Drawing(width: 140, height: 110, paths: [
-        .dots("M6 100 C 30 96, 40 70, 28 62 C 16 54, 10 76, 34 80 C 60 84, 80 60, 92 50"),
-        .glow("M96 46 L136 12 L122 62 L110 52 Z"), .line("M110 52 L136 12 L102 56"),
     ])
 
     /// Detail pages: a small card.

@@ -32,7 +32,7 @@ struct ContactsPage: View {
                             .contentShape(Rectangle())
                             .onTapGesture { router.push(.record(.contact(c))) }
                         if let url = PhoneLinks.call(c.phone) {
-                            RoundButton(icon: .phone, label: "Call \(c.displayTitle)", ink: Palette.tomato) { openURL(url) }
+                            RoundButton(icon: .phone, label: "Call \(c.displayTitle)", ink: Palette.ink) { openURL(url) }
                         }
                     }
                     .accessibilityElement(children: .combine)

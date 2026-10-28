@@ -10,7 +10,7 @@ struct API {
         self.token = token
     }
 
-    /// "api.rubenonmission.nl" or "http://localhost:8787/" -> a clean base URL, or nil if it isn't one.
+    /// "api.hesent.me" or "http://localhost:8787/" -> a clean base URL, or nil if it isn't one.
     static func baseURL(_ server: String) -> URL? {
         var text = server.trimmingCharacters(in: .whitespacesAndNewlines)
         while text.hasSuffix("/") { text.removeLast() }

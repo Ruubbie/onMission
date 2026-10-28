@@ -105,7 +105,7 @@ struct PackingPage: View {
                 .contentTransition(.numericText(value: Double(pct)))
                 .animation(.easeOut(duration: 0.8), value: pct)
                 .lineLimit(1)
-                .offset(y: FontMetrics.shift(.archivo, size: 122, lineHeight: 0.8))
+                .offset(y: FontMetrics.shift(size: 122, lineHeight: 0.8))
                 .rise(1)
                 .at(18, 138)
             CapLine(totalKg > 0 ? "\(kg(packedKg)) of \(kg(totalKg)) kg" : "\(list.filter(\.packed).count) of \(list.count) packed")
@@ -142,7 +142,7 @@ struct PackingPage: View {
                 .slideIn(slide, direction: direction)
                 FormBlock("") {
                     FieldRow {
-                        AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                        AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.ink).frame(width: 22)
                         TextField("", text: $newName, prompt: Text("Add to \(stop.title.lowercased())").foregroundStyle(Palette.inkFaint))
                             .type(.bodyBold)
                             .submitLabel(.done)
@@ -263,8 +263,8 @@ private struct Suitcase: View {
             let p = t / 0.48
             ZStack(alignment: .topLeading) {
                 ZStack(alignment: .topLeading) {
-                    Wave(level: level, closed: true).fill(Palette.cream.opacity(0.24))
-                    Wave(level: level, closed: false).stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
+                    Wave(level: level, closed: true).fill(Palette.sage.opacity(0.55))
+                    Wave(level: level, closed: false).stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
                 }
                 .frame(width: 140, height: 272, alignment: .topLeading)
                 .clipShape(SVGShape(d: SVG.rect(12, 62, 116, 186, rx: 16)))
@@ -303,7 +303,7 @@ private struct Wave: Shape {
     }
 }
 
-/// A tomato dot flying in an arc (640ms).
+/// An ink dot with a paper ring, flying in an arc (640ms).
 private struct FlyingDot: View {
     let from: CGPoint
     let to: CGPoint
@@ -311,8 +311,8 @@ private struct FlyingDot: View {
 
     var body: some View {
         Circle()
-            .fill(Palette.tomato)
-            .overlay(Circle().strokeBorder(Palette.cream, lineWidth: 2))
+            .fill(Palette.ink)
+            .overlay(Circle().strokeBorder(Palette.paper, lineWidth: 2))
             .frame(width: 16, height: 16)
             .modifier(ArcFlight(from: from, to: to, progress: progress))
             .onAppear {
@@ -359,8 +359,8 @@ struct PackingDetail: View {
                 StepperRow(title: "Quantity", value: $item.quantity, range: 1...99)
                 LabeledRow("Weight (grams, each)") {
                     TextField("0", value: $item.weightGrams, format: .number)
-                        .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                        .foregroundStyle(Palette.tomatoInk)
+                        .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                        .foregroundStyle(Palette.ink)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.numberPad)
                         .frame(maxWidth: 120)

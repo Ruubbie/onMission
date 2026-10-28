@@ -158,7 +158,7 @@ private struct EnvelopeFlight: View {
     }
 }
 
-/// The envelope (100 × 100, its middle on the route): a cream letter that slides in, a flap that closes.
+/// The envelope (100 × 100, its middle on the route): a paper letter that slides in, a flap that closes.
 private struct Envelope: View {
     let slide: Double
     let flap: Double
@@ -167,21 +167,21 @@ private struct Envelope: View {
         let line = StrokeStyle(lineWidth: Metrics.line, lineCap: .round, lineJoin: .round)
         ZStack(alignment: .topLeading) {
             ZStack(alignment: .topLeading) {
-                SVGShape(d: "M16 16 L84 16 L84 54 L16 54 Z").fill(Palette.cream)
-                SVGShape(d: "M16 16 L84 16 L84 54 L16 54 Z").stroke(Palette.cream, style: line)
+                SVGShape(d: "M16 16 L84 16 L84 54 L16 54 Z").fill(Palette.paper)
+                SVGShape(d: "M16 16 L84 16 L84 54 L16 54 Z").stroke(Palette.ink, style: line)
             }
             .offset(y: 34 * slide)
-            SVGShape(d: "M4 36 L96 36 L96 96 L4 96 Z").fill(Palette.tomato)
-            SVGShape(d: "M4 36 L96 36 L96 96 L4 96 Z").stroke(Palette.cream, style: line)
-            SVGShape(d: "M4 96 L40 68 M96 96 L60 68").stroke(Palette.cream, style: line)
+            SVGShape(d: "M4 36 L96 36 L96 96 L4 96 Z").fill(Palette.flood)
+            SVGShape(d: "M4 36 L96 36 L96 96 L4 96 Z").stroke(Palette.ink, style: line)
+            SVGShape(d: "M4 96 L40 68 M96 96 L60 68").stroke(Palette.ink, style: line)
             Path { p in
                 p.move(to: CGPoint(x: 4, y: 36))
                 p.addLine(to: CGPoint(x: 50, y: 4 + 68 * flap))
                 p.addLine(to: CGPoint(x: 96, y: 36))
             }
-            .stroke(Palette.cream, style: line)
+            .stroke(Palette.ink, style: line)
             SVGShape(d: "M50 84 C 41 78, 39 72, 43 68 C 46 65, 49 66, 50 69 C 51 66, 54 65, 57 68 C 61 72, 59 78, 50 84 Z")
-                .fill(Palette.cream)
+                .fill(Palette.coral)
         }
         .frame(width: 100, height: 100, alignment: .topLeading)
     }
@@ -216,7 +216,7 @@ struct NewsletterDetail: View {
             }
             ShareLink(item: "\(letter.title)\n\n\(letter.body)") {
                 FieldRow {
-                    AnimatedIcon(.share, size: 20).foregroundStyle(Palette.tomato)
+                    AnimatedIcon(.share, size: 20).foregroundStyle(Palette.ink)
                     Text("Share the text").type(.bodyBold).foregroundStyle(Palette.ink)
                     Spacer(minLength: 4)
                 }
@@ -228,7 +228,7 @@ struct NewsletterDetail: View {
                 if let url = URL(string: letter.webURL), !letter.webURL.isEmpty, url.scheme != nil {
                     Link(destination: url) {
                         FieldRow {
-                            AnimatedIcon(.globe, size: 20).foregroundStyle(Palette.tomato)
+                            AnimatedIcon(.globe, size: 20).foregroundStyle(Palette.ink)
                             Text("Open web version").type(.bodyBold).foregroundStyle(Palette.ink)
                         }
                     }

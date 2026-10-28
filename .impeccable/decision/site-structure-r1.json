@@ -1,0 +1,76 @@
+{
+  "title": "Choose the page structure",
+  "question": "A new hand, built for people who have never met you. They arrive from a flyer or a shared link and need to know who you are, what the mission is, and why they should follow along.",
+  "options": [
+    {
+      "id": "zine",
+      "label": "The zine",
+      "kicker": "THE ROLL",
+      "lineage": "a youth-group zine",
+      "thesis": "A folded zine introduces Ruben to someone who has never met him, with one spread per question a newcomer asks.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#E8A13A", "#4B3B52"],
+      "materials": ["tomato cover", "cream inside pages", "page numbers as navigation", "line drawings with callouts"],
+      "viewport": "A cover spread. On the left, the tomato cover: 'HÉ, IK BEN RUBEN.' at display scale over a portrait in a flat block, with 'en ik ga naar Nieuw-Zeeland' by hand. On the right, a cream inside page with three lines on what this is and the 'Lees mee' e-mail field.",
+      "risk": "A zine can look cheap and DIY; the spreads have to be crisp and print-sharp.",
+      "raised": [
+        { "from": "patent-drawing", "raise": "The line drawings carry numbered callouts (1 Ruben, 2 the base, 3 the lake) that explain the mission at a glance." },
+        { "from": "teletext", "raise": "Page numbers are real navigation: 'p. 4 Bidden' jumps straight there." },
+        { "from": "design-annual", "raise": "One handwritten signature stamp on the cover shows a real person made this." }
+      ],
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "page numbers + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "cover: HÉ, IK BEN RUBEN + portrait", "x": 0, "y": 1, "w": 6, "h": 5, "accent": true },
+        { "label": "inside cover: what + sign-up", "x": 6, "y": 1, "w": 6, "h": 5 },
+        { "label": "spread: why Queenstown (callout drawing)", "x": 0, "y": 6, "w": 12, "h": 2 },
+        { "label": "spread: pray", "x": 0, "y": 8, "w": 6, "h": 2, "accent": true },
+        { "label": "spread: partner", "x": 6, "y": 8, "w": 6, "h": 2 }
+      ] }
+    },
+    {
+      "id": "sentence",
+      "label": "One sentence",
+      "lineage": "kinetic typographic introduction",
+      "thesis": "One long sentence introduces Ruben clause by clause, and each clause opens into its own section.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#E8A13A"],
+      "materials": ["display type at poster scale", "ghosted next clause", "cream sections that open from the words"],
+      "viewport": "Tomato flood with 'IK BEN RUBEN,' huge and the next clause, 'en over 85 dagen verhuis ik naar Queenstown', set ghosted below. The 'Lees mee' field sits inline at the end of the line.",
+      "risk": "Moving text can feel like a gimmick; every clause has to work as a plain heading too.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "IK BEN RUBEN, (display)", "x": 0, "y": 1, "w": 12, "h": 3, "accent": true },
+        { "label": "next clause (ghost) + inline sign-up", "x": 0, "y": 4, "w": 12, "h": 1 },
+        { "label": "clause 2 opens: Queenstown + photo", "x": 0, "y": 5, "w": 12, "h": 2 },
+        { "label": "clause 3: om jongeren te trainen", "x": 0, "y": 7, "w": 12, "h": 1, "accent": true },
+        { "label": "clause 4: en jij kan meedoen (pray/give)", "x": 0, "y": 8, "w": 12, "h": 2 }
+      ] }
+    },
+    {
+      "id": "timetable",
+      "label": "A week there",
+      "lineage": "a training-school timetable",
+      "thesis": "The mission shown as a real week in Queenstown, so newcomers see the work itself, not a slogan.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#4B3B52"],
+      "materials": ["tomato poster", "cream timetable sheet", "handwritten notes on the schedule"],
+      "viewport": "A tomato poster asks 'WAT GA IK DOEN?' over a mountain drawing. Below it, a cream sheet with a Monday-to-Sunday timetable (teaching, outreach, worship) and Ruben's handwritten notes; 'Volg mijn eerste week' sits as the sign-up on the right.",
+      "risk": "It needs your real schedule; I'd mark the sample blocks until you confirm them.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "WAT GA IK DOEN? (poster)", "x": 0, "y": 1, "w": 8, "h": 3, "accent": true },
+        { "label": "sign-up: follow week one", "x": 8, "y": 1, "w": 4, "h": 3 },
+        { "label": "timetable Mon-Sun", "x": 0, "y": 4, "w": 12, "h": 3 },
+        { "label": "who I am + portrait", "x": 0, "y": 7, "w": 6, "h": 3 },
+        { "label": "pray / partner", "x": 6, "y": 7, "w": 6, "h": 3, "accent": true }
+      ] }
+    },
+    { "id": "patent-drawing", "label": "Patent sheet", "verdict": "declined", "lineage": "utility patent drawings", "thesis": "An invention exploded into numbered figures.", "palette": ["#111111", "#F4F1E8"], "materials": ["ruled ink line", "leader lines"], "viewport": "Fig. 1 exploded view.", "risk": "Technical and cold for a personal story.", "case": "Newcomers want a person, not an invention.", "kept": "Numbered callouts on the drawings." },
+    { "id": "design-annual", "label": "Plate annual", "verdict": "declined", "lineage": "design annual plate sections", "thesis": "Plates with registration marks and a signed stamp.", "palette": ["#F6F4EE", "#1C1C1C", "#7C83D6"], "materials": ["uncoated stock", "registration crosses"], "viewport": "A plate with a half-off stamp.", "risk": "Reads as a design portfolio.", "case": "About craft, not about the mission.", "kept": "One handwritten stamp as proof of a person." },
+    { "id": "teletext", "label": "Teletext", "verdict": "declined", "lineage": "broadcast teletext", "thesis": "Numbered pages on a block grid.", "palette": ["#000000", "#FFFF00", "#00FFFF"], "materials": ["block mosaic"], "viewport": "P100 index.", "risk": "Retro novelty.", "case": "Fights the warm world.", "kept": "Page numbers as direct navigation." },
+    { "id": "jacquard", "label": "Jacquard", "verdict": "declined", "lineage": "punched-card weaving", "thesis": "Binary choices weave a gold bird.", "palette": ["#14163A", "#C9A23A"], "materials": ["silk", "punched cards"], "viewport": "A bird gathering in gold weft.", "risk": "Luxury and abstract.", "case": "No link to the move.", "kept": "Many small acts adding up to one picture." },
+    { "id": "alien-understory", "label": "Alien forest", "verdict": "declined", "lineage": "surreal botany", "thesis": "A glowing forest that lights the path ahead.", "palette": ["#0B1A1E", "#6CF2C2"], "materials": ["bioluminescence"], "viewport": "A self-lighting path.", "risk": "Fantasy and dark.", "case": "Wrong mood for church supporters.", "kept": "The path lights a step ahead of the reader." },
+    { "id": "ebru", "label": "Ebru", "verdict": "declined", "lineage": "marbled paper", "thesis": "Floated pigment combed into one unique print.", "palette": ["#1F3A5F", "#C0392B", "#F2E6C9"], "materials": ["floated pigment"], "viewport": "A marbled field.", "risk": "Decorative, adds gradients the world bans.", "case": "Clashes with flat Tomato Flood.", "kept": "Each visit's moment is one of a kind." }
+  ],
+  "reroll": true,
+  "steer": true,
+  "followup": false,
+  "buildPath": { "value": "code" }
+}

@@ -121,15 +121,15 @@ struct BudgetPage: View {
     }
 }
 
-/// An amount on the right of a row: incoming in tomato.
+/// An amount on the right of a row: incoming in sage.
 private struct Amount: View {
     let text: String
     var positive = false
 
     var body: some View {
         Text(text)
-            .type(TypeStyle(size: 16, wght: 800, relativeTo: .body))
-            .foregroundStyle(positive ? Palette.tomatoInk : Palette.ink)
+            .type(TypeStyle(size: 16, wght: 650, relativeTo: .body))
+            .foregroundStyle(positive ? Palette.sageDeep : Palette.ink)
             .monospacedDigit()
             .lineLimit(1)
             .frame(minWidth: 86, alignment: .trailing)
@@ -184,12 +184,13 @@ private struct BalanceScale: View, Animatable {
         ZStack(alignment: .topLeading) {
             LineArt(drawing: Drawing(width: 150, height: 140, paths: [.line("M75 26 L75 128"), .line("M50 132 L100 132")]))
             SVGShape(d: "M10 22 L140 22")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
                 .frame(width: 150, height: 140, alignment: .topLeading)
                 .rotationEffect(.degrees(tilt), anchor: UnitPoint(x: 75.0 / 150, y: 22.0 / 140))
-            pan(fill: Palette.cream).offset(x: 75 - c, y: 22 - s)
-            pan(fill: Palette.tomato).offset(x: 75 + c, y: 22 + s)
-            Circle().fill(Palette.cream).frame(width: 10, height: 10).offset(x: 70, y: 17)
+            pan(fill: Palette.paper).offset(x: 75 - c, y: 22 - s)
+            pan(fill: Palette.flood).offset(x: 75 + c, y: 22 + s)
+            Circle().fill(Palette.paper).overlay(Circle().stroke(Palette.ink, lineWidth: Metrics.line))
+                .frame(width: 10, height: 10).offset(x: 70, y: 17)
             label("IN").position(x: 75 - c, y: 22 - s + 70)
             label("OUT").position(x: 75 + c, y: 22 + s + 70)
         }
@@ -201,10 +202,10 @@ private struct BalanceScale: View, Animatable {
     private func pan(fill: Color) -> some View {
         ZStack(alignment: .topLeading) {
             SVGShape(d: "M24 0 L6 44 M24 0 L42 44")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
             SVGShape(d: "M0 44 C 0 60, 48 60, 48 44 Z").fill(fill)
             SVGShape(d: "M0 44 C 0 60, 48 60, 48 44 Z")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineJoin: .round))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineJoin: .round))
         }
         .frame(width: 48, height: 60, alignment: .topLeading)
         .offset(x: -24)
@@ -213,7 +214,7 @@ private struct BalanceScale: View, Animatable {
     private func label(_ text: String) -> some View {
         Text(text)
             .type(TypeStyle(size: 11, wght: 800, tracking: 0.14, relativeTo: nil))
-            .foregroundStyle(Palette.cream)
+            .foregroundStyle(Palette.ink)
             .fixedSize()
     }
 }
@@ -332,7 +333,7 @@ struct SellingPage: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .frame(width: 240, alignment: .leading)
-                .offset(y: FontMetrics.shift(.archivo, size: 104, lineHeight: 0.88))
+                .offset(y: FontMetrics.shift(size: 104, lineHeight: 0.88))
                 .background {
                     GeometryReader { g in
                         Color.clear
@@ -355,7 +356,7 @@ struct SellingPage: View {
                     EmptyRow(title: "Nothing on the market", message: "Add what you own below: \"Bike 150\" sets the price.")
                 }
                 FieldRow {
-                    AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                    AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.ink).frame(width: 22)
                     TextField("", text: $quick, prompt: Text("Something you own: Bike 150").foregroundStyle(Palette.inkFaint))
                         .type(.bodyBold)
                         .submitLabel(.done)
@@ -447,12 +448,12 @@ private struct SellRow: View {
         .overlay(alignment: .leading) {
             if stamp {
                 Text("Sold")
-                    .type(TypeStyle(size: 30, wdth: 64, wght: 900, tracking: 0.02, uppercase: true, relativeTo: nil))
-                    .foregroundStyle(Palette.tomato)
+                    .type(TypeStyle(size: 30, wdth: 75, wght: 820, tracking: -0.01, uppercase: true, relativeTo: nil))
+                    .foregroundStyle(Palette.coral)
                     .padding(.horizontal, 12)
                     .frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: Metrics.stampRadius).fill(Palette.cream.opacity(0.9)))
-                    .overlay(RoundedRectangle(cornerRadius: Metrics.stampRadius).strokeBorder(Palette.tomato, lineWidth: 3))
+                    .background(RoundedRectangle(cornerRadius: Metrics.stampRadius).fill(Palette.paper.opacity(0.9)))
+                    .overlay(RoundedRectangle(cornerRadius: Metrics.stampRadius).strokeBorder(Palette.coral, lineWidth: 3))
                     .rotationEffect(.degrees(-9))
                     .offset(x: 92)
                     .transition(.asymmetric(insertion: .scale(scale: 1.9).combined(with: .opacity), removal: .identity))
@@ -483,14 +484,15 @@ private struct PriceTag: View {
                 ZStack(alignment: .topLeading) {
                     LineArt(drawing: Self.tag)
                     Text("€")
-                        .type(TypeStyle(size: 42, wght: 900, relativeTo: nil))
-                        .foregroundStyle(Palette.cream)
+                        .type(TypeStyle(size: 42, wght: 820, relativeTo: nil))
+                        .foregroundStyle(Palette.ink)
                         .position(x: 55, y: 110)
                 }
                 .frame(width: 110, height: 160, alignment: .topLeading)
                 .rotationEffect(.degrees(kf(p, [0, 12, -8, 5, -2, 0])), anchor: UnitPoint(x: 0.5, y: 6.0 / 160))
             }
-            Circle().fill(Palette.cream).frame(width: 9, height: 9).offset(x: 50.5, y: 1.5)
+            Circle().fill(Palette.paper).overlay(Circle().stroke(Palette.ink, lineWidth: Metrics.line))
+                .frame(width: 9, height: 9).offset(x: 50.5, y: 1.5)
         }
         .frame(width: 110, height: 160, alignment: .topLeading)
         .accessibilityHidden(true)
@@ -512,8 +514,11 @@ private struct FlyingPrice: View {
 
     var body: some View {
         Text(text)
-            .type(TypeStyle(size: 16, wght: 800, relativeTo: nil))
-            .foregroundStyle(Palette.tomatoInk)
+            .type(TypeStyle(size: 20, wdth: 75, wght: 820, relativeTo: nil))
+            .foregroundStyle(Palette.ink)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: 11).fill(Palette.paper))
             .fixedSize()
             .modifier(ArcFlight(from: from, to: to, progress: progress, height: 60))
             .onAppear {
@@ -536,11 +541,12 @@ struct SellAllPage: View {
             Hand("Everything you own").rise(0).at(24, 106)
             Lines("\(items.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine("\(settled) with a place\n\(items.count - settled) to decide").rise(2).at(24, 292)
-            PriceTag(swing: 0).at(262, 160)
+            // The traveller photographing something to sell.
+            Picture(.travellerPhoto, height: 226).rise(3).at(276, 110)
         } sheet: {
             SheetScroll {
                 FieldRow {
-                    AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                    AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.ink).frame(width: 22)
                     TextField("", text: $quick, prompt: Text("Something you own: Bike 150").foregroundStyle(Palette.inkFaint))
                         .type(.bodyBold)
                         .submitLabel(.done)
@@ -600,7 +606,7 @@ struct SellDetail: View {
                 if let url = URL(string: item.listingURL), !item.listingURL.isEmpty, url.scheme != nil {
                     Link(destination: url) {
                         FieldRow {
-                            AnimatedIcon(.link, size: 20).foregroundStyle(Palette.tomato)
+                            AnimatedIcon(.link, size: 20).foregroundStyle(Palette.ink)
                             Text("Open listing").type(.bodyBold).foregroundStyle(Palette.ink)
                         }
                     }

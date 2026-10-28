@@ -41,13 +41,30 @@ public sealed class PartnerRow : EntityRow<Partner>
     }
 
     public bool FollowUpDue => Model.NextFollowUp is { } d && d <= Fmt.Today && Model.Stage is not ("declined" or "paused");
+    public bool ReplyWaiting => Model.ReplyWaiting;
+    public bool HasMessages => Model.SiteMessages.Count > 0;
+    /// <summary>"Bram wrote to you on hesent.me · today".</summary>
+    public string MessageHeading => Model.SiteMessages.FirstOrDefault() is { } m
+        ? $"{(m.Name.Length > 0 ? m.Name : Model.Name)} wrote to you on hesent.me · {Fmt.NiceDate(DateOnly.FromDateTime(m.At.LocalDateTime))}"
+        : "";
+    public string MessageText => Model.SiteMessages.FirstOrDefault()?.Text ?? "";
+    /// <summary>All messages from hesent.me, newest first, for the history under the latest one.</summary>
+    public IEnumerable<string> OlderMessages => Model.SiteMessages.Skip(1)
+        .Select(m => $"{Fmt.NiceDate(DateOnly.FromDateTime(m.At.LocalDateTime))}: {m.Text}");
+
+    public void MarkAnswered()
+    {
+        Model.MarkAnswered(Fmt.Today);
+        Save();
+        RaiseAll();
+    }
     public Brush StageBrush => Palette.Get(Lists.StageColor(Model.Stage));
     public string LastContactNice => Model.LastContactAt is null ? "never" : Fmt.NiceDate(Model.LastContactAt);
     public string ThankedNice => Model.ThankedAt is null ? "not yet" : Fmt.NiceDate(Model.ThankedAt);
 
     protected override void OnModelChanged(string? name)
     {
-        Notify(nameof(FollowUpDue), nameof(StageBrush), nameof(LastContactNice), nameof(ThankedNice),
+        Notify(nameof(FollowUpDue), nameof(ReplyWaiting), nameof(StageBrush), nameof(LastContactNice), nameof(ThankedNice),
             nameof(LastContactText), nameof(ThankedText), nameof(NextFollowUpText), nameof(NextFollowUpDate));
     }
 }
@@ -74,6 +91,7 @@ public sealed class PartnersViewModel : EntityListViewModel<Partner, PartnerRow>
     public PartnersViewModel()
     {
         StageChips.Add(new FilterChip(null, "All", "Paper") { IsActive = true });
+        StageChips.Add(new FilterChip("message", "Wrote to you", "Pink"));
         foreach (var s in Lists.PartnerStages) StageChips.Add(new FilterChip(s, s, Lists.StageColor(s)));
         StageChips.Add(new FilterChip("due", "Follow-up due", "Pink"));
     }
@@ -105,6 +123,7 @@ public sealed class PartnersViewModel : EntityListViewModel<Partner, PartnerRow>
     protected override bool Include(PartnerRow r) => MatchesSearch(r) && _stageFilter switch
     {
         null => true,
+        "message" => r.ReplyWaiting,
         "due" => r.FollowUpDue,
         var s => r.Model.Stage == s,
     };
@@ -142,6 +161,7 @@ public sealed class PartnersViewModel : EntityListViewModel<Partner, PartnerRow>
             c.Count = c.Key switch
             {
                 null => Rows.Count,
+                "message" => Rows.Count(r => r.ReplyWaiting),
                 "due" => Rows.Count(r => r.FollowUpDue),
                 var s => Rows.Count(r => r.Model.Stage == s),
             };
@@ -183,7 +203,29 @@ public sealed class PartnersViewModel : EntityListViewModel<Partner, PartnerRow>
 
         int due = Rows.Count(r => r.FollowUpDue);
         int team = Rows.Count(r => r.Model.CountsAsSupport);
-        Subtitle = $"{Rows.Count} people · {team} on the team · {due} follow-up{(due == 1 ? "" : "s")} due";
+        int messages = Rows.Count(r => r.ReplyWaiting);
+        Subtitle = (messages > 0 ? $"{messages} message{(messages == 1 ? "" : "s")} waiting on you · " : "")
+            + $"{Rows.Count} people · {team} on the team · {due} follow-up{(due == 1 ? "" : "s")} due";
+    }
+
+    /// <summary>People with a message from hesent.me come first in the list.</summary>
+    protected override IEnumerable<Partner> Load() =>
+        base.Load().OrderByDescending(p => p.ReplyWaiting).ThenByDescending(p => p.SiteMessages.FirstOrDefault()?.At);
+
+    /// <summary>Opens an email back to the selected partner and counts their message as answered.</summary>
+    public void Reply()
+    {
+        var row = Selected;
+        if (row?.Model.ReplyMailto() is not { } url) return;
+        PageActions.Shell(url);
+        row.MarkAnswered();
+        Recompute();
+    }
+
+    public void MarkAnswered()
+    {
+        Selected?.MarkAnswered();
+        Recompute();
     }
 
     public PartnerRow New() => Add(new Partner { Name = "New partner", Stage = "idea", Currency = "EUR", Newsletter = true });

@@ -1,5 +1,5 @@
 // Mission App API: sync + file storage for the iPhone app and the Windows helper.
-// Cloudflare Worker + D1 (records, accounts) + R2 (files). Contract: ../api/openapi.yaml
+// Runs on Ruben's own server in the Workers runtime: DB is SQLite (records, accounts), FILES the file store. Contract: ../api/openapi.yaml
 //
 //   GET    /v1/health                     no login
 //   POST   /v1/auth/setup                 first account, needs SETUP_SECRET
@@ -9,8 +9,13 @@
 //   GET/PUT/DELETE /v1/records/:collection[/:id]
 //   PUT/GET/HEAD/DELETE /v1/files/:id     GET /v1/files
 //   GET    /v1/summary | /v1/export
+//   GET    /v1/public/summary              no login: what the hesent.me site may show
+//   POST   /v1/public/subscribe            no login: newsletter sign-up from hesent.me
+//   POST   /v1/public/message              no login: a message to Ruben from the giving page on hesent.me
+//   GET    /v1/public/letters[/:key]        no login: the letters on hesent.me, in Dutch or English
+//   GET    /v1/public/photos/:id            no login: a photo used in one of those letters
 //
-// Secret: SETUP_SECRET. Vars: APP_VERSION, MAX_FILE_MB.
+// Secret: SETUP_SECRET. Vars: APP_VERSION, MAX_FILE_MB, PUBLIC_SPACE_ID (optional; else the oldest space).
 
 const COLLECTIONS = new Set([
   "tasks", "checklists", "partners", "gifts", "budget", "sellItems", "packing", "notes", "documents", "contacts", "newsletters", "settings",
@@ -56,6 +61,14 @@ async function route(request, env) {
   }
   if (path === "/v1/auth/setup" && method === "POST") return setup(request, env);
   if (path === "/v1/auth/login" && method === "POST") return login(request, env);
+  if (path === "/v1/public/summary" && method === "GET") return publicSummary(env, url);
+  if (path === "/v1/public/subscribe" && method === "POST") return subscribe(request, env);
+  if (path === "/v1/public/message" && method === "POST") return publicMessage(request, env);
+  if (path === "/v1/public/letters" && method === "GET") return publicLetterList(env, url);
+  let p = path.match(/^\/v1\/public\/letters\/([^/]+)$/);
+  if (p && method === "GET") return publicLetter(env, url, decodeURIComponent(p[1]));
+  p = path.match(/^\/v1\/public\/photos\/([^/]+)$/);
+  if (p && (method === "GET" || method === "HEAD")) return publicPhoto(request, env, p[1], method === "HEAD");
 
   const auth = await authenticate(request, env);
 
@@ -517,28 +530,15 @@ const fileKey = (auth, id) => `${auth.space.id}/${id}`;
 // ---------- summary and export ----------
 
 async function summary(env, auth, url) {
-  const tz = url.searchParams.get("tz") || "Europe/Amsterdam";
-  let today;
-  try {
-    today = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-  } catch {
-    throw new HttpError(400, "invalid_tz", "Unknown time zone.");
-  }
+  const today = localToday(url.searchParams.get("tz") || "Europe/Amsterdam");
   const { results } = await env.DB.prepare(
     "SELECT collection, data, updated_at FROM records WHERE space_id = ? AND deleted_at IS NULL AND collection IN ('tasks','partners','sellItems','packing','documents','settings')"
   ).bind(auth.space.id).all();
   const by = { tasks: [], partners: [], sellItems: [], packing: [], documents: [], settings: [] };
   for (const r of results) by[r.collection].push({ ...safeParse(r.data), _updatedAt: r.updated_at });
 
-  const settings = by.settings.filter((s) => s.key === "main").sort((a, b) => (a._updatedAt < b._updatedAt ? 1 : -1))[0] || {};
-  const nzdPerEur = Number(settings.nzdPerEur) || null;
-  const toEurCents = (cents, currency) => {
-    const n = Number(cents) || 0;
-    if (!currency || currency === "EUR") return n;
-    if (currency === "NZD" && nzdPerEur) return Math.round(n / nzdPerEur);
-    return 0; // unknown rate: leave it out rather than guess
-  };
-  const addDays = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  const settings = mainSettings(by.settings);
+  const toEurCents = eurCents(settings);
   const weekEnd = addDays(today, 7);
 
   const tasks = { open: 0, overdue: 0, dueThisWeek: 0, done: 0, byArea: {} };
@@ -553,12 +553,10 @@ async function summary(env, auth, url) {
     }
   }
 
-  const target = Number.isInteger(settings.supportTargetMonthlyCents) ? settings.supportTargetMonthlyCents : null;
   const minimum = Number.isInteger(settings.supportMinimumMonthlyCents) ? settings.supportMinimumMonthlyCents : null;
-  let committed = 0;
+  const { committed, target } = supportTotals(by.partners, settings);
   let followUpsDue = 0;
   for (const p of by.partners) {
-    if (p.stage === "committed" || p.stage === "giving") committed += toEurCents(p.monthlyCents, p.currency);
     if (typeof p.nextFollowUp === "string" && p.nextFollowUp <= today && p.stage !== "declined") followUpsDue++;
   }
 
@@ -580,7 +578,7 @@ async function summary(env, auth, url) {
   return json({
     today,
     departureDate,
-    daysToDeparture: departureDate ? Math.round((Date.parse(departureDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 864e5) : null,
+    daysToDeparture: daysBetween(today, departureDate),
     tasks,
     support: {
       committedMonthlyCents: committed,
@@ -594,6 +592,436 @@ async function summary(env, auth, url) {
     packing: { total: by.packing.length, packed: by.packing.filter((p) => p.packed === true).length },
     documents: docs,
   });
+}
+
+const addDays = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+const daysBetween = (from, to) => (to ? Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 864e5) : null);
+
+function localToday(tz) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  } catch {
+    throw new HttpError(400, "invalid_tz", "Unknown time zone.");
+  }
+}
+
+// The newest `main` settings record (all devices write the same id, but be safe).
+function mainSettings(list) {
+  return list.filter((s) => s.key === "main").sort((a, b) => (a._updatedAt < b._updatedAt ? 1 : -1))[0] || {};
+}
+
+function eurCents(settings) {
+  const nzdPerEur = Number(settings.nzdPerEur) || null;
+  return (cents, currency) => {
+    const n = Number(cents) || 0;
+    if (!currency || currency === "EUR") return n;
+    if (currency === "NZD" && nzdPerEur) return Math.round(n / nzdPerEur);
+    return 0; // unknown rate: leave it out rather than guess
+  };
+}
+
+function supportTotals(partners, settings) {
+  const toEurCents = eurCents(settings);
+  const target = Number.isInteger(settings.supportTargetMonthlyCents) ? settings.supportTargetMonthlyCents : null;
+  let committed = 0;
+  for (const p of partners) {
+    if (p.stage === "committed" || p.stage === "giving") committed += toEurCents(p.monthlyCents, p.currency);
+  }
+  return { committed, target };
+}
+
+// ---------- public (hesent.me) ----------
+// No login. Only what Ruben chose to show: the departure date, support as a percentage
+// (never amounts or names), prayer notes he marked public, sent newsletters he put online (see letters below),
+// and the giving details he filled in under Settings.
+
+async function publicSpaceId(env) {
+  if (env.PUBLIC_SPACE_ID) return env.PUBLIC_SPACE_ID;
+  const row = await env.DB.prepare("SELECT id FROM spaces ORDER BY created_at LIMIT 1").first();
+  if (!row) throw new HttpError(404, "not_set_up", "Nothing to show yet.");
+  return row.id;
+}
+
+async function publicSummary(env, url) {
+  const today = localToday(url.searchParams.get("tz") || "Europe/Amsterdam");
+  const spaceId = await publicSpaceId(env);
+  const { results } = await env.DB.prepare(
+    `SELECT id, collection, data, created_at, updated_at FROM records
+     WHERE space_id = ? AND deleted_at IS NULL AND collection IN ('partners','settings','notes','newsletters')`
+  ).bind(spaceId).all();
+  const by = { partners: [], settings: [], notes: [], newsletters: [] };
+  for (const r of results) by[r.collection].push({ ...safeParse(r.data), id: r.id, _createdAt: r.created_at, _updatedAt: r.updated_at });
+
+  const settings = mainSettings(by.settings);
+  const { committed, target } = supportTotals(by.partners, settings);
+  const departureDate = typeof settings.departureDate === "string" ? settings.departureDate : null;
+
+  const prayers = by.notes
+    .filter((n) => n.kind === "prayer" && n.public === true && typeof n.title === "string" && n.title.trim())
+    .map((n) => ({
+      text: n.title.trim().slice(0, 280),
+      addedAt: n._createdAt.slice(0, 10),
+      answeredAt: typeof n.answeredAt === "string" ? n.answeredAt.slice(0, 10) : null,
+      _order: typeof n.order === "number" ? n.order : null,
+    }));
+  const open = prayers.filter((p) => !p.answeredAt)
+    .sort((a, b) => (a._order ?? Infinity) - (b._order ?? Infinity) || (a.addedAt < b.addedAt ? 1 : -1)).slice(0, 12);
+  const answered = prayers.filter((p) => p.answeredAt).sort((a, b) => (a.answeredAt < b.answeredAt ? 1 : -1)).slice(0, 12);
+
+  const letters = onlineLetters(by.newsletters, langOf(url)).slice(0, 5)
+    .map((l) => ({ key: l.key, title: l.title, sentAt: l.sentAt, webUrl: l.webUrl, excerpt: l.excerpt }));
+
+  const res = json({
+    today,
+    departureDate,
+    daysToDeparture: daysBetween(today, departureDate),
+    support: { percentOfTarget: target ? Math.round((committed / target) * 100) : null },
+    giving: publicGiving(settings),
+    prayers: [...open, ...answered].map(({ _order, ...p }) => p),
+    letters,
+  });
+  res.headers.set("Cache-Control", "public, max-age=300");
+  return res;
+}
+
+// The bank details Ruben filled in under Settings > Giving, for Give on hesent.me. null until there is an IBAN.
+function publicGiving(settings) {
+  const text = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+  const iban = text(settings.givingIban, 42);
+  if (!iban) return null;
+  const url = text(settings.givingUrl, 300);
+  return {
+    iban,
+    holder: text(settings.givingHolder, 80),
+    reference: text(settings.givingReference, 80),
+    url: url && /^https:\/\/\S+$/.test(url) ? url : null,
+  };
+}
+
+// ---------- letters on hesent.me ----------
+// A newsletter is online when it is sent and Ruben ticked "Show on hesent.me" (public), or gave it an https webUrl.
+// Each letter has a Dutch side (title, subtitle, body, note, nextTime, prayers, photo captions) and an English
+// side (the same names ending in En). A letter shows in a language once it has a title in that language.
+// Its key in the address is "<number>-<title-as-slug>"; only the part before the first dash is looked up,
+// so changing the title doesn't break old links.
+
+const langOf = (url) => (url.searchParams.get("lang") === "en" ? "en" : "nl");
+const str = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+
+function slugify(s) {
+  return s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "");
+}
+
+function isOnline(n) {
+  return n.status === "sent" && (n.public === true || /^https:\/\//.test(n.webUrl || ""));
+}
+
+// One letter in one language, or null when it isn't written in that language yet.
+function letterIn(n, lang) {
+  const en = lang === "en";
+  const pick = (k, max) => str(en ? n[`${k}En`] : n[k], max);
+  const title = pick("title", 140);
+  if (!title) return null;
+  const list = (v) => (Array.isArray(v) ? v.map((x) => str(x, 280)).filter(Boolean).slice(0, 8) : []);
+  const size = (v) => (Number.isInteger(v) && v > 0 ? v : null);
+  const photos = (Array.isArray(n.photos) ? n.photos : [])
+    .filter((ph) => ph && UUID_RE.test(ph.id || ""))
+    .slice(0, 12)
+    .map((ph) => ({ id: ph.id, url: `/v1/public/photos/${ph.id}`, caption: str(en ? ph.captionEn : ph.caption, 200), width: size(ph.width), height: size(ph.height) }));
+  const body = en ? n.bodyEn : n.body;
+  const number = Number.isInteger(n.number) && n.number > 0 ? n.number : null;
+  const slug = slugify(title);
+  return {
+    key: `${number ?? n.id.slice(0, 8)}${slug ? `-${slug}` : ""}`,
+    number,
+    title,
+    subtitle: pick("subtitle", 200),
+    place: str(n.place, 80),
+    sentAt: (typeof n.sentAt === "string" ? n.sentAt : n._updatedAt).slice(0, 10),
+    webUrl: /^https:\/\//.test(n.webUrl || "") ? n.webUrl : null,
+    excerpt: excerpt(body),
+    body: typeof body === "string" ? body.slice(0, 60000) : "",
+    note: pick("note", 400),
+    nextTime: pick("nextTime", 400),
+    funds: pick("funds", 400),
+    prayers: list(en ? n.prayersEn : n.prayers),
+    photos,
+    ...arranged(n, lang, photos),
+  };
+}
+
+// ---------- a letter's own arrangement ----------
+// The web app writes a letter as sections (a heading and its text, in Dutch and English) and arranges them on the
+// Arrange page: which photo leads in the header, which pieces go in each of the three columns, top to bottom, and
+// which in the footer under them, side by side. Pieces are "s:<section id>", "p:<photo id>", "prayers", "note",
+// "next" (next time and the sign-up) and "funds" (the support so far and how to give); pieces under `off` stay off
+// the page. A piece the arrangement doesn't name yet (written after arranging) goes where it would go by itself:
+// text after the last text, photos, prayer points and the note at the end of the third column, next time and funds
+// in the footer. A layout from before the footer existed gets one: next time moves into it, with funds beside it.
+// The body is kept as the sections joined into Markdown, so the iPhone and Windows apps can still edit it. When the
+// body no longer matches the sections in a language (it was edited elsewhere), that language falls back to the
+// automatic layout. Keep in step with missions/app/web/assets/js/pages/sections.js.
+
+const sectionText = (s, en) => [str(en ? s.titleEn : s.title, 140), typeof (en ? s.bodyEn : s.body) === "string" ? (en ? s.bodyEn : s.body).trim() : ""];
+const mdOf = (title, body) => [title && `## ${title}`, body].filter(Boolean).join("\n\n");
+const flat = (md) => (typeof md === "string" ? md : "").replace(/\r/g, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+
+function arranged(n, lang, photos) {
+  const en = lang === "en";
+  const sections = Array.isArray(n.sections) ? n.sections.filter((s) => s && typeof s.id === "string" && s.id) : [];
+  const L = n.layout;
+  if (!sections.length || !L || typeof L !== "object" || !Array.isArray(L.columns)) return {};
+  const joined = sections.map((s) => mdOf(...sectionText(s, en))).filter(Boolean).join("\n\n");
+  if (flat(joined) !== flat(en ? n.bodyEn : n.body)) return {};
+
+  const out = sections.map((s) => {
+    const [title, body] = sectionText(s, en);
+    return title || body ? { id: s.id, title, body: body.slice(0, 20000) } : null;
+  }).filter(Boolean).slice(0, 40);
+  const has = new Set([
+    ...out.map((s) => `s:${s.id}`), ...photos.map((p) => `p:${p.id}`),
+    ...(n[en ? "prayersEn" : "prayers"]?.length ? ["prayers"] : []),
+    ...(str(n[en ? "noteEn" : "note"], 400) ? ["note"] : []),
+    "next",
+    "funds",
+  ]);
+  const cover = typeof L.cover === "string" && has.has(`p:${L.cover}`) ? L.cover : null;
+  const seen = new Set(cover ? [`p:${cover}`] : []);
+  const off = new Set(Array.isArray(L.off) ? L.off : []);
+  const old = !Array.isArray(L.footer);
+  const keep = (r) => {
+    if (typeof r !== "string" || !has.has(r) || seen.has(r)) return false;
+    seen.add(r);
+    return true;
+  };
+  const columns = [0, 1, 2].map((i) => (Array.isArray(L.columns[i]) ? L.columns[i] : []).filter((r) => !(old && r === "next") && keep(r)));
+  const footer = (old ? [] : L.footer).filter(keep);
+  for (const r of has) {
+    if (seen.has(r) || off.has(r)) continue;
+    if (r.startsWith("s:")) {
+      const last = [2, 1, 0].find((i) => columns[i].some((x) => x.startsWith("s:"))) ?? 0;
+      const col = columns[last];
+      const at = col.findLastIndex((x) => x.startsWith("s:"));
+      col.splice(at + 1, 0, r);
+    } else (r === "next" || r === "funds" ? footer : columns[2]).push(r);
+  }
+  return { sections: out, layout: { cover, columns, footer } };
+}
+
+// The online letters in one language, newest first.
+function onlineLetters(newsletters, lang) {
+  return newsletters.filter(isOnline).map((n) => letterIn(n, lang)).filter(Boolean)
+    .sort((a, b) => (a.sentAt < b.sentAt ? 1 : a.sentAt > b.sentAt ? -1 : (b.number ?? 0) - (a.number ?? 0)));
+}
+
+async function publicNewsletters(env) {
+  const spaceId = await publicSpaceId(env);
+  const { results } = await env.DB.prepare(
+    "SELECT id, data, updated_at FROM records WHERE space_id = ? AND deleted_at IS NULL AND collection = 'newsletters'"
+  ).bind(spaceId).all();
+  return { spaceId, newsletters: results.map((r) => ({ ...safeParse(r.data), id: r.id, _updatedAt: r.updated_at })) };
+}
+
+function cachedJson(value) {
+  const res = json(value);
+  res.headers.set("Cache-Control", "public, max-age=300");
+  return res;
+}
+
+// Every letter for the front page: what the list needs, with the first photo, but no bodies.
+async function publicLetterList(env, url) {
+  const { newsletters } = await publicNewsletters(env);
+  const letters = onlineLetters(newsletters, langOf(url)).slice(0, 200)
+    .map(({ body, note, nextTime, funds, prayers, photos, sections, layout, ...l }) => ({ ...l, photo: (layout?.cover && photos.find((p) => p.id === layout.cover)) || photos[0] || null }));
+  return cachedJson({ letters });
+}
+
+// One whole letter, with the letters just before and after it.
+async function publicLetter(env, url, key) {
+  const { spaceId, newsletters } = await publicNewsletters(env);
+  const all = onlineLetters(newsletters, langOf(url));
+  const head = key.split("-")[0];
+  const i = head ? all.findIndex((l) => l.key.split("-")[0] === head) : -1;
+  if (i < 0) throw new HttpError(404, "not_found", "No such letter.");
+  const brief = (l) => (l ? { key: l.key, title: l.title, sentAt: l.sentAt } : null);
+  return cachedJson({ letter: all[i], newer: brief(all[i - 1]), older: brief(all[i + 1]), support: await publicSupport(env, spaceId) });
+}
+
+// The support as a percentage of the target, as on the home page, for the funds at the foot of a letter.
+async function publicSupport(env, spaceId) {
+  const { results } = await env.DB.prepare(
+    "SELECT collection, data, updated_at FROM records WHERE space_id = ? AND deleted_at IS NULL AND collection IN ('partners','settings')"
+  ).bind(spaceId).all();
+  const rows = (c) => results.filter((r) => r.collection === c).map((r) => ({ ...safeParse(r.data), _updatedAt: r.updated_at }));
+  const { committed, target } = supportTotals(rows("partners"), mainSettings(rows("settings")));
+  return { percentOfTarget: target ? Math.round((committed / target) * 100) : null };
+}
+
+// A photo, but only one that an online letter uses, and only if it is an image.
+async function publicPhoto(request, env, id, headOnly) {
+  if (!UUID_RE.test(id)) throw new HttpError(404, "not_found", "No such photo.");
+  const { spaceId, newsletters } = await publicNewsletters(env);
+  const used = newsletters.some((n) => isOnline(n) && Array.isArray(n.photos) && n.photos.some((ph) => ph?.id === id));
+  const row = used ? await env.DB.prepare("SELECT * FROM files WHERE space_id = ? AND id = ?").bind(spaceId, id).first() : null;
+  if (!row || !/^image\/(jpeg|png|webp|gif|avif)$/.test(row.mime_type)) throw new HttpError(404, "not_found", "No such photo.");
+  const headers = new Headers(CORS);
+  headers.set("Content-Type", row.mime_type);
+  headers.set("ETag", `"${row.sha256}"`);
+  headers.set("Cache-Control", "public, max-age=86400");
+  headers.set("X-Content-Type-Options", "nosniff");
+  const inm = (request.headers.get("If-None-Match") || "").replace(/^W\//, "").replace(/"/g, "");
+  if (inm && inm.split(",").map((s) => s.trim()).includes(row.sha256)) return new Response(null, { status: 304, headers });
+  headers.set("Content-Length", String(row.size_bytes));
+  if (headOnly) return new Response(null, { status: 200, headers });
+  const obj = await env.FILES.get(`${spaceId}/${id}`);
+  if (!obj) throw new HttpError(404, "not_found", "No such photo.");
+  return new Response(obj.body, { status: 200, headers });
+}
+
+// The opening of a Markdown letter as plain text: the first paragraph that isn't a heading or a picture, cut at a word.
+function excerpt(body) {
+  if (typeof body !== "string") return null;
+  // A heading line is a paragraph of its own, also straight above its text (the site reads it the same way).
+  const paras = body.replace(/^[ \t]*#{1,3}[ \t]*\S.*$/gm, "\n#\n").split(/\n\s*\n/).map((p) => p.trim())
+    .filter((p) => p && !/^(#|!\[|>|---)/.test(p));
+  // A greeting on its own ("Hoi lieve mensen,") is skipped when there is more to show.
+  const para = paras.length > 1 && paras[0].length < 60 && /[,:!]$/.test(paras[0]) ? paras[1] : paras[0];
+  if (!para) return null;
+  const text = para
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`~]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length <= 320) return text || null;
+  return text.slice(0, 320).replace(/\s+\S*$/, "") + "…";
+}
+
+const PUBLIC_PER_IP_PER_HOUR = 5;
+const PUBLIC_PER_HOUR = 200;
+
+async function subscribe(request, env) {
+  const body = await readJson(request);
+  // Bots fill the hidden "website" field; tell them it worked and store nothing.
+  if (typeof body.website === "string" && body.website.trim()) return json({ ok: true }, 201);
+
+  const name = String(body.name || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!name) throw new HttpError(400, "invalid_name", "Fill in your first name.");
+  if (email.length > 200 || !EMAIL_RE.test(email)) throw new HttpError(400, "invalid_email", "That email address doesn't look right.");
+  // The language the reader wants the letters in, kept as a "lang-nl" or "lang-en" tag.
+  const lang = body.lang === "en" ? "en" : "nl";
+  const langTag = `lang-${lang}`;
+
+  await publicLimit(request, env, "subscribe", "Too many sign-ups right now. Try again later.");
+
+  const spaceId = await publicSpaceId(env);
+  const today = localToday("Europe/Amsterdam");
+  const stamp = now();
+  const existing = await env.DB.prepare(
+    `SELECT id, data FROM records WHERE space_id = ? AND collection = 'partners' AND deleted_at IS NULL
+     AND lower(json_extract(data, '$.email')) = ? ORDER BY updated_at DESC LIMIT 1`
+  ).bind(spaceId, email).first();
+
+  const changes = [];
+  if (existing) {
+    // Someone Ruben already knows: switch the newsletter on and set the language. Their name and stage stay his.
+    const data = safeParse(existing.data);
+    const old = Array.isArray(data.tags) ? data.tags : [];
+    const tags = [...new Set([...old.filter((t) => !/^lang-/.test(t)), "website", langTag])];
+    if (data.newsletter !== true || tags.length !== old.length || tags.some((t) => !old.includes(t))) {
+      changes.push({ id: existing.id, collection: "partners", updatedAt: stamp, deletedAt: null, data: { ...data, newsletter: true, tags } });
+    }
+  } else {
+    changes.push({
+      id: crypto.randomUUID(), collection: "partners", updatedAt: stamp, deletedAt: null,
+      data: {
+        name, email, stage: "idea", newsletter: true, tags: ["website", langTag],
+        notes: `Signed up for the newsletter on hesent.me (${lang.toUpperCase()}) on ${today}.`,
+      },
+    });
+  }
+  if (changes.length) {
+    const { rejected } = await applyChanges(env, { space: { id: spaceId, role: "owner" }, device: { id: "website" } }, changes);
+    if (rejected.length) throw new HttpError(500, "server_error", "Signing up didn't work. Try again.");
+  }
+  // The same answer whether or not the address was already known, so the form can't be used to probe the list.
+  return json({ ok: true }, 201);
+}
+
+// Rate limit a public form by a hash of the visitor's IP (the IP itself is never stored): a few per IP per hour,
+// and a cap on everyone together, counted over all the public forms.
+async function publicLimit(request, env, form, message) {
+  const ipKey = await sha256Hex(form + ":" + visitorIp(request));
+  const hourAgo = new Date(Date.now() - 3600e3).toISOString();
+  const counts = await env.DB.prepare(
+    "SELECT SUM(key = ?) AS mine, COUNT(*) AS everyone FROM public_hits WHERE at > ?"
+  ).bind(ipKey, hourAgo).first();
+  if ((counts?.mine || 0) >= PUBLIC_PER_IP_PER_HOUR || (counts?.everyone || 0) >= PUBLIC_PER_HOUR) {
+    throw new HttpError(429, "too_many_attempts", message);
+  }
+  await env.DB.prepare("INSERT INTO public_hits (key, at) VALUES (?, ?)").bind(ipKey, now()).run();
+}
+
+// A message from the giving page on hesent.me, from someone who gives or thinks about it and wants to get to know
+// Ruben. It lands on the partner with that email (or a new one on "On my list"): the message goes on top of their
+// siteMessages (and a copy on top of their notes), replyWaiting is set until he answers it in the app, and the
+// follow-up is set to today with "Reply to their message", so it shows up in the app to answer.
+const SITE_MESSAGES_KEPT = 20;
+
+async function publicMessage(request, env) {
+  const body = await readJson(request);
+  if (typeof body.website === "string" && body.website.trim()) return json({ ok: true }, 201);
+
+  const name = String(body.name || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const email = String(body.email || "").trim().toLowerCase();
+  // Line breaks kept, but never more than one empty line in a row.
+  const message = String(body.message || "").replace(/\r\n?/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (!name) throw new HttpError(400, "invalid_name", "Fill in your name.");
+  if (email.length > 200 || !EMAIL_RE.test(email)) throw new HttpError(400, "invalid_email", "That email address doesn't look right.");
+  if (!message) throw new HttpError(400, "invalid_message", "Write a few words.");
+  if (message.length > 2000) throw new HttpError(400, "invalid_message", "Keep it under 2000 characters.");
+  const lang = body.lang === "en" ? "en" : "nl";
+
+  await publicLimit(request, env, "message", "Too many messages right now. Try again later.");
+
+  const spaceId = await publicSpaceId(env);
+  const today = localToday("Europe/Amsterdam");
+  const stamp = now();
+  const existing = await env.DB.prepare(
+    `SELECT id, data FROM records WHERE space_id = ? AND collection = 'partners' AND deleted_at IS NULL
+     AND lower(json_extract(data, '$.email')) = ? ORDER BY updated_at DESC LIMIT 1`
+  ).bind(spaceId, email).first();
+
+  const entry = `Message on hesent.me (${lang.toUpperCase()}) on ${today}${existing ? `, as "${name}"` : ""}:\n${message}`;
+  const followUp = { nextFollowUp: today, nextStep: "Reply to their message from hesent.me", lastContactAt: today, replyWaiting: true };
+  const sent = { at: stamp, name, text: message, lang };
+  let change;
+  if (existing) {
+    const data = safeParse(existing.data);
+    const tags = [...new Set([...(Array.isArray(data.tags) ? data.tags : []), "website"])];
+    const notes = typeof data.notes === "string" && data.notes.trim() ? `${entry}\n\n${data.notes}` : entry;
+    const siteMessages = [sent, ...(Array.isArray(data.siteMessages) ? data.siteMessages : [])].slice(0, SITE_MESSAGES_KEPT);
+    // A follow-up he already planned for an earlier day stays.
+    const due = typeof data.nextFollowUp === "string" && data.nextFollowUp < today ? data.nextFollowUp : today;
+    change = { id: existing.id, data: { ...data, ...followUp, nextFollowUp: due, tags, notes, siteMessages } };
+  } else {
+    change = {
+      id: crypto.randomUUID(),
+      data: { name, email, stage: "idea", tags: ["website", `lang-${lang}`], notes: entry, siteMessages: [sent], ...followUp },
+    };
+  }
+  const { rejected } = await applyChanges(env, { space: { id: spaceId, role: "owner" }, device: { id: "website" } },
+    [{ ...change, collection: "partners", updatedAt: stamp, deletedAt: null }]);
+  if (rejected.length) throw new HttpError(500, "server_error", "Sending didn't work. Try again.");
+  return json({ ok: true }, 201);
+}
+
+// The visitor's IP as nginx saw it: nginx sets X-Real-IP to the address it got the request from, overwriting
+// whatever the visitor sent.
+function visitorIp(request) {
+  return request.headers.get("X-Real-IP") || "unknown";
 }
 
 async function exportAll(env, auth) {
@@ -621,6 +1049,7 @@ export async function prune(env, date) {
     stmts.push(env.DB.prepare("DELETE FROM records WHERE space_id = ? AND deleted_at IS NOT NULL AND deleted_at < ?").bind(r.space_id, cutoff));
   }
   stmts.push(env.DB.prepare("DELETE FROM login_failures WHERE at < ?").bind(new Date(date.getTime() - 864e5).toISOString()));
+  stmts.push(env.DB.prepare("DELETE FROM public_hits WHERE at < ?").bind(new Date(date.getTime() - 864e5).toISOString()));
   await env.DB.batch(stmts);
 }
 

@@ -1,0 +1,58 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hesent-site",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "missions/site/dev.mjs"
+      ],
+      "port": 8788
+    },
+    {
+      "name": "missie-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "missions/app/server",
+        "run",
+        "dev"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "missie-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "serve",
+        "-l",
+        "5173",
+        "missions/app/web"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "hesent-site-sample",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "missions/site/dev.mjs"
+      ],
+      "env": {
+        "SAMPLE": "1",
+        "PORT": "8789"
+      },
+      "port": 8789
+    },
+    {
+      "name": "missie-api-test",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd missions/app/server && npx wrangler d1 migrations apply missionapp --local --persist-to .wrangler/test-state && npx wrangler dev --port 8791 --persist-to .wrangler/test-state"
+      ],
+      "port": 8791,
+      "autoPort": false
+    }
+  ]
+}

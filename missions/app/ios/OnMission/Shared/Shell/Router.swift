@@ -3,9 +3,9 @@ import SwiftData
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
 
-// Navigation for Tomato Flood (handoff §3, §4, §7): five tabs, a stack of pages that flood out of what
-// you tapped, and the overlays (Capture, the check-in, Answered, the toast). The bar mode and the
-// status bar follow from this state.
+// Navigation (handoff §3, §4, §7): five tabs, a stack of pages that flood out of what you tapped, and the
+// overlays (Capture, the check-in, Answered, the toast). The bar mode follows from this state. Everything is
+// light paper with ink on it, so the status bar is always dark.
 
 enum RootTab: String, CaseIterable, Identifiable {
     case today, tasks, people, prayer, move
@@ -24,14 +24,15 @@ enum RootTab: String, CaseIterable, Identifiable {
     }
 }
 
-/// The tab bar takes the colour of whatever sits at the bottom of the screen.
+/// The tab bar takes the colour of whatever sits at the bottom of the screen: the sheet's paper, the poster's
+/// deeper paper, or the Answered ochre.
 enum BarMode {
-    case cream, flood, gold
+    case paper, flood, gold
 }
 
-/// What a page has at the bottom: a cream sheet, nothing but tomato, or a whole cream page.
+/// What a page has at the bottom: a paper sheet, nothing but poster, or a whole paper page.
 enum PageStyle {
-    case sheet, flood, cream
+    case sheet, flood, paper
 }
 
 /// Every pushed page.
@@ -69,8 +70,8 @@ enum Page {
 
     var style: PageStyle {
         switch self {
-        case .reader, .search: .cream
-        case .record(.note(let n)) where n.kindValue != .prayer && !n.isThanks: .cream
+        case .reader, .search: .paper
+        case .record(.note(let n)) where n.kindValue != .prayer && !n.isThanks: .paper
         default: .sheet
         }
     }
@@ -115,8 +116,6 @@ struct ToastItem: Identifiable, Equatable {
     var iconPop: [RootTab: Int] = [:]
     var captureOpen = false
     var checkIn: CheckInRequest?
-    /// The check-in's colour stop, 0 (Not now) to 1 (Yes!), for the status bar.
-    var checkInT: Double = 0.5
     var answered: AnsweredFlood?
     var todayAllDone = false
     var toast: ToastItem?
@@ -235,24 +234,9 @@ struct ToastItem: Identifiable, Equatable {
 
     var barMode: BarMode {
         if answered?.open == true { return .gold }
-        if let top { return top.style == .flood ? .flood : .cream }
+        if let top { return top.style == .flood ? .flood : .paper }
         if tab == .prayer || (tab == .today && todayAllDone) { return .flood }
-        return .cream
-    }
-
-    /// Light status-bar content on tomato and plum; dark on cream and marigold.
-    var statusLight: Bool {
-        if captureOpen { return false }
-        if checkIn != nil { return checkInT < 0.27 || checkInT >= 0.74 }
-        if answered?.open == true { return false }
-        if let top, top.style == .cream { return false }
-        return true
-    }
-
-    /// The colour of the top bar's kicker and buttons.
-    var topInk: Color {
-        if let top, top.style == .cream { return Palette.ink }
-        return Palette.cream
+        return .paper
     }
 }
 

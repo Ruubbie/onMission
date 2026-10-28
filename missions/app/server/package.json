@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Sync + file API for Ruben's mission-prep apps (Cloudflare Worker + D1 + R2)",
+  "description": "Sync + file API for Ruben's mission-prep apps (runs in the Workers runtime on Ruben's own server)",
   "scripts": {
     "dev": "wrangler d1 migrations apply missionapp --local && wrangler dev",
     "test": "node --test test/*.test.mjs",

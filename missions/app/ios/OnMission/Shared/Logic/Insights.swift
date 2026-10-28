@@ -74,6 +74,13 @@ struct Insights {
     }
 
     /// Open partners whose follow-up is due within 3 days (or overdue).
+    /// People whose message from hesent.me waits for an answer, whatever their stage; newest message first.
+    var messages: [Partner] {
+        partners
+            .filter(\.replyWaiting)
+            .sorted { ($0.siteMessages.first?.at ?? .distantPast) > ($1.siteMessages.first?.at ?? .distantPast) }
+    }
+
     var followUps: [Partner] {
         let limit = cal.date(byAdding: .day, value: 3, to: today) ?? today
         return partners

@@ -58,7 +58,8 @@ public sealed partial class HomeTaskRow : ObservableObject
 
 public sealed record ChecklistCard(string Id, string Title, string Subtitle, string? Detail, string Glyph, Brush Accent, double? Progress, string? Badge);
 
-public sealed record FollowUpRow(string Id, string Name, string WhenText, string Stage, bool IsLate);
+/// <summary>A person to follow up with on Home. Detail is their stage, or their message from hesent.me.</summary>
+public sealed record FollowUpRow(string Id, string Name, string WhenText, string Detail, bool IsLate);
 
 public sealed partial class HomePageViewModel : ObservableObject
 {
@@ -182,19 +183,25 @@ public sealed partial class HomePageViewModel : ObservableObject
         DocumentsDetail = docParts.Count == 0 ? "all safe" : string.Join(" · ", docParts);
         DocumentsBadge = s.DocumentsExpiringSoon > 0 ? "CHECK" : null;
 
-        // Follow-ups
+        // Follow-ups: messages from hesent.me first (whatever the stage), then the follow-up dates.
         var followHorizon = today.AddDays(7);
-        Replace(FollowUps, _store.All<Partner>()
-            .Where(p => p.NextFollowUp is { } d && d <= followHorizon && p.Stage is not ("declined" or "paused"))
+        var partners = _store.All<Partner>().ToList();
+        var messages = partners
+            .Where(p => p.ReplyWaiting)
+            .OrderByDescending(p => p.SiteMessages.FirstOrDefault()?.At)
+            .Select(p => new FollowUpRow(p.Id, p.Name, "wrote to you",
+                p.SiteMessages.FirstOrDefault() is { } m ? $"“{m.Text.Replace('\n', ' ')}”" : "Message on hesent.me", true));
+        var dates = partners
+            .Where(p => !p.ReplyWaiting && p.NextFollowUp is { } d && d <= followHorizon && p.Stage is not ("declined" or "paused"))
             .OrderBy(p => p.NextFollowUp)
-            .Take(8)
             .Select(p =>
             {
                 var d = p.NextFollowUp!.Value;
                 var days = d.DayNumber - today.DayNumber;
                 var when = days switch { 0 => "today", 1 => "tomorrow", < 0 => $"{-days}d late", _ => $"in {days} days" };
                 return new FollowUpRow(p.Id, p.Name, when, p.Stage, days < 0);
-            }));
+            });
+        Replace(FollowUps, messages.Concat(dates).Take(8));
     }
 
     private static string PhaseLabel(string phase) => phase switch

@@ -272,7 +272,7 @@ extension View {
 
 // MARK: - The cover
 
-/// Add anything (handoff §6): a cream cover floods out of the + and folds back into it. What you type
+/// Add anything (handoff §6): a paper cover floods out of the + and folds back into it. What you type
 /// decides what it becomes ("pray: …", "sell: Bike 150", "@Anna", or a task like "Call Anna friday #support");
 /// the chips override it. Matching records show below, so a name you type opens the person instead of
 /// adding them twice.
@@ -294,7 +294,7 @@ struct CaptureCover: View {
         }
         // minWidth 0: never report more than the screen, or the whole root (and the top bar) widens with it.
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-        .background(Palette.cream.ignoresSafeArea())
+        .paper()
         .mask {
             RevealShape(center: origin, progress: open ? 1 : 0)
                 .animation(Motion.flood.rm, value: open)
@@ -347,12 +347,12 @@ private struct CaptureForm: View {
                         .padding(.leading, Metrics.gutter - Metrics.sheetSide)
                         .padding(.top, chrome.top - 3)
                         .accessibilityAddTraits(.isHeader)
-                    LineArt(drawing: kind.art, ink: .onCream, delay: 0, trigger: artPlay, drawDuration: 0.65, stagger: 0.05)
+                    LineArt(drawing: kind.art, ink: .onPaper, delay: 0, trigger: artPlay, drawDuration: 0.65, stagger: 0.05)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
                     entry
                     Hand("↓ sounds like \(kind.noun)", size: 26, tilt: -4)
-                        .foregroundStyle(Palette.tomato)
+                        .foregroundStyle(Palette.sageDeep)
                         .opacity(guessed ? 1 : 0)
                         .animation(.easeOut(duration: 0.35), value: guessed)
                         .padding(.leading, 72)
@@ -461,8 +461,8 @@ private struct CaptureForm: View {
             Text(f.label).type(TypeStyle(size: 15.5, wght: 600, relativeTo: .body)).opacity(0.6)
             Spacer(minLength: 8)
             Text(f.value)
-                .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                .foregroundStyle(Palette.tomatoInk)
+                .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                .foregroundStyle(Palette.ink)
                 .lineLimit(1)
                 .contentTransition(.opacity)
         }

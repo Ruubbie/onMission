@@ -1,0 +1,278 @@
+{
+  "lang": "nl",
+  "meta": {
+    "title": "hesent.me · Ruben",
+    "description": "Ruben verhuist naar Queenstown, Nieuw-Zeeland, om staf te worden bij YWAM Queenstown: jongeren discipelen en YWAM-basissen dienen met IT en software. Leef hier mee."
+  },
+  "skip": "Naar de inhoud",
+  "nav": {
+    "label": "Hoofdmenu",
+    "items": [
+      {
+        "id": "my-story",
+        "label": "Mijn verhaal"
+      },
+      {
+        "id": "the-journey",
+        "label": "De reis"
+      },
+      {
+        "id": "letters",
+        "label": "Brieven"
+      },
+      {
+        "id": "get-involved",
+        "label": "Doe mee"
+      }
+    ]
+  },
+  "loop": {
+    "label": "Blijf op de hoogte",
+    "id": "stay-in-the-loop",
+    "title": "Krijg de volgende brief",
+    "form": {
+      "name": "Voornaam",
+      "email": "E-mailadres",
+      "lang": "Stuur de brieven in het",
+      "submit": "Stuur me de brieven",
+      "sending": "Even aanmelden…",
+      "thanks": "Bedankt, {name}! De volgende brief gaat naar {email}.",
+      "errName": "Vul je voornaam in.",
+      "errEmail": "Dat e-mailadres klopt niet helemaal.",
+      "errBusy": "Er melden zich nu veel mensen aan. Probeer het zo nog eens.",
+      "errNetwork": "Dat lukte niet. Controleer je verbinding en probeer het opnieuw.",
+      "privacy": "Alleen Ruben ziet je adres. Het wordt nooit gedeeld."
+    }
+  },
+  "hero": {
+    "title": "Een *nieuw hoofdstuk*, aan de andere kant van de wereld.",
+    "lede": "Ik verhuis naar Queenstown, Nieuw-Zeeland, om staf te worden bij Jeugd met een Opdracht (YWAM). Hier leef je mee, lees je mijn brieven en zie je wat God doet, stap voor stap.",
+    "cta": "Lees mijn verhaal",
+    "target": "my-story"
+  },
+  "globe": {
+    "label": "Een interactieve wereldbol met de route van Nederland naar Queenstown, Nieuw-Zeeland. Sleep hem, of gebruik de pijltjestoetsen, om hem te draaien.",
+    "to": "Queenstown"
+  },
+  "story": {
+    "id": "my-story",
+    "title": "Waarom ik naar de *andere kant* van de wereld ga.",
+    "lede": "Ik ben Ruben. In {departure} vlieg ik naar Queenstown, Nieuw-Zeeland, om fulltime te dienen bij Jeugd met een Opdracht (YWAM). Mijn geloof groeide stap voor stap, en mijn DTS daar veranderde het meest: ik leerde ontzettend veel over God, de Bijbel en wie ik zelf ben. Hier lees je in het kort wat er nu komt.",
+    "vision": "Ik ga naar Queenstown om jonge mensen in het dagelijks leven te discipelen en YWAM-basissen met IT en software te dienen, zodat jongeren ontdekken wie ze in God zijn en basissen hun werk goed en veilig kunnen doen.",
+    "chapters": [
+      {
+        "icon": "place",
+        "title": "De plek",
+        "body": "Ik ken YWAM Queenstown van mijn DTS, en het is daar prachtig. Dit is geen beslissing die ik even uit mijn broekzak trok: het is een roeping die ik ontving na wekenlang gebed en zoeken, en God bevestigde hem via de mensen die met me meebaden."
+      },
+      {
+        "icon": "people",
+        "title": "De mensen",
+        "body": "Het raakt me hoeveel mensen van mijn generatie leugens geloven over wie ze zijn en over Gods liefde. Veel jongeren wonen op de basis, dus discipelen stopt niet om vijf uur: het gebeurt bij een spelletje ’s avonds, aan tafel en op gewone dagen."
+      },
+      {
+        "icon": "plan",
+        "title": "Het plan",
+        "body": "Ik zorg voor de IT van de basis en bouw software die YWAM-basissen kunnen gebruiken, zodat ook basissen met weinig IT-kennis goed en veilig kunnen draaien. Daarnaast doe ik wat alle staf doet: het café, de keuken, schoonmaken, het geluid bij worship nights en meedoen met evangelisatie."
+      },
+      {
+        "icon": "team",
+        "title": "Het team",
+        "body": "Staf bij YWAM krijgt geen salaris, dus ik bouw een team dat me uitzendt: in gebed, met een maandelijkse gift en door mee te leven. Ik laat vrienden, familie en Ignite achter, de jeugd waar ik mijn hart in leg, dus de mensen thuis betekenen veel."
+      }
+    ],
+    "cta": "Volg de reis",
+    "target": "the-journey"
+  },
+  "journey": {
+    "id": "the-journey",
+    "title": "De weg van hier naar *Queenstown*.",
+    "lede": "Naar de andere kant van de wereld verhuizen gaat niet in één keer. Dit zijn de stukken van de weg, en waar ik nu ben.",
+    "countdown": {
+      "before": "dagen tot ik vlieg",
+      "today": "Vandaag vlieg ik",
+      "after": "Onderweg sinds {departure}"
+    },
+    "suitcase": "Een gepakte koffer met een groen takje onder de riem",
+    "here": "Hier ben ik nu",
+    "stops": [
+      {
+        "icon": "pack",
+        "title": "Voorbereiden",
+        "when": "Nu, in Nederland",
+        "body": "Mijn NZeTA is aangevraagd en mijn baan is opgezegd. Nu: het team bouwen dat me uitzendt, uitzoeken wat ik verkoop, opsla of meeneem, en goed afscheid nemen.",
+        "here": true
+      },
+      {
+        "icon": "fly",
+        "title": "Vertrek",
+        "when": "{departure}",
+        "body": "Van Schiphol naar Queenstown, ruim 18.000 km, met één ingecheckte tas, één rugzak en veel mensen die meebidden."
+      },
+      {
+        "icon": "serve",
+        "title": "Staf",
+        "when": "Daarna",
+        "body": "Wonen en werken op de basis: IT en software, het gewone stafwerk en het leven met de jongeren. Daar stap ik met hulp van YWAM over op een langer visum."
+      }
+    ],
+    "cta": "Lees mijn brieven",
+    "target": "letters"
+  },
+  "letters": {
+    "id": "letters",
+    "title": "Brieven van *onderweg*.",
+    "lede": "Eén keer per maand schrijf ik een brief naar huis: wat ik doe, wat God doet en waar je voor kunt bidden. Lees de laatste hier.",
+    "art": "Een stapeltje luchtpostenveloppen met een touwtje erom en een takje groen eronder",
+    "card": {
+      "title": "De eerste brief komt eraan",
+      "greeting": "Lieve vrienden,",
+      "body": [
+        "Ik schrijf nu aan de eerste brief. Hij gaat de deur uit voor ik in {departure} vlieg: hoe de voorbereiding gaat, hoe afscheid nemen voelt en waar ik gebed voor kan gebruiken.",
+        "Daarna komt er elke maand een brief, uit Queenstown. Meld je aan en hij komt zo bij jou binnen."
+      ],
+      "sign": "Ruben",
+      "read": "Lees de hele brief",
+      "readLabel": "Lees de hele brief: {title}"
+    },
+    "earlier": "Eerdere brieven"
+  },
+  "paper": {
+    "index": {
+      "slug": "brieven",
+      "title": "Brieven van onderweg",
+      "lede": "Elke brief die ik naar huis stuurde, de nieuwste bovenaan: wat ik doe, wat God doet en waar je voor kunt bidden.",
+      "read": "Lees de brief",
+      "readLabel": "Lees de brief: {title}",
+      "issue": "Brief {number}",
+      "older": "Eerdere brieven",
+      "all": "Alle brieven",
+      "signup": "Krijg de volgende in je mailbox",
+      "loading": "De brieven worden opgehaald…",
+      "offline": "De brieven kunnen nu even niet geladen worden. Probeer het straks nog eens."
+    },
+    "letter": {
+      "slug": "brief",
+      "title": "Brief",
+      "loading": "De brief wordt opgehaald…",
+      "offline": "Deze brief kan nu even niet geladen worden. Probeer het straks nog eens.",
+      "missing": "Deze brief kon ik niet vinden. Misschien is het adres veranderd.",
+      "prayers": "Gebedspunten",
+      "nextTime": "Volgende keer",
+      "funds": "Help me er te komen",
+      "fundsBody": "Staf bij YWAM krijgt geen salaris: ik leef van de steun van de mensen die me uitzenden.",
+      "give": "Geef",
+      "newer": "Nieuwere brief",
+      "older": "Oudere brief",
+      "all": "Alle brieven",
+      "signup": "Krijg de volgende in je mailbox",
+      "sign": "Ruben"
+    }
+  },
+  "involved": {
+    "id": "get-involved",
+    "title": "Ga *met me* mee.",
+    "lede": "Ik kan dit niet alleen, en dat wil ik ook niet. Dit zijn vier manieren om erbij te horen, waar je ook bent.",
+    "ways": [
+      {
+        "kind": "letters",
+        "icon": "letter",
+        "title": "Lees mee",
+        "body": "Eén brief per maand in je mailbox, in het Nederlands of Engels: nieuws van de basis, foto’s en waar je voor kunt bidden. Antwoord op een brief en je bent eraf."
+      },
+      {
+        "kind": "pray",
+        "icon": "pray",
+        "title": "Bid mee",
+        "body": "Wat me nu bezighoudt. Ik vink het af als de antwoorden komen."
+      },
+      {
+        "kind": "give",
+        "icon": "monthly",
+        "title": "Geef",
+        "body": "Staf bij YWAM krijgt geen salaris: ik leef van de steun van de mensen die me uitzenden. Maandelijks of één keer, klein of groot, het helpt allebei."
+      },
+      {
+        "kind": "share",
+        "icon": "share",
+        "title": "Vertel het door",
+        "body": "Vertel het aan een vriend, je kerk of je kring, en stuur ze deze pagina.",
+        "link": "Deel deze pagina"
+      }
+    ],
+    "pray": {
+      "id": "pray",
+      "answered": "Verhoord op {date}",
+      "empty": "De gebedspunten staan hier binnenkort. Tot die tijd komen ze mee met elke brief."
+    },
+    "give": {
+      "id": "give",
+      "progress": "{percent}% van mijn maandelijkse steun is rond",
+      "progressLabel": "Het team is {percent}% van de weg naar Queenstown",
+      "iban": "IBAN",
+      "holder": "Ten name van",
+      "reference": "Omschrijving",
+      "copy": "Kopieer IBAN",
+      "copied": "IBAN gekopieerd",
+      "online": "Geef online",
+      "pending": "Ik regel nog hoe giften binnen kunnen komen. Lees mee, dan hoor je het zodra het klaar is.",
+      "note": "Maandelijks geven? Zet een periodieke overboeking klaar bij je bank, en laat het me weten, dan kan ik je bedanken."
+    },
+    "share": {
+      "title": "hesent.me · Ruben",
+      "text": "Ruben verhuist naar Queenstown, Nieuw-Zeeland, om staf te worden bij YWAM. Leef mee:",
+      "copied": "Link gekopieerd"
+    }
+  },
+  "giving": {
+    "slug": "geven",
+    "art": "Een glazen pot met munten, een papieren hartje, een label met een papieren vliegtuigje en een groen takje",
+    "title": "Geef, en laten we *kennismaken*.",
+    "metaTitle": "Geven",
+    "lede": "Staf bij YWAM krijgt geen salaris: ik leef van de steun van de mensen die me uitzenden. Hier lees je hoe je kunt geven, maandelijks of één keer. En als je geeft, wil ik graag weten wie je bent.",
+    "give": {
+      "title": "Zo geef je",
+      "body": "Maak het over naar de rekening hieronder: maandelijks met een periodieke overboeking, of één keer. Elk bedrag helpt, klein of groot.",
+      "note": "Maandelijks geven? Zet een periodieke overboeking klaar bij je bank, en stuur me een bericht op deze pagina, dan kan ik je bedanken."
+    },
+    "message": {
+      "title": "Stuur me een bericht",
+      "body": "Geef je, denk je erover na of wil je gewoon hoi zeggen? Vertel me wie je bent en hoe je me kent. Ik lees elk bericht zelf en schrijf je terug.",
+      "name": "Je naam",
+      "email": "E-mailadres",
+      "message": "Je bericht",
+      "submit": "Verstuur mijn bericht",
+      "sending": "Even versturen…",
+      "thanks": "Bedankt, {name}! Je bericht is bij me. Ik schrijf je terug op {email}.",
+      "errName": "Vul je naam in.",
+      "errEmail": "Dat e-mailadres klopt niet helemaal.",
+      "errMessage": "Schrijf een paar woorden.",
+      "errLong": "Dat is wat lang: houd het onder de 2000 tekens.",
+      "errBusy": "Er komen nu veel berichten binnen. Probeer het zo nog eens.",
+      "errNetwork": "Dat lukte niet. Controleer je verbinding en probeer het opnieuw.",
+      "privacy": "Alleen Ruben leest dit. Je adres wordt nooit gedeeld.",
+      "sign": "Ruben"
+    },
+    "more": "Meer over geven"
+  },
+  "footer": {
+    "tagline": "Brieven en updates van Ruben, onderweg naar YWAM Queenstown.",
+    "navLabel": "Ontdek",
+    "language": "Taal",
+    "line": "Vertrek {departure} · Queenstown, Nieuw-Zeeland"
+  },
+  "months": [
+    "januari",
+    "februari",
+    "maart",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "augustus",
+    "september",
+    "oktober",
+    "november",
+    "december"
+  ]
+}

@@ -1,0 +1,278 @@
+{
+  "lang": "en",
+  "meta": {
+    "title": "hesent.me · Ruben",
+    "description": "Ruben is moving to Queenstown, New Zealand, to join the staff of YWAM Queenstown: discipling young people and serving YWAM bases with IT and software. Follow along here."
+  },
+  "skip": "Skip to content",
+  "nav": {
+    "label": "Main",
+    "items": [
+      {
+        "id": "my-story",
+        "label": "My story"
+      },
+      {
+        "id": "the-journey",
+        "label": "The journey"
+      },
+      {
+        "id": "letters",
+        "label": "Letters"
+      },
+      {
+        "id": "get-involved",
+        "label": "Get involved"
+      }
+    ]
+  },
+  "loop": {
+    "label": "Stay in the loop",
+    "id": "stay-in-the-loop",
+    "title": "Get the next letter",
+    "form": {
+      "name": "First name",
+      "email": "Email address",
+      "lang": "Send the letters in",
+      "submit": "Send me the letters",
+      "sending": "Signing you up…",
+      "thanks": "Thanks, {name}! The next letter goes to {email}.",
+      "errName": "Fill in your first name.",
+      "errEmail": "That email address doesn’t look right.",
+      "errBusy": "Too many sign-ups right now. Try again in a little while.",
+      "errNetwork": "That didn’t work. Check your connection and try again.",
+      "privacy": "Only Ruben sees your address. It’s never shared."
+    }
+  },
+  "hero": {
+    "title": "A *new chapter*, on the other side of the world.",
+    "lede": "I’m moving to Queenstown, New Zealand, to join the staff of YWAM. Here you can follow along, read my letters and see what God is doing, one step at a time.",
+    "cta": "Read my story",
+    "target": "my-story"
+  },
+  "globe": {
+    "label": "An interactive globe with the route from the Netherlands to Queenstown, New Zealand. Drag it, or use the arrow keys, to turn it.",
+    "to": "Queenstown"
+  },
+  "story": {
+    "id": "my-story",
+    "title": "Why I’m going to the *other side* of the world.",
+    "lede": "I’m Ruben. In {departure} I fly to Queenstown, New Zealand, to serve full time with Youth With A Mission (YWAM). My faith grew step by step, and my DTS there changed the most: I learned so much about God, the Bible and who I am. Here’s the short version of what comes next.",
+    "vision": "I’m going to Queenstown to disciple young people in everyday life and to serve YWAM bases with IT and software, so that young people discover who they are in God and bases can run well and safely.",
+    "chapters": [
+      {
+        "icon": "place",
+        "title": "The place",
+        "body": "I know YWAM Queenstown from my DTS, and it’s a beautiful place. This isn’t a choice I pulled out of my pocket: it’s a calling I received after weeks of prayer and seeking, and God confirmed it through the people who prayed with me."
+      },
+      {
+        "icon": "people",
+        "title": "The people",
+        "body": "It hurts me how many people my age believe lies about who they are and about God’s love. Many of the young people live on the base, so discipleship doesn’t stop at five o’clock: it happens over games in the evening, at dinner and on the ordinary days."
+      },
+      {
+        "icon": "plan",
+        "title": "The plan",
+        "body": "I’ll look after the base’s IT and build software that YWAM bases can use, so bases with little IT know-how can still run well and safely. Next to that I do what all staff do: the café, the kitchen, cleaning, the sound for worship nights and joining in with evangelism."
+      },
+      {
+        "icon": "team",
+        "title": "The team",
+        "body": "YWAM staff don’t get a salary, so I’m building a team that sends me: in prayer, with a monthly gift and by following along. I leave friends, family and Ignite, the youth group I pour my heart into, so the people back home matter a lot."
+      }
+    ],
+    "cta": "Follow the journey",
+    "target": "the-journey"
+  },
+  "journey": {
+    "id": "the-journey",
+    "title": "The road from here to *Queenstown*.",
+    "lede": "Moving to the other side of the world doesn’t happen in one go. These are the stretches of the road, and where I am on it right now.",
+    "countdown": {
+      "before": "days until I fly",
+      "today": "I fly today",
+      "after": "On the road since {departure}"
+    },
+    "suitcase": "A packed suitcase with a sprig of green under its strap",
+    "here": "I’m here now",
+    "stops": [
+      {
+        "icon": "pack",
+        "title": "Getting ready",
+        "when": "Now, in the Netherlands",
+        "body": "My NZeTA is applied for and my job is handed in. Now: building the team that sends me, sorting what I sell, store or take, and saying goodbye well.",
+        "here": true
+      },
+      {
+        "icon": "fly",
+        "title": "Departure",
+        "when": "{departure}",
+        "body": "From Schiphol to Queenstown, more than 18,000 km, with one checked bag, one backpack and a lot of people praying along."
+      },
+      {
+        "icon": "serve",
+        "title": "On staff",
+        "when": "After that",
+        "body": "Living and working on the base: IT and software, the everyday staff jobs and life with the young people. There, with YWAM’s help, I switch to a longer visa."
+      }
+    ],
+    "cta": "Read my letters",
+    "target": "letters"
+  },
+  "letters": {
+    "id": "letters",
+    "title": "Letters from *the road*.",
+    "lede": "Once a month I write a letter home: what I’m doing, what God is doing, and what to pray for. Read the latest one here.",
+    "art": "A small stack of airmail envelopes tied with string, with a sprig of green tucked under it",
+    "card": {
+      "title": "The first letter is on its way",
+      "greeting": "Dear friends,",
+      "body": [
+        "I’m writing the first letter right now. It goes out before I fly in {departure}: how the preparations are going, what saying goodbye is like and what I could use prayer for.",
+        "After that a letter comes once a month, from Queenstown. Sign up and it comes straight to you."
+      ],
+      "sign": "Ruben",
+      "read": "Read the whole letter",
+      "readLabel": "Read the whole letter: {title}"
+    },
+    "earlier": "Earlier letters"
+  },
+  "paper": {
+    "index": {
+      "slug": "letters",
+      "title": "Letters from the road",
+      "lede": "Every letter I sent home, the newest first: what I’m doing, what God is doing and what you can pray for.",
+      "read": "Read the letter",
+      "readLabel": "Read the letter: {title}",
+      "issue": "Letter {number}",
+      "older": "Earlier letters",
+      "all": "All letters",
+      "signup": "Get the next one in your inbox",
+      "loading": "Fetching the letters…",
+      "offline": "The letters can’t be loaded right now. Try again in a little while."
+    },
+    "letter": {
+      "slug": "letter",
+      "title": "Letter",
+      "loading": "Fetching the letter…",
+      "offline": "This letter can’t be loaded right now. Try again in a little while.",
+      "missing": "I couldn’t find this letter. Maybe its address changed.",
+      "prayers": "Prayer points",
+      "nextTime": "Next time",
+      "funds": "Help me get there",
+      "fundsBody": "YWAM staff don’t get a salary: I live on the support of the people who send me.",
+      "give": "Give",
+      "newer": "Newer letter",
+      "older": "Older letter",
+      "all": "All letters",
+      "signup": "Get the next one in your inbox",
+      "sign": "Ruben"
+    }
+  },
+  "involved": {
+    "id": "get-involved",
+    "title": "Go *with me*.",
+    "lede": "I can’t do this on my own, and I don’t want to. These are four ways to be part of it, from wherever you are.",
+    "ways": [
+      {
+        "kind": "letters",
+        "icon": "letter",
+        "title": "Read along",
+        "body": "One letter a month in your inbox, in English or Dutch: news from the base, photos and what to pray for. Reply to any letter and you’re off the list."
+      },
+      {
+        "kind": "pray",
+        "icon": "pray",
+        "title": "Pray",
+        "body": "What’s on my mind right now. I tick them off as the answers come."
+      },
+      {
+        "kind": "give",
+        "icon": "monthly",
+        "title": "Give",
+        "body": "YWAM staff don’t get a salary: I live on the support of the people who send me. Monthly or once, small or large, both help."
+      },
+      {
+        "kind": "share",
+        "icon": "share",
+        "title": "Pass it on",
+        "body": "Tell a friend, your church or your small group, and send them this page.",
+        "link": "Share this page"
+      }
+    ],
+    "pray": {
+      "id": "pray",
+      "answered": "Answered on {date}",
+      "empty": "The prayer requests will be here soon. Until then, they come with every letter."
+    },
+    "give": {
+      "id": "give",
+      "progress": "{percent}% of my monthly support is in place",
+      "progressLabel": "The team is {percent}% of the way to Queenstown",
+      "iban": "IBAN",
+      "holder": "In the name of",
+      "reference": "Reference",
+      "copy": "Copy IBAN",
+      "copied": "IBAN copied",
+      "online": "Give online",
+      "pending": "I’m still arranging how gifts can come in. Read along and you’ll hear as soon as it’s ready.",
+      "note": "Want to give monthly? Set up a standing order with your bank, and let me know, so I can thank you."
+    },
+    "share": {
+      "title": "hesent.me · Ruben",
+      "text": "Ruben is moving to Queenstown, New Zealand, to join the staff of YWAM. Follow along:",
+      "copied": "Link copied"
+    }
+  },
+  "giving": {
+    "slug": "give",
+    "art": "A glass jar of coins with a paper heart, a luggage tag with a paper plane and a sprig of green",
+    "title": "Give, and let’s *get to know* each other.",
+    "metaTitle": "Give",
+    "lede": "YWAM staff don’t get a salary: I live on the support of the people who send me. Here’s how to give, monthly or once. And if you give, I’d love to know who you are.",
+    "give": {
+      "title": "How to give",
+      "body": "Transfer to the account below: monthly with a standing order, or once. Every amount helps, small or large.",
+      "note": "Giving monthly? Set up a standing order with your bank, and send me a message on this page, so I can thank you."
+    },
+    "message": {
+      "title": "Send me a message",
+      "body": "Whether you give, are thinking about it or just want to say hello: tell me who you are and how you know me. I read every message myself and write back.",
+      "name": "Your name",
+      "email": "Email address",
+      "message": "Your message",
+      "submit": "Send my message",
+      "sending": "Sending…",
+      "thanks": "Thanks, {name}! Your message is with me. I’ll write back to {email}.",
+      "errName": "Fill in your name.",
+      "errEmail": "That email address doesn’t look right.",
+      "errMessage": "Write a few words.",
+      "errLong": "That’s a bit long: keep it under 2000 characters.",
+      "errBusy": "Lots of messages right now. Try again in a little while.",
+      "errNetwork": "That didn’t work. Check your connection and try again.",
+      "privacy": "Only Ruben reads this. Your address is never shared.",
+      "sign": "Ruben"
+    },
+    "more": "More about giving"
+  },
+  "footer": {
+    "tagline": "Letters and updates from Ruben, on the road to YWAM Queenstown.",
+    "navLabel": "Explore",
+    "language": "Language",
+    "line": "Departure {departure} · Queenstown, New Zealand"
+  },
+  "months": [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ]
+}

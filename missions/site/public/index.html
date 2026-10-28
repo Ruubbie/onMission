@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hesent.me</title>
+<meta name="robots" content="noindex">
+<link rel="alternate" hreflang="nl" href="https://hesent.me/nl/">
+<link rel="alternate" hreflang="en" href="https://hesent.me/en/">
+<link rel="icon" href="/assets/logo-192.png" type="image/png">
+<style>body{margin:0;background:#D2462B;color:#FBF1E3;font:700 19px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}a{color:inherit;margin:0 12px}</style>
+<script>
+  // The Worker normally answers "/" with a redirect. This page only runs where it doesn't (plain static hosting).
+  (function () {
+    var m = document.cookie.match(/(?:^|; )lang=(nl|en)/);
+    var lang = m ? m[1] : ((navigator.languages || [navigator.language || "nl"])[0] || "nl").toLowerCase().indexOf("nl") === 0 ? "nl" : "en";
+    location.replace("/" + lang + "/");
+  })();
+</script>
+</head>
+<body><p><a href="/nl/" hreflang="nl">Nederlands</a> · <a href="/en/" hreflang="en">English</a></p></body>
+</html>

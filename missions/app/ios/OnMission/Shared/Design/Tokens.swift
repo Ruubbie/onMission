@@ -2,38 +2,43 @@ import SwiftUI
 import UIKit
 import CoreText
 
-/// The shared design tokens from app/design/tokens.json ("Tomato Flood"), in Swift.
-/// One big idea on tomato per screen; a calm cream sheet holds the rest.
+/// The design tokens, in the look of the web app (missions/app/web/assets/app.css): the Tomato Flood screens
+/// drawn in hesent.me's paper and ink (missions/site/public/assets/tokens.css). Posters are deeper paper,
+/// the sheet is paper, everything is drawn in ink, and sage marks what is done.
 enum Palette {
-    /// The flood: poster backgrounds, primary buttons, the active pill, rings, line accents on cream.
-    static let tomato = Color(hex: 0xD2462B)
-    /// "Late" and alert text, and small tomato text on cream (5.3:1).
-    static let tomatoInk = Color(hex: 0xB23A22)
-    /// Sheets, cream pages, text and line art on tomato.
-    static let cream = Color(hex: 0xFBF1E3)
-    /// Text on cream and on marigold.
-    static let ink = Color(hex: 0x2E1C16)
-    /// The "Answered!" flood and the "Thinking" check-in.
-    static let marigold = Color(hex: 0xE8A13A)
-    /// The "Not now" check-in.
-    static let plum = Color(hex: 0x4B3B52)
-    /// The toast's check icon.
-    static let blush = Color(hex: 0xF0A58F)
+    /// The sheet, whole paper pages, and text on ink.
+    static let paper = Color(hex: 0xF4EDE1)
+    /// The tab bar under a poster, insets and the Arrange card.
+    static let paperDeep = Color(hex: 0xE9DFCE)
+    /// Text, line art, primary buttons, the active pill, rings and outlines.
+    static let ink = Color(hex: 0x1E1A17)
+    /// The poster: paper a shade deeper, with the paper texture multiplied in.
+    static let flood = Color(hex: 0xEFE6D6)
 
-    /// Row dividers on cream (1.5pt).
-    static let rule = Color(hex: 0xD2462B, opacity: 0.16)
-    /// Move tile outline (1.6pt).
-    static let tileRule = Color(hex: 0xD2462B, opacity: 0.35)
-    /// Unselected chip and pill outline (1.6pt).
-    static let chipRule = Color(hex: 0x2E1C16, opacity: 0.22)
+    static let sage = Color(hex: 0x8BA374)
+    /// Done: ticked rings, full progress, papers in the vault, money in. Tile icons and asides.
+    static let sageDeep = Color(hex: 0x5C7448)
+    static let sky = Color(hex: 0xA9CCE0)
+    /// The caret, focus, the SOLD stamp and the flame.
+    static let coral = Color(hex: 0xE5774A)
+    static let pink = Color(hex: 0xEE9AA8)
+    /// The "Answered!" flood and the "Thinking" check-in.
+    static let ochre = Color(hex: 0xD9A13B)
+    /// Late and missing.
+    static let error = Color(hex: 0xA8481F)
+
+    /// Row dividers (1.5pt).
+    static let rule = Color(hex: 0x1E1A17, opacity: 0.16)
+    /// Move tile outline (1.5pt).
+    static let tileRule = Color(hex: 0x1E1A17, opacity: 0.35)
+    /// Unselected chip and pill outline (1.5pt).
+    static let chipRule = Color(hex: 0x1E1A17, opacity: 0.22)
     /// Row subtitles.
-    static let inkSoft = Color(hex: 0x2E1C16, opacity: 0.68)
+    static let inkSoft = Color(hex: 0x1E1A17, opacity: 0.68)
     /// Section counts and placeholders.
-    static let inkFaint = Color(hex: 0x2E1C16, opacity: 0.55)
-    /// Secondary text on tomato.
-    static let creamSoft = Color(hex: 0xFBF1E3, opacity: 0.82)
-    /// Inactive tab icons on tomato.
-    static let creamFaint = Color(hex: 0xFBF1E3, opacity: 0.72)
+    static let inkFaint = Color(hex: 0x1E1A17, opacity: 0.55)
+    /// The sheet's top edge.
+    static let sheetEdge = Color(hex: 0x1E1A17, opacity: 0.85)
 }
 
 enum Metrics {
@@ -42,7 +47,9 @@ enum Metrics {
     static let docRadius: CGFloat = 13
     static let stampRadius: CGFloat = 8
     /// Line art stroke.
-    static let line: CGFloat = 2.4
+    static let line: CGFloat = 2
+    /// Outlines of buttons, chips, avatars and boxes.
+    static let outline: CGFloat = 1.5
     /// Row dividers.
     static let rule: CGFloat = 1.5
     /// Left inset of posters and the top bar.
@@ -64,30 +71,24 @@ enum Metrics {
 
 // MARK: - Type
 
-/// Archivo (variable, wdth 62–125, wght 100–900) and Caveat (variable, wght 400–700), bundled in Resources/Fonts.
+/// Archivo (variable, wdth 62–125, wght 100–900), bundled in Resources/Fonts. The only face, as on hesent.me.
 enum TF {
-    enum Family { case archivo, caveat }
-
-    /// PostScript names of the default instances of the bundled variable fonts.
+    /// PostScript name of the default instance of the bundled variable font.
     static let archivoName = "Archivo-SemiBold"
-    static let caveatName = "Caveat-Regular"
 
     private static let wghtAxis = NSNumber(value: 0x77676874 as UInt32)
     private static let wdthAxis = NSNumber(value: 0x77647468 as UInt32)
     private static var cache: [String: UIFont] = [:]
 
     static let hasArchivo: Bool = UIFont(name: archivoName, size: 12) != nil
-    static let hasCaveat: Bool = UIFont(name: caveatName, size: 12) != nil
 
     /// The font at one width and weight, built through the variation axes.
-    static func uiFont(_ family: Family, size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> UIFont {
-        let key = "\(family)|\(size)|\(wdth)|\(wght)"
+    static func uiFont(size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> UIFont {
+        let key = "(size)|(wdth)|(wght)"
         if let hit = cache[key] { return hit }
         let made: UIFont
-        let name = family == .archivo ? archivoName : caveatName
-        if let base = UIFont(name: name, size: size) {
-            var axes: [NSNumber: NSNumber] = [wghtAxis: NSNumber(value: Double(wght))]
-            if family == .archivo { axes[wdthAxis] = NSNumber(value: Double(wdth)) }
+        if let base = UIFont(name: archivoName, size: size) {
+            let axes: [NSNumber: NSNumber] = [wghtAxis: NSNumber(value: Double(wght)), wdthAxis: NSNumber(value: Double(wdth))]
             let attribute = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
             let descriptor = base.fontDescriptor.addingAttributes([attribute: axes])
             made = UIFont(descriptor: descriptor, size: size)
@@ -113,14 +114,13 @@ enum TF {
         }
     }
 
-    static func font(_ family: Family, size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> Font {
-        Font(uiFont(family, size: size, wdth: wdth, wght: wght) as CTFont)
+    static func font(size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> Font {
+        Font(uiFont(size: size, wdth: wdth, wght: wght) as CTFont)
     }
 }
 
-/// One text style: family, size, axes, tracking (in em), case, and what it scales with.
+/// One text style: size, axes, tracking (in em), case, and what it scales with.
 struct TypeStyle {
-    var family: TF.Family = .archivo
     var size: CGFloat
     var wdth: CGFloat = 100
     var wght: CGFloat = 600
@@ -139,33 +139,39 @@ struct TypeStyle {
         return UIFontMetrics(forTextStyle: relativeTo.uiStyle).scaledValue(for: size, compatibleWith: traits)
     }
 
-    // Display: condensed black capitals for the one big thing.
+    /// Display: the one big thing, Archivo narrowed to 75 and set tight, in sentence case (.disp on the web).
     static func disp(_ size: CGFloat) -> TypeStyle {
-        TypeStyle(size: size, wdth: 64, wght: 900, uppercase: true, relativeTo: nil)
+        TypeStyle(size: size, wdth: 75, wght: 820, tracking: -0.045, relativeTo: nil)
     }
-    // Hand: Caveat Bold for asides.
+    /// Asides. Once a handwriting face; like the web app it is Archivo 650 at the handwriting's x-height,
+    /// so `size` is still the handwriting size and the letters come out at about two thirds of it.
     static func hand(_ size: CGFloat) -> TypeStyle {
-        TypeStyle(family: .caveat, size: size, wght: 700, relativeTo: nil)
+        TypeStyle(size: (size * handScale * 2).rounded() / 2, wght: 650, tracking: -0.02, relativeTo: nil)
     }
+    /// Archivo's x-height (0.526 em) brought to the handwriting's 0.34 em (font-size-adjust: .34 on the web).
+    static let handScale: CGFloat = 0.34 / 0.526
     /// The line under each big number.
-    static let cap = TypeStyle(size: 21, wdth: 70, wght: 800, tracking: 0.06, uppercase: true, relativeTo: nil)
-    static let heroTitle = TypeStyle(size: 29, wdth: 78, wght: 800, relativeTo: .title)
-    static let prayer = TypeStyle(size: 35, wdth: 80, wght: 800, relativeTo: nil)
-    static let entry = TypeStyle(size: 36, wdth: 78, wght: 800, relativeTo: .largeTitle)
-    /// 15pt bold rather than the prototype's 12.5: cream on tomato only passes contrast at this size (handoff §13.3).
-    static let kicker = TypeStyle(size: 15, wght: 800, tracking: 0.11, uppercase: true, relativeTo: nil)
-    static let section = TypeStyle(size: 13, wght: 800, tracking: 0.13, uppercase: true, relativeTo: .footnote)
-    static let count = TypeStyle(size: 13, wght: 700, tracking: 0.02, relativeTo: .footnote)
+    static let cap = TypeStyle(size: 19, wght: 650, tracking: -0.01, relativeTo: nil)
+    static let heroTitle = TypeStyle(size: 27, wght: 820, tracking: -0.035, relativeTo: .title)
+    static let prayer = TypeStyle(size: 32, wght: 820, tracking: -0.04, relativeTo: nil)
+    static let entry = TypeStyle(size: 32, wght: 820, tracking: -0.04, relativeTo: .largeTitle)
+    static let kicker = TypeStyle(size: 15, wght: 650, relativeTo: nil)
+    /// "Next up", "This week": a bold heading in sentence case.
+    static let section = TypeStyle(size: 17, wght: 820, tracking: -0.02, relativeTo: .headline)
+    static let count = TypeStyle(size: 13, wght: 600, relativeTo: .footnote)
     static let rowTitle = TypeStyle(size: 16.5, wght: 700, relativeTo: .body)
     static let rowSub = TypeStyle(size: 13, wght: 500, relativeTo: .footnote)
     static let when = TypeStyle(size: 13, wght: 700, relativeTo: .footnote)
-    static let button = TypeStyle(size: 15, wght: 800, relativeTo: .subheadline)
-    static let buttonSmall = TypeStyle(size: 14, wght: 800, relativeTo: .subheadline)
-    static let tab = TypeStyle(size: 14.5, wght: 800, relativeTo: nil)
+    /// Capsule buttons are light, like the site's.
+    static let button = TypeStyle(size: 15, wght: 500, relativeTo: .subheadline)
+    static let buttonSmall = TypeStyle(size: 14, wght: 500, relativeTo: .subheadline)
+    /// Links, chips, pills, segments and labels.
+    static let label = TypeStyle(size: 15, wght: 650, relativeTo: .subheadline)
+    static let tab = TypeStyle(size: 14.5, wght: 650, relativeTo: nil)
     static let body = TypeStyle(size: 15.5, wght: 500, relativeTo: .body)
     static let bodyBold = TypeStyle(size: 15.5, wght: 700, relativeTo: .body)
     static let small = TypeStyle(size: 13, wght: 600, relativeTo: .footnote)
-    static let tile = TypeStyle(size: 15.5, wght: 800, relativeTo: .subheadline)
+    static let tile = TypeStyle(size: 15.5, wght: 650, relativeTo: .subheadline)
     static let tileStatus = TypeStyle(size: 12.5, wght: 700, relativeTo: .caption)
     static let lead = TypeStyle(size: 18, wght: 600, relativeTo: .title3)
 }
@@ -195,7 +201,7 @@ private struct TypeStyleModifier: ViewModifier {
     func body(content: Content) -> some View {
         let size = style.scaledSize(dts)
         content
-            .font(TF.font(style.family, size: size, wdth: style.wdth, wght: style.wght))
+            .font(TF.font(size: size, wdth: style.wdth, wght: style.wght))
             .tracking(style.tracking * size)
             .textCase(style.uppercase ? .uppercase : nil)
     }
@@ -206,19 +212,19 @@ extension View {
     func type(_ style: TypeStyle) -> some View { modifier(TypeStyleModifier(style: style)) }
 }
 
-/// Vertical metrics of the bundled fonts, for placing text the way the prototype's CSS line boxes do.
+/// Vertical metrics of Archivo, for placing text the way the web app's CSS line boxes do.
 enum FontMetrics {
     /// (ascender + descender) / em.
-    static func content(_ family: TF.Family) -> CGFloat { family == .archivo ? 1.088 : 1.26 }
+    static let content: CGFloat = 1.088
 
     /// How far a SwiftUI text frame sits from the top of a CSS line box of `lineHeight`.
-    static func shift(_ family: TF.Family, size: CGFloat, lineHeight: CGFloat) -> CGFloat {
-        (lineHeight - content(family)) * size / 2
+    static func shift(size: CGFloat, lineHeight: CGFloat) -> CGFloat {
+        (lineHeight - content) * size / 2
     }
 
     /// Spacing between stacked lines to get a CSS `line-height` below the font's own.
-    static func lineGap(_ family: TF.Family, size: CGFloat, lineHeight: CGFloat) -> CGFloat {
-        (lineHeight - content(family)) * size
+    static func lineGap(size: CGFloat, lineHeight: CGFloat) -> CGFloat {
+        (lineHeight - content) * size
     }
 }
 
@@ -243,24 +249,86 @@ extension Color {
     }
 }
 
-/// Ollie, from Ruben's own character sheet (Resources/Ollie). Never redrawn in code; a rare cameo only.
-enum OlliePose: String {
-    case sit, hug, stand, sleep, side
+// MARK: - Paper and illustrations
+
+/// Loads an image bundled in Resources (copied flat, or kept in its folder), WebP included.
+enum BundledImage {
+    private static var cache: [String: UIImage] = [:]
+
+    /// `scale` is how many pixels make a point: the 1024px paper texture tiles at 512pt, like the web's.
+    static func named(_ name: String, ext: String = "webp", folder: String? = nil, scale: CGFloat = 1) -> UIImage? {
+        if let hit = cache[name] { return hit }
+        let url = Bundle.main.url(forResource: name, withExtension: ext)
+            ?? folder.flatMap { Bundle.main.url(forResource: name, withExtension: ext, subdirectory: $0) }
+        guard let url, let data = try? Data(contentsOf: url), let image = UIImage(data: data, scale: scale) else { return nil }
+        cache[name] = image
+        return image
+    }
 }
 
-struct Ollie: View {
-    let pose: OlliePose
-    var height: CGFloat = 60
+/// hesent.me's paper texture (Resources/Texture/paper.webp, from the web app): the sheet and paper pages
+/// show it as it is; posters multiply it into the deeper paper.
+struct Paper: View {
+    var color: Color = Palette.paper
+    /// Posters multiply the texture into their colour; sheets lay it on top.
+    var multiply = false
+
+    var body: some View {
+        ZStack {
+            color
+            if let tex = BundledImage.named("paper", folder: "Texture", scale: 2) {
+                Image(uiImage: tex)
+                    .resizable(resizingMode: .tile)
+                    .blendMode(multiply ? .multiply : .normal)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// The paper texture behind a view, filling the safe areas too.
+    func paper(_ color: Color = Palette.paper, multiply: Bool = false) -> some View {
+        background(Paper(color: color, multiply: multiply).ignoresSafeArea())
+    }
+}
+
+/// The illustrations from the web app and hesent.me (Resources/Art): the traveller with his backpack,
+/// the mountains and a flower. Drawn in colour, never redrawn in code.
+enum Illustration: String {
+    case travellerWalk = "traveller-walk"
+    case travellerRead = "traveller-read"
+    case travellerWrite = "traveller-write"
+    case travellerPray = "traveller-pray"
+    case travellerPhoto = "traveller-photo"
+    case travellerWave = "traveller-wave"
+    case mountains
+    case flowerPink = "flower-pink"
+}
+
+/// An illustration at a height, its width following the picture. It rises in with the poster.
+struct Picture: View {
+    let illustration: Illustration
+    var height: CGFloat
+    /// Leans the picture a little, like the prints on hesent.me.
+    var tilt: Double = 0
+
+    init(_ illustration: Illustration, height: CGFloat, tilt: Double = 0) {
+        self.illustration = illustration
+        self.height = height
+        self.tilt = tilt
+    }
 
     var body: some View {
         Group {
-            if let img = UIImage(named: "ollie-\(pose.rawValue)") {
-                Image(uiImage: img).resizable().interpolation(.high).scaledToFit()
+            if let image = BundledImage.named(illustration.rawValue, folder: "Art", scale: 2) {
+                Image(uiImage: image).resizable().interpolation(.high).scaledToFit()
             } else {
                 Color.clear
             }
         }
         .frame(height: height)
+        .rotationEffect(.degrees(tilt))
         .accessibilityHidden(true)
     }
 }

@@ -447,6 +447,252 @@ test("export contains the records", async () => {
   assert.equal(rec.collection, "contacts");
 });
 
+// ---------- public (hesent.me) ----------
+
+test("public summary shows only public prayers and a support percentage", async () => {
+  const shown = change("notes", { title: `Public prayer ${randomUUID()}`, kind: "prayer", public: true });
+  const hidden = change("notes", { title: `Private prayer ${randomUUID()}`, kind: "prayer" });
+  const note = change("notes", { title: `Public but not a prayer ${randomUUID()}`, kind: "note", public: true });
+  await sync(A.token, null, [shown, hidden, note]);
+
+  const r = await api("GET", "/v1/public/summary?tz=Europe/Amsterdam");
+  expectStatus(r, 200);
+  assert.match(r.data.today, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(Array.isArray(r.data.prayers));
+  const texts = r.data.prayers.map((p) => p.text);
+  assert.ok(texts.includes(shown.data.title), "public prayer is listed");
+  assert.ok(!texts.includes(hidden.data.title), "private prayer stays private");
+  assert.ok(!texts.includes(note.data.title), "only prayer notes");
+  const p = r.data.prayers.find((x) => x.text === shown.data.title);
+  assert.deepEqual(Object.keys(p).sort(), ["addedAt", "answeredAt", "text"]);
+  assert.deepEqual(Object.keys(r.data.support), ["percentOfTarget"], "no amounts leave the server");
+  expectStatus(await api("GET", "/v1/public/summary?tz=Not/AZone"), 400, "bad tz");
+});
+
+test("public summary shows the giving details only once there is an IBAN", async () => {
+  const base = { key: "main", departureDate: "2027-01-05", supportTargetMonthlyCents: 100000 };
+  await sync(A.token, null, [change("settings", { ...base, givingIban: "  ", givingHolder: "Nobody" })]);
+  const empty = await api("GET", "/v1/public/summary?tz=Europe/Amsterdam");
+  expectStatus(empty, 200);
+  assert.equal(empty.data.giving, null, "no IBAN, no details");
+
+  const filled = { ...base, givingIban: "NL00 TEST 0123 4567 89", givingHolder: "Test Holder", givingReference: "Queenstown", givingUrl: "http://not-https.example" };
+  await sync(A.token, null, [change("settings", filled, Date.now() + 1000)]);
+  const r = await api("GET", "/v1/public/summary?tz=Europe/Amsterdam");
+  assert.deepEqual(r.data.giving, { iban: "NL00 TEST 0123 4567 89", holder: "Test Holder", reference: "Queenstown", url: null }, "only an https link is shown");
+
+  await sync(A.token, null, [change("settings", base, Date.now() + 2000)]);
+});
+
+test("public summary lists only sent letters that are online", async () => {
+  const online = change("newsletters", { title: `Letter online ${randomUUID()}`, status: "sent", sentAt: "2026-11-02T09:00:00.000Z", webUrl: "https://example.com/letter-1", body: "# Hello\n\nDear friends, **this** is the [first](https://x.y) letter.\n\nSecond paragraph." });
+  const offline = change("newsletters", { title: `Letter not online ${randomUUID()}`, status: "sent", body: "Private." });
+  const draft = change("newsletters", { title: `Draft ${randomUUID()}`, status: "draft", webUrl: "https://example.com/draft" });
+  await sync(A.token, null, [online, offline, draft]);
+
+  const r = await api("GET", "/v1/public/summary?tz=Europe/Amsterdam");
+  expectStatus(r, 200);
+  const titles = r.data.letters.map((l) => l.title);
+  assert.ok(titles.includes(online.data.title), "sent letter with a webUrl is listed");
+  assert.ok(!titles.includes(offline.data.title), "a letter without a webUrl stays private");
+  assert.ok(!titles.includes(draft.data.title), "drafts stay private");
+  const l = r.data.letters.find((x) => x.title === online.data.title);
+  assert.equal(l.key.split("-")[0], online.id.slice(0, 8), "without a number the key starts with the id");
+  assert.deepEqual({ ...l, key: undefined }, { key: undefined, title: online.data.title, sentAt: "2026-11-02", webUrl: "https://example.com/letter-1", excerpt: "Dear friends, this is the first letter." });
+});
+
+test("public letters: list and page per language, photos only when a letter uses them", async () => {
+  const number = 100000 + Math.floor(Math.random() * 800000);
+  const year = 1000 + Math.floor(Math.random() * 900); // long ago and different each run: other runs never sit in between, and the summary's newest five stay free
+  const bytes = new Uint8Array(2048).map((_, i) => (i * 13 + 5) & 0xff);
+  const photoId = randomUUID(), privateId = randomUUID();
+  for (const id of [photoId, privateId]) {
+    expectStatus(await api("PUT", `/v1/files/${id}`, { token: A.token, body: bytes, headers: { "Content-Type": "image/jpeg" } }), 201, "photo upload");
+  }
+  const letter = change("newsletters", {
+    title: "Een nieuw hoofdstuk", titleEn: "A new chapter", number, status: "sent", public: true,
+    sentAt: `${year}-10-20T09:00:00.000Z`, place: "Queenstown, NZ", subtitle: "Van de bergen, naar de mensen.",
+    body: "Hoi lieve mensen,\n\nWat fijn.\n\n## Nieuwe mensen\n\nTekst.", bodyEn: "Hi everyone,\n\nSo good.",
+    prayers: ["Voor de mensen", " ", "Voor wijsheid"], prayersEn: ["For the people"],
+    note: "Soms zijn het de kleine dingen.", nextTime: "Meer over de YWAM base.",
+    photos: [{ id: photoId, caption: "Queenstown", captionEn: "Queenstown from above", width: 1600, height: 1067 }],
+  });
+  const dutchOnly = change("newsletters", { title: `Alleen Nederlands ${randomUUID()}`, number: number + 1, status: "sent", public: true, sentAt: `${year}-10-21T09:00:00.000Z`, body: "Hallo." });
+  const hidden = change("newsletters", { title: "Niet online", status: "sent", photos: [{ id: privateId }] });
+  await sync(A.token, null, [letter, dutchOnly, hidden]);
+
+  const nl = await api("GET", "/v1/public/letters?lang=nl");
+  expectStatus(nl, 200, "list nl");
+  const item = nl.data.letters.find((x) => x.number === number);
+  assert.equal(item.key, `${number}-een-nieuw-hoofdstuk`);
+  assert.equal(item.excerpt, "Wat fijn.", "a greeting on its own is skipped");
+  assert.equal(item.photo.url, `/v1/public/photos/${photoId}`);
+  assert.equal(item.body, undefined, "the list carries no bodies");
+  assert.ok(nl.data.letters.some((x) => x.title === dutchOnly.data.title));
+
+  const en = await api("GET", "/v1/public/letters?lang=en");
+  assert.ok(!en.data.letters.some((x) => x.number === number + 1), "a letter without English stays off the English list");
+  assert.equal(en.data.letters.find((x) => x.number === number).key, `${number}-a-new-chapter`);
+
+  // Only the number is looked up, so an old slug still works.
+  const page = await api("GET", `/v1/public/letters/${number}-old-title?lang=nl`);
+  expectStatus(page, 200, "letter nl");
+  assert.equal(page.data.letter.title, "Een nieuw hoofdstuk");
+  assert.deepEqual(page.data.letter.prayers, ["Voor de mensen", "Voor wijsheid"]);
+  assert.equal(page.data.letter.photos[0].caption, "Queenstown");
+  assert.equal(page.data.newer.title, dutchOnly.data.title);
+  const pageEn = await api("GET", `/v1/public/letters/${number}?lang=en`);
+  assert.equal(pageEn.data.letter.photos[0].caption, "Queenstown from above");
+  assert.equal(pageEn.data.letter.body, "Hi everyone,\n\nSo good.");
+  expectStatus(await api("GET", "/v1/public/letters/0-nothing?lang=nl"), 404, "unknown letter");
+
+  const photo = await api("GET", `/v1/public/photos/${photoId}`);
+  expectStatus(photo, 200, "public photo");
+  assert.equal(photo.headers.get("content-type"), "image/jpeg");
+  assert.equal(photo.headers.get("content-disposition"), null, "no file name leaks");
+  expectStatus(await api("GET", `/v1/public/photos/${privateId}`), 404, "photo of a private letter");
+});
+
+test("public letters: an arranged letter carries its sections and columns, until the body is edited elsewhere", async () => {
+  const number = 100000 + Math.floor(Math.random() * 800000);
+  const year = 1000 + Math.floor(Math.random() * 900);
+  const [open, outreach, late] = [randomUUID(), randomUUID(), randomUUID()];
+  const photoA = randomUUID(), photoB = randomUUID();
+  const sections = [
+    { id: open, title: null, titleEn: null, body: "Hoi lieve mensen,\n\nWat fijn.", bodyEn: "Hi everyone,\n\nSo good." },
+    { id: outreach, title: "De outreach", titleEn: "The outreach", body: "Spannend.", bodyEn: "" },
+    { id: late, title: "Later geschreven", titleEn: null, body: "Nog meer.", bodyEn: "" },
+  ];
+  const data = {
+    title: "Gearrangeerd", titleEn: "Arranged", number, status: "sent", public: true, sentAt: `${year}-03-01T09:00:00.000Z`,
+    sections, body: "Hoi lieve mensen,\n\nWat fijn.\n\n## De outreach\n\nSpannend.\n\n## Later geschreven\n\nNog meer.",
+    bodyEn: "Hi everyone,\n\nSo good.\n\n## The outreach",
+    prayers: ["Voor de mensen"], note: "Klein.",
+    photos: [{ id: photoA }, { id: photoB }],
+    layout: { cover: photoB, columns: [[`s:${open}`, `s:${outreach}`], [`p:${photoA}`, "nobody"], []], off: ["note"] },
+  };
+  const letter = change("newsletters", data);
+  await sync(A.token, null, [letter]);
+
+  const nl = (await api("GET", `/v1/public/letters/${number}?lang=nl`)).data.letter;
+  assert.deepEqual(nl.sections.map((s) => s.id), [open, outreach, late]);
+  assert.equal(nl.layout.cover, photoB);
+  assert.deepEqual(nl.layout.columns, [[`s:${open}`, `s:${outreach}`, `s:${late}`], [`p:${photoA}`], ["prayers"]],
+    "unknown pieces drop, new text follows the last text, the note stays off");
+  assert.deepEqual(nl.layout.footer, ["next", "funds"], "next time and funds close the letter in the footer");
+  const list = (await api("GET", "/v1/public/letters?lang=nl")).data.letters.find((x) => x.number === number);
+  assert.equal(list.photo.id, photoB, "the front page shows the cover photo");
+  assert.equal(list.layout, undefined);
+
+  const en = (await api("GET", `/v1/public/letters/${number}?lang=en`)).data.letter;
+  assert.deepEqual(en.sections.map((s) => s.title), [null, "The outreach"], "a section with nothing in English is left out");
+  assert.deepEqual(en.layout.columns[0], [`s:${open}`, `s:${outreach}`]);
+
+  // An arranged layout with a footer of its own: a section can close the letter, and funds can stay off.
+  await sync(A.token, null, [change("newsletters", { ...data, funds: "Bijna!",
+    layout: { ...data.layout, columns: [[`s:${open}`, `s:${outreach}`, "next"], [`p:${photoA}`], []], footer: [`s:${late}`], off: ["note", "funds"] } },
+  Date.now() + 500, { id: letter.id })]);
+  const footed = (await api("GET", `/v1/public/letters/${number}?lang=nl`)).data;
+  assert.deepEqual(footed.letter.layout.columns[0], [`s:${open}`, `s:${outreach}`, "next"], "next time stays where it was put");
+  assert.deepEqual(footed.letter.layout.footer, [`s:${late}`]);
+  assert.equal(footed.letter.funds, "Bijna!");
+  assert.ok(footed.support && "percentOfTarget" in footed.support, "the letter carries the support for its funds");
+
+  // Edited on the iPhone: the body no longer matches the sections, so the letter is laid out automatically again.
+  await sync(A.token, null, [change("newsletters", { ...data, body: "Hoi,\n\nAlles anders." }, Date.now() + 1000, { id: letter.id })]);
+  const again = (await api("GET", `/v1/public/letters/${number}?lang=nl`)).data.letter;
+  assert.equal(again.layout, undefined);
+  assert.equal(again.sections, undefined);
+});
+
+test("public subscribe adds a partner on 'On my list' with their language", async () => {
+  const email = `reader-${randomUUID()}@example.com`;
+  const before = await drain(A.token, null);
+  const r = await api("POST", "/v1/public/subscribe", { json: { name: "  Anna  ", email, lang: "en" } });
+  expectStatus(r, 201);
+  const after = await drain(A.token, before.cursor);
+  const partner = after.changes.find((c) => c.collection === "partners" && c.data.email === email);
+  assert.ok(partner, "partner created");
+  assert.equal(partner.data.name, "Anna");
+  assert.equal(partner.data.stage, "idea");
+  assert.equal(partner.data.newsletter, true);
+  assert.ok(partner.data.tags.includes("website"));
+  assert.ok(partner.data.tags.includes("lang-en"));
+  assert.ok(!after.changes.some((c) => c.collection === "tasks" && c.data.links?.some((l) => l.id === partner.id)), "no task");
+
+  // Signing up again with the same address doesn't make a second partner, but does switch the language.
+  expectStatus(await api("POST", "/v1/public/subscribe", { json: { name: "Anna J", email: email.toUpperCase(), lang: "nl" } }), 201);
+  const again = await drain(A.token, after.cursor);
+  assert.ok(!again.changes.some((c) => c.collection === "partners" && c.id !== partner.id && c.data.email === email));
+  const updated = again.changes.find((c) => c.id === partner.id);
+  assert.ok(updated, "partner updated");
+  assert.ok(updated.data.tags.includes("lang-nl") && !updated.data.tags.includes("lang-en"), "language replaced");
+  assert.equal(updated.data.name, "Anna", "name stays");
+});
+
+test("public subscribe rejects bad input and ignores bots", async () => {
+  const bad = await api("POST", "/v1/public/subscribe", { json: { name: "X", email: "not-an-email" } });
+  expectStatus(bad, 400);
+  assert.equal(bad.data.error.code, "invalid_email");
+  const noName = await api("POST", "/v1/public/subscribe", { json: { name: " ", email: "a@example.com" } });
+  expectStatus(noName, 400);
+  const email = `bot-${randomUUID()}@example.com`;
+  const before = await drain(A.token, null);
+  expectStatus(await api("POST", "/v1/public/subscribe", { json: { name: "Bot", email, website: "http://spam" } }), 201, "bot gets a quiet ok");
+  const after = await drain(A.token, before.cursor);
+  assert.ok(!after.changes.some((c) => c.data?.email === email), "bot stored nothing");
+});
+
+test("public message lands on the partner with a follow-up for today", async () => {
+  const email = `giver-${randomUUID()}@example.com`;
+  const before = await drain(A.token, null);
+  const r = await api("POST", "/v1/public/message", { json: { name: " Bram  de Vries ", email, message: "Hoi Ruben,\r\n\r\n\r\nIk geef graag mee.", lang: "nl" } });
+  expectStatus(r, 201);
+  const after = await drain(A.token, before.cursor);
+  const partner = after.changes.find((c) => c.collection === "partners" && c.data.email === email);
+  assert.ok(partner, "partner created");
+  assert.equal(partner.data.name, "Bram de Vries");
+  assert.equal(partner.data.stage, "idea");
+  assert.ok(partner.data.tags.includes("website") && partner.data.tags.includes("lang-nl"));
+  assert.match(partner.data.notes, /Hoi Ruben,\n\nIk geef graag mee\.$/);
+  assert.match(partner.data.nextFollowUp, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(partner.data.nextStep, "Reply to their message from hesent.me");
+  assert.notEqual(partner.data.newsletter, true, "a message doesn't sign up for the letters");
+  assert.equal(partner.data.replyWaiting, true);
+  assert.equal(partner.data.siteMessages.length, 1);
+  assert.deepEqual({ ...partner.data.siteMessages[0], at: undefined },
+    { at: undefined, name: "Bram de Vries", text: "Hoi Ruben,\n\nIk geef graag mee.", lang: "nl" });
+  assert.ok(!Number.isNaN(Date.parse(partner.data.siteMessages[0].at)));
+
+  // A second message from the same address goes on top of the same partner's notes.
+  expectStatus(await api("POST", "/v1/public/message", { json: { name: "Bram", email: email.toUpperCase(), message: "Nog een vraag." } }), 201);
+  const again = await drain(A.token, after.cursor);
+  assert.ok(!again.changes.some((c) => c.collection === "partners" && c.id !== partner.id && c.data.email === email));
+  const updated = again.changes.find((c) => c.id === partner.id);
+  assert.ok(updated.data.notes.startsWith("Message on hesent.me"), "newest first");
+  assert.ok(updated.data.notes.includes("Nog een vraag.") && updated.data.notes.includes("Ik geef graag mee."));
+  assert.equal(updated.data.name, "Bram de Vries", "name stays");
+  assert.deepEqual(updated.data.siteMessages.map((m) => m.text), ["Nog een vraag.", "Hoi Ruben,\n\nIk geef graag mee."], "newest first");
+  assert.equal(updated.data.siteMessages[0].name, "Bram");
+  assert.equal(updated.data.replyWaiting, true);
+});
+
+test("public message rejects bad input and ignores bots", async () => {
+  const bad = await api("POST", "/v1/public/message", { json: { name: "X", email: "nope", message: "Hi" } });
+  expectStatus(bad, 400);
+  assert.equal(bad.data.error.code, "invalid_email");
+  const empty = await api("POST", "/v1/public/message", { json: { name: "X", email: "a@example.com", message: "  " } });
+  expectStatus(empty, 400);
+  assert.equal(empty.data.error.code, "invalid_message");
+  const long = await api("POST", "/v1/public/message", { json: { name: "X", email: "a@example.com", message: "a".repeat(2001) } });
+  expectStatus(long, 400);
+  const email = `bot-${randomUUID()}@example.com`;
+  const before = await drain(A.token, null);
+  expectStatus(await api("POST", "/v1/public/message", { json: { name: "Bot", email, message: "Buy now", website: "x" } }), 201);
+  const after = await drain(A.token, before.cursor);
+  assert.ok(!after.changes.some((c) => c.data?.email === email), "bot stored nothing");
+});
+
 // ---------- password & logout (last) ----------
 
 test("password change (and change it back)", async () => {

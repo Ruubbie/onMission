@@ -16,6 +16,8 @@ public sealed class NoteRow : EntityRow<Note>
     public string? Body { get => Model.Body; set => Set(Model.Body, Fmt.Opt(value), v => Model.Body = v); }
 
     public bool IsPrayer => Model.Kind == "prayer";
+    /// <summary>Prayer notes only: shown on hesent.me.</summary>
+    public bool Public { get => Model.Public == true; set => Set(Model.Public == true, value, v => Model.Public = v ? true : null); }
     public bool Answered => Model.AnsweredAt is not null;
     public string AnsweredText => Model.AnsweredAt is { } d ? $"Answered {Fmt.NiceDate(d)}" : "";
     public Brush KindBrush => Palette.Get(Lists.NoteKindColor(Model.Kind));

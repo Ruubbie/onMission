@@ -144,7 +144,7 @@ struct VaultPage: View {
                 .contentTransition(.numericText(value: Double(missing)))
                 .animation(.easeOut(duration: 0.4), value: missing)
                 .lineLimit(1)
-                .offset(y: FontMetrics.shift(.archivo, size: 184, lineHeight: 0.78))
+                .offset(y: FontMetrics.shift(size: 184, lineHeight: 0.78))
                 .rise(1)
                 .at(18, 136)
             CapLine(allIn ? "Nothing missing.\nYou're set." : (docs.isEmpty ? "Add your first\npaper" : "Papers still\nmissing"))
@@ -243,9 +243,9 @@ private struct ScanLine: View {
                 let local = Ease.easeInOut((t - Double(leg) * 0.48) / 0.48)
                 let y = leg % 2 == 0 ? local : 1 - local
                 Capsule()
-                    .fill(Palette.tomato)
+                    .fill(Palette.ink)
                     .frame(width: 36, height: 2.5)
-                    .shadow(color: Palette.tomato.opacity(0.7), radius: 4)
+                    .shadow(color: Palette.ink.opacity(0.55), radius: 4)
                     .offset(y: -17.5 + 35 * y)
             }
         }
@@ -263,12 +263,12 @@ private struct AllInStamp: View {
             let p = Ease(0.6, 0, 0.9, 0.6)(min(max((t - 0.3) / 0.52, 0), 1))
             let stops = [0, 0.7, 0.85, 1.0]
             ZStack {
-                Circle().fill(Palette.tomato)
-                Circle().strokeBorder(Palette.cream, lineWidth: 2.6)
-                Circle().strokeBorder(Palette.cream, style: StrokeStyle(lineWidth: 1.6, dash: [2, 4])).padding(7)
+                Circle().fill(Palette.coral)
+                Circle().strokeBorder(Palette.ink, lineWidth: 2.6)
+                Circle().strokeBorder(Palette.ink, style: StrokeStyle(lineWidth: 1.6, dash: [2, 4])).padding(7)
                 Text("ALL IN")
                     .type(TypeStyle(size: 17, wght: 900, tracking: 0.06, relativeTo: nil))
-                    .foregroundStyle(Palette.cream)
+                    .foregroundStyle(Palette.ink)
             }
             .frame(width: 72, height: 72)
             .rotationEffect(.degrees(-14 + kf(p, [12, 0, 0, 0], stops)))
@@ -342,7 +342,7 @@ struct DocumentsPage: View {
         .overlay {
             if dropTargeted {
                 RoundedRectangle(cornerRadius: Metrics.sheetRadius)
-                    .strokeBorder(Palette.tomato, style: StrokeStyle(lineWidth: 4, dash: [10, 6]))
+                    .strokeBorder(Palette.ink, style: StrokeStyle(lineWidth: 3, dash: [10, 6]))
                     .padding(6)
                     .allowsHitTesting(false)
             }
@@ -420,7 +420,7 @@ struct DocumentDetail: View {
                     ActionRow(title: "Open", icon: .eye) { preview = url }
                     ShareLink(item: url) {
                         FieldRow {
-                            AnimatedIcon(.share, size: 20).foregroundStyle(Palette.tomato)
+                            AnimatedIcon(.share, size: 20).foregroundStyle(Palette.ink)
                             Text("Share or save a copy").type(.bodyBold).foregroundStyle(Palette.ink)
                             Spacer(minLength: 4)
                         }

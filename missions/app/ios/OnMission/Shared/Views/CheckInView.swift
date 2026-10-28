@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// After a call (handoff §6): slide how it went. The whole screen goes from plum through marigold to tomato,
-/// the sun rises over the hills and the big word rolls between NOT NOW, THINKING and YES!
+/// After a call (handoff §6): slide how it went. The whole screen goes from sky through ochre to coral, as in the
+/// web app, the sun rises over the hills and the big word rolls between Not now, Thinking and Yes!
 struct CheckInView: View {
     @Environment(\.modelContext) private var ctx
     @Environment(Router.self) private var router
@@ -34,10 +34,11 @@ struct CheckInView: View {
     ]
 
     private var background: Color {
-        t <= 0.5 ? Color.mix(0x4B3B52, 0xE8A13A, t * 2) : Color.mix(0xE8A13A, 0xD2462B, (t - 0.5) * 2)
+        t <= 0.5 ? Color.mix(0xA9CCE0, 0xD9A13B, t * 2) : Color.mix(0xD9A13B, 0xE5774A, (t - 0.5) * 2)
     }
 
-    private var ink: Color { (t < 0.27 || t >= 0.74) ? Palette.cream : Palette.ink }
+    /// Ink on all three colours.
+    private let ink = Palette.ink
 
     private var name: String {
         request.partner.firstName.isEmpty ? request.partner.displayTitle : request.partner.firstName
@@ -73,7 +74,7 @@ struct CheckInView: View {
                         .lineLimit(2...5)
                         .focused($noteFocused)
                         .padding(14)
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(ink.opacity(0.5), lineWidth: 1.6))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(ink.opacity(0.5), lineWidth: Metrics.outline))
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -86,7 +87,6 @@ struct CheckInView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(background.ignoresSafeArea())
         .onChange(of: t) { _, new in
-            router.checkInT = new
             let idx = Int((new * 2).rounded())
             if idx != word {
                 up = idx > word
@@ -94,7 +94,6 @@ struct CheckInView: View {
             }
         }
         .onAppear {
-            router.checkInT = 0.5
             guard !reduce else { return }
             // A small nudge so you see it moves.
             Motion.after(0.65) {
@@ -216,8 +215,8 @@ struct CheckInView: View {
         HStack {
             ForEach(0..<3, id: \.self) { i in
                 Button { snap(to: Double(i) / 2) } label: {
-                    Text(stops[i].word.uppercased())
-                        .type(TypeStyle(size: 13, wght: 800, tracking: 0.08, relativeTo: nil))
+                    Text(stops[i].word)
+                        .type(TypeStyle(size: 15, wght: 650, relativeTo: nil))
                         .opacity(i == word ? 1 : 0.55)
                         .frame(width: 90, height: 44, alignment: i == 0 ? .leading : (i == 1 ? .center : .trailing))
                         .contentShape(Rectangle())
@@ -236,7 +235,7 @@ struct CheckInView: View {
                 if addingNote { noteFocused = true }
             } label: {
                 Text(addingNote ? "Hide note" : "Add note")
-                    .type(TypeStyle(size: 16.5, wght: 800, relativeTo: .body))
+                    .type(TypeStyle(size: 16.5, wght: 650, relativeTo: .body))
                     .frame(maxWidth: .infinity, minHeight: 58)
                     .overlay(Capsule().strokeBorder(ink, lineWidth: 1.8))
                     .contentShape(Capsule())
@@ -245,7 +244,7 @@ struct CheckInView: View {
             .layoutPriority(1)
             Button { save() } label: {
                 HStack(spacing: 9) {
-                    Text("Save").type(TypeStyle(size: 16.5, wght: 800, relativeTo: .body))
+                    Text("Save").type(TypeStyle(size: 16.5, wght: 650, relativeTo: .body))
                     AnimatedIcon(.arrow, size: 19, trigger: saved)
                 }
                 .foregroundStyle(background)
@@ -287,7 +286,6 @@ struct CheckInView: View {
     }
 
     private func close() {
-        router.checkInT = 0.5
         withAnimation(.curve(0.2, 0.9, 0.2, 1, 0.55).rm) { router.checkIn = nil }
     }
 

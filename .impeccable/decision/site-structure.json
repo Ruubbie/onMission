@@ -1,0 +1,147 @@
+{
+  "title": "Choose the page structure",
+  "question": "All three use the Tomato Flood world. They differ in how the page is built around the newsletter sign-up. Lock one, steer it, or re-roll.",
+  "options": [
+    {
+      "id": "boarding-pass",
+      "label": "Fly along",
+      "kicker": "THE ROLL",
+      "lineage": "boarding pass and itinerary",
+      "thesis": "The sign-up is a boarding pass to Queenstown, and the page below is the itinerary.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#E8A13A", "#4B3B52"],
+      "materials": ["tomato flood", "cream pass with tear perforation", "dotted AMS to ZQN route", "line drawings"],
+      "viewport": "Tomato flood: a handwritten 'Ga je mee?', the live days-to-go at poster scale, and a cream boarding pass beside it with name and e-mail fields and 'Stap in' as the button.",
+      "risk": "Travel imagery is a common trope; the pass has to stay one simple form, not a costume.",
+      "raised": [
+        { "from": "provenance-ribbon", "raise": "One dotted route runs from the pass down the whole page and links every section like stops on the trip." },
+        { "from": "studio-dumbar", "raise": "Photos sit in flat tomato, marigold and plum blocks on one module, never as loose rounded cards." },
+        { "from": "centre-rail", "raise": "Handwritten asides hang in the margin beside the letter text, like notes on a printed page." }
+      ],
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "days to go (poster)", "x": 0, "y": 1, "w": 6, "h": 4, "accent": true },
+        { "label": "boarding pass sign-up", "x": 7, "y": 1, "w": 5, "h": 4 },
+        { "label": "route spine", "x": 5, "y": 5, "w": 1, "h": 5, "accent": true },
+        { "label": "stop 1: my story + photo", "x": 0, "y": 5, "w": 5, "h": 2 },
+        { "label": "stop 2: pray along", "x": 6, "y": 6, "w": 6, "h": 2 },
+        { "label": "stop 3: partner + IBAN", "x": 0, "y": 8, "w": 5, "h": 2 }
+      ] }
+    },
+    {
+      "id": "letter",
+      "label": "The open letter",
+      "lineage": "a missionary's prayer letter",
+      "thesis": "The site reads as Ruben's open letter, and signing up means addressing the envelope.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#E8A13A"],
+      "materials": ["cream letter sheet", "Caveat greeting and signature", "envelope with flap", "dotted mail route"],
+      "viewport": "A tomato band with 'Lieve vrienden,' in hand type and the days-to-go. The cream letter rises over it, and beside its opening sits the envelope with the address fields and 'Verstuur'.",
+      "risk": "A letter invites long reading; the envelope must stay in view so the action never waits for the end.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "greeting + days (tomato)", "x": 0, "y": 1, "w": 12, "h": 3, "accent": true },
+        { "label": "letter sheet", "x": 1, "y": 3, "w": 7, "h": 7 },
+        { "label": "envelope sign-up (sticky)", "x": 8, "y": 3, "w": 4, "h": 3 },
+        { "label": "pray / give asides", "x": 8, "y": 7, "w": 4, "h": 3, "accent": true }
+      ] }
+    },
+    {
+      "id": "postcards",
+      "label": "Postcards home",
+      "lineage": "picture postcards",
+      "thesis": "Each section is a postcard from the road to Queenstown: a drawing on the front, Ruben's handwriting on the back.",
+      "palette": ["#D2462B", "#FBF1E3", "#2E1C16", "#4B3B52", "#E8A13A"],
+      "materials": ["postcard fronts on tomato", "cream backs with address lines", "stamp and postmark", "line drawings"],
+      "viewport": "One big postcard: the tomato front with mountains and 'Groeten uit Queenstown' turns to its cream back, with a short message on the left and the address lines (the sign-up) under a stamp on the right.",
+      "risk": "Flipping cards can hide text; on phones every back must be readable without flipping.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav + NL/EN", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "postcard front (tomato)", "x": 0, "y": 1, "w": 6, "h": 4, "accent": true },
+        { "label": "postcard back: sign-up", "x": 6, "y": 1, "w": 6, "h": 4 },
+        { "label": "card: my story", "x": 0, "y": 6, "w": 4, "h": 4 },
+        { "label": "card: pray", "x": 4, "y": 6, "w": 4, "h": 4, "accent": true },
+        { "label": "card: give", "x": 8, "y": 6, "w": 4, "h": 4 }
+      ] }
+    },
+    {
+      "id": "studio-dumbar",
+      "label": "Block identity",
+      "verdict": "declined",
+      "lineage": "Studio Dumbar identity systems",
+      "thesis": "Photos and loud colour bars snap together under one module.",
+      "palette": ["#00A3E0", "#E5007E", "#FFD100", "#3FAE2A"],
+      "materials": ["colour bars", "staged photography"],
+      "viewport": "Tilted photo under stacked saturated bars.",
+      "risk": "Corporate feel; would replace the Tomato palette.",
+      "case": "Supporters don't recognise a design-studio identity, and it would push out the Tomato colours.",
+      "kept": "Photos framed by flat colour blocks on one module."
+    },
+    {
+      "id": "centre-rail",
+      "label": "Margin edition",
+      "verdict": "declined",
+      "lineage": "wide-margin reference setting",
+      "thesis": "Two text columns around a rail, with notes in a wide margin.",
+      "palette": ["#1A1A1A", "#C2341C", "#EFE8DA"],
+      "materials": ["hairline rules", "small caps apparatus"],
+      "viewport": "A small dense text block in a wide margin.",
+      "risk": "Scholarly and cold for a personal letter.",
+      "case": "Too academic for church friends and family.",
+      "kept": "Handwritten asides hung in the margin."
+    },
+    {
+      "id": "provenance-ribbon",
+      "label": "One red line",
+      "verdict": "declined",
+      "lineage": "museum provenance ribbon",
+      "thesis": "One continuous line carries a life story through every fold.",
+      "palette": ["#C8102E", "#E9DFC8", "#7A7A7A"],
+      "materials": ["silk ribbon", "archival buff"],
+      "viewport": "A single ribbon-led column.",
+      "risk": "Museum tone, about objects rather than people.",
+      "case": "The dotted flight route already plays this part, in the app's own language.",
+      "kept": "One continuous route linking every section."
+    },
+    {
+      "id": "ansi-bbs",
+      "label": "Night board",
+      "verdict": "declined",
+      "lineage": "ANSI bulletin boards",
+      "thesis": "A text-mode board where presence is precious.",
+      "palette": ["#000000", "#00FFFF", "#FF00FF"],
+      "materials": ["block characters"],
+      "viewport": "Title art over numbered menu lines.",
+      "risk": "Unreadable for the audience.",
+      "case": "No supporter identifies with a terminal.",
+      "kept": "Showing who else follows along feels precious."
+    },
+    {
+      "id": "seven-segment",
+      "label": "Segment clock",
+      "verdict": "declined",
+      "lineage": "seven-segment displays",
+      "thesis": "Digits as lit segments with ghost cells.",
+      "palette": ["#FF2A1A", "#111111"],
+      "materials": ["LED segments"],
+      "viewport": "A bedside-clock countdown.",
+      "risk": "Cold and technical, with a dark palette.",
+      "case": "Fights the warm cream-and-tomato world.",
+      "kept": "The countdown changes instantly, with no slide."
+    },
+    {
+      "id": "drawcord-cape",
+      "label": "Drawcord cape",
+      "verdict": "declined",
+      "lineage": "transforming fashion",
+      "thesis": "One pull turns a flat plane into volume.",
+      "palette": ["#111111", "#C9A23A", "#5B6770"],
+      "materials": ["black silk", "gold cord"],
+      "viewport": "A black semicircle with a gold cord.",
+      "risk": "Luxury fashion, unrelated to the mission.",
+      "case": "No link to the move or the people.",
+      "kept": "One clear action changes the whole form."
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": { "value": "code" }
+}

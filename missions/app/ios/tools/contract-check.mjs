@@ -80,7 +80,7 @@ const data = {
   sellItems: { name: "Bike", status: "listed", askingCents: 15000, currency: "EUR", platform: "Marktplaats",
                listingUrl: "https://example.com/bike", location: "Shed" },
   packing: { name: "Rain jacket", bag: "carry-on", category: "clothes", quantity: 1, packed: false, weightGrams: 450, order: 2 },
-  notes: { title: "Pray for the visa", body: "That it comes in time.", area: "visa", kind: "prayer", answeredAt: day(0) },
+  notes: { title: "Pray for the visa", body: "That it comes in time.", area: "visa", kind: "prayer", answeredAt: day(0), public: true },
   documents: { title: "Passport", kind: "passport", fileId, fileName: "Paspoort – scan é.pdf", mimeType: "application/pdf",
                sizeBytes: fileBytes.length, sha256: sha256(fileBytes), number: "NX1234567", issuedAt: "2020-03-01",
                expiresAt: "2030-03-01", offline: true, notes: "Valid long enough" },

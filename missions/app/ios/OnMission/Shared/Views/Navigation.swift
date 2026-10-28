@@ -105,7 +105,7 @@ struct MoveView: View {
             CountUp(value: pct, trigger: entry, duration: 1.4) { "\($0)%" }
                 .type(.disp(124))
                 .lineLimit(1)
-                .offset(y: FontMetrics.shift(.archivo, size: 124, lineHeight: 0.88))
+                .offset(y: FontMetrics.shift(size: 124, lineHeight: 0.88))
                 .rise(1)
                 .at(18, 140)
             CapLine("Ready\nto go").rise(2).at(238, 192)
@@ -203,7 +203,7 @@ private struct ArcArt: View {
                 ZStack(alignment: .topLeading) {
                     SVGShape(d: Art.arcPath)
                         .trim(from: 0, to: f)
-                        .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
+                        .stroke(Palette.ink, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
                     Plane()
                         .rotationEffect(.degrees(spot.angle))
                         .position(spot.point)
@@ -221,20 +221,20 @@ private struct ArcArt: View {
     private func label(_ text: String) -> some View {
         Text(text)
             .type(TypeStyle(size: 12, wght: 800, tracking: 0.125, relativeTo: nil))
-            .foregroundStyle(Palette.cream)
+            .foregroundStyle(Palette.ink)
             .fixedSize()
     }
 }
 
-/// The little plane: a tomato body with a cream outline.
+/// The little plane: a poster-paper body with an ink outline.
 private struct Plane: View {
     var body: some View {
         ZStack {
-            SVGShape(d: "M4 1 L38 10 L4 19 L11 10 Z").fill(Palette.tomato)
+            SVGShape(d: "M4 1 L38 10 L4 19 L11 10 Z").fill(Palette.flood)
             SVGShape(d: "M4 1 L38 10 L4 19 L11 10 Z")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round, lineJoin: .round))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round, lineJoin: .round))
             SVGShape(d: "M11 10 L38 10")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
         }
         // Drawn around (20, 10) so it turns about its middle.
         .frame(width: 40, height: 20, alignment: .topLeading)
@@ -267,7 +267,7 @@ struct RecordDestination: View {
     }
 }
 
-/// A detail page in the house pattern: an aside by hand and the record's name big on tomato,
+/// A detail page in the house pattern: an aside and the record's name big on the poster,
 /// its fields on the sheet (handoff §7, "not in the prototype").
 struct DetailPage<Content: View>: View {
     let aside: String
@@ -302,8 +302,8 @@ struct DetailPage<Content: View>: View {
     }
 }
 
-/// A whole cream page (the reader, search, a note): ink on cream, scrolling under the top bar.
-struct CreamPage<Content: View>: View {
+/// A whole paper page (the reader, search, a note): ink on paper, scrolling under the top bar.
+struct PaperPage<Content: View>: View {
     @ViewBuilder let content: Content
     @Environment(\.chrome) private var chrome
 
@@ -324,17 +324,17 @@ struct CreamPage<Content: View>: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .overlay(alignment: .top) {
-            // The top bar sits on cream; scrolled content passes under it.
-            Palette.cream.frame(height: chrome.top + Metrics.topBar).allowsHitTesting(false)
+            // The top bar sits on paper; scrolled content passes under it.
+            Paper().frame(height: chrome.top + Metrics.topBar).allowsHitTesting(false)
         }
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
-        .background(Palette.cream)
+        .paper()
         .foregroundStyle(Palette.ink)
     }
 }
 
-/// A sheet for a quick form (record a gift, add names, link to…): Cancel, a tomato title, Save.
-struct CreamSheet<Content: View>: View {
+/// A sheet for a quick form (record a gift, add names, link to…): Cancel, a big ink title, Save.
+struct PaperSheet<Content: View>: View {
     let title: String
     var save: String = "Save"
     var saveDisabled = false
@@ -355,8 +355,8 @@ struct CreamSheet<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .type(.bodyBold)
-                    .foregroundStyle(Palette.tomatoInk)
+                    .type(.label)
+                    .foregroundStyle(Palette.ink)
                     .frame(minHeight: 44)
                 Spacer()
                 if let onSave {
@@ -368,8 +368,8 @@ struct CreamSheet<Content: View>: View {
             }
             .padding(.top, 12)
             Text(title)
-                .type(TypeStyle(size: 30, wdth: 78, wght: 800, relativeTo: .title))
-                .foregroundStyle(Palette.tomato)
+                .type(TypeStyle(size: 30, wght: 820, tracking: -0.04, relativeTo: .title))
+                .foregroundStyle(Palette.ink)
                 .lineLimit(2)
                 .padding(.top, 6)
                 .accessibilityAddTraits(.isHeader)
@@ -383,7 +383,7 @@ struct CreamSheet<Content: View>: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .padding(.horizontal, Metrics.sheetSide)
-        .background(Palette.cream.ignoresSafeArea())
+        .paper()
         .foregroundStyle(Palette.ink)
         .environment(\.colorScheme, .light)
         .presentationDragIndicator(.visible)
@@ -463,7 +463,7 @@ struct LinkPicker: View {
 
     var body: some View {
         let found = results
-        CreamSheet(title: "Link to") {
+        PaperSheet(title: "Link to") {
             SearchField(text: $query, prompt: "Find a task, person, paper…")
                 .padding(.vertical, 12)
             ForEach(Array(found.enumerated()), id: \.element.id) { index, rec in
