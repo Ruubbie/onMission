@@ -84,7 +84,7 @@ enum TF {
 
     /// The font at one width and weight, built through the variation axes.
     static func uiFont(size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> UIFont {
-        let key = "(size)|(wdth)|(wght)"
+        let key = "\(size)|\(wdth)|\(wght)"
         if let hit = cache[key] { return hit }
         let made: UIFont
         if let base = UIFont(name: archivoName, size: size) {
@@ -299,12 +299,11 @@ enum Illustration: String {
     case travellerWalk = "traveller-walk"
     case travellerRead = "traveller-read"
     case travellerWrite = "traveller-write"
-    case travellerPray = "traveller-pray"
     case travellerPhoto = "traveller-photo"
     case travellerWave = "traveller-wave"
     case mountains
     case flowerPink = "flower-pink"
-    // Made in Canva for the pages that had none, in the same sketchbook style.
+    // Made in Canva for the pages that had none, drawn after the hesent.me globe and traveller.
     case tasks, people, partner, checklists, vault, packing, budget, selling, notes, guides, contacts
 }
 

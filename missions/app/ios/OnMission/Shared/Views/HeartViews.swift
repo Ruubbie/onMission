@@ -64,7 +64,6 @@ struct PrayerView: View {
             } else {
                 card(list[i], count: list.count).rise(1).at(24, 160)
             }
-            Picture(.travellerPray, height: 168).rise(3).at(4, 414)
             candle.at(135, 392)
             Hand("Amen.", size: 46, tilt: -9)
                 .scaleEffect(amen ? 1 : 0.6)
@@ -533,6 +532,7 @@ struct NotesPage: View {
                         ActionRow(title: "New \(k.title.lowercased())", icon: k.icon) { newNote(k) }
                     }
                 }
+                MoreLink(title: "Prayers & thanks are on the Prayer tab") { router.select(.prayer) }
             }
         }
         .onChange(of: kind) { old, new in

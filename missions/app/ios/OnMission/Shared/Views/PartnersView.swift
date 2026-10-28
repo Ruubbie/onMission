@@ -123,6 +123,10 @@ struct PeopleView: View {
     @Query private var gifts: [Gift]
     @Query private var settingsList: [MissionSettings]
     @State private var giving = false
+    @State private var showAllWaiting = false
+
+    /// How many people waiting on you show before "Show all".
+    private static let waitingShown = 5
 
     private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
 
@@ -138,12 +142,11 @@ struct PeopleView: View {
             CapLine("of \(euros(settings.supportTargetMonthlyCents)) a month · \(Int((fraction * 100).rounded()))%", size: 18)
                 .rise(2).at(24, 238)
             // What friends give: letters, a coffee, flowers, a heart. Not a trail to climb.
-            Picture(.people, height: 153).rise(3).at(214, 236)
+            Picture(.people, height: 163).rise(3).at(214, 236)
         } sheet: {
             SheetScroll {
                 HStack(spacing: 8) {
                     ActionButton(title: "Someone gives", icon: .heart, style: .filledSmall) { giving = true }
-                    ActionButton(title: "All \(partners.count) people", style: .outlinedSmall) { router.push(.allPeople) }
                     Spacer(minLength: 0)
                 }
                 .padding(.bottom, 16)
@@ -151,13 +154,20 @@ struct PeopleView: View {
                     SectionHeader("Waiting on you")
                     EmptyRow(title: "Nobody's waiting on you", message: "Nice. Nothing needs you right now.")
                 } else {
-                    // Everyone, not the first few: the sheet rises to the top bar when the list is long.
+                    // The first few; the rest behind "Show all", so the sheet stays short until asked.
+                    let shown = showAllWaiting ? waiting : Array(waiting.prefix(Self.waitingShown))
                     SectionHeader("Waiting on you", count: waiting.count)
-                    ForEach(Array(waiting.enumerated()), id: \.element.id) { index, p in
-                        WaitingRow(partner: p, gifts: gifts, rule: index < waiting.count - 1)
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, p in
+                        WaitingRow(partner: p, gifts: gifts, rule: index < shown.count - 1)
                             .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .trailing).combined(with: .opacity)))
                     }
+                    if waiting.count > Self.waitingShown {
+                        MoreLink(title: showAllWaiting ? "Show fewer" : "Show all \(waiting.count)") {
+                            withAnimation(.easeOut(duration: 0.25)) { showAllWaiting.toggle() }
+                        }
+                    }
                 }
+                MoreLink(title: "All \(partners.count) people") { router.push(.allPeople) }
             }
         }
         .captureContext(.partner)
@@ -329,15 +339,21 @@ private struct WaitingRow: View {
 
 // MARK: - A partner's page
 
-/// Their name big, the six-stop path with a walker, the one next thing as a hero, their story.
+/// The tabs on a person's page. Each one answers a single question, so nothing has to be hunted for.
+private enum PartnerTab: String, CaseIterable {
+    case now = "Now", history = "History", messages = "Messages", notes = "Notes", details = "Details"
+}
+
+/// Their name big, then five tabs: Now (what needs you, how they are with you, gifts), History (all of it, newest first), Messages (what they wrote
+/// and what you can send), Notes (what you talked about) and Details (every field, in groups).
 struct PartnerPage: View {
     @Environment(\.modelContext) private var ctx
     @Environment(Router.self) private var router
     @Environment(\.openURL) private var openURL
     @Bindable var partner: Partner
     @Query private var gifts: [Gift]
+    @State private var tab: PartnerTab = .now
     @State private var recordingGift = false
-    @State private var showDetails = false
     @State private var thanksPlay = 0
 
     init(partner: Partner) {
@@ -349,6 +365,13 @@ struct PartnerPage: View {
     private var who: String { partner.firstName.isEmpty ? "them" : partner.firstName }
 
     var body: some View {
+        let messages = partner.siteMessages
+        let notes = linkedNotes
+        let items = [Segments<PartnerTab>.Item(value: .now, title: "Now"),
+                     .init(value: .history, title: "History"),
+                     .init(value: .messages, title: "Messages", count: messages.isEmpty ? nil : messages.count),
+                     .init(value: .notes, title: "Notes", count: notes.isEmpty ? nil : notes.count),
+                     .init(value: .details, title: "Details")]
         Screen(posterHeight: 306) {
             // How they are with you, on one line: it never runs into the name.
             Text(partner.line).type(.hand(33)).lineLimit(1).truncationMode(.tail)
@@ -357,50 +380,244 @@ struct PartnerPage: View {
                 .frame(width: 350, alignment: .leading)
                 .rise(1)
                 .at(20, 140)
-            Picture(.partner, height: 128).rise(3).at(256, 250)
+            Picture(.partner, height: 137).rise(3).at(256, 250)
         } sheet: {
-            SheetScroll { sheet }
+            // The tabs stay put while the page under them scrolls.
+            Segments(items: items, selection: $tab, tight: true)
+            SheetScroll {
+                switch tab {
+                case .now: now
+                case .history: history
+                case .messages: messagesTab(messages)
+                case .notes: notesTab(notes)
+                case .details: details
+                }
+            }
         }
         .captureContext(.task, linkTo: .partner(partner))
         .sheet(isPresented: $recordingGift) { SomeoneGivesSheet(fixed: partner) }
     }
 
-    // MARK: Sheet
+    // MARK: Now
 
     @ViewBuilder
-    private var sheet: some View {
-        SectionHeader("How \(who) is with you")
-        WayChips(partner: partner)
-        if partner.stageValue.countsAsSupport {
-            MoneyRow(title: "A month", cents: $partner.monthlyCents, currency: partner.currency)
-        }
-        OptionalDateRow(title: "Follow up on", date: $partner.nextFollowUp)
+    private var now: some View {
+        contactButtons
+
         if needsYou {
-            SectionHeader("Next", count: dueLabel)
+            SectionHeader("Needs you", count: dueLabel.isEmpty ? nil : dueLabel).padding(.top, 14)
             hero
                 .id(partner.stage + (partner.needsThanks(gifts) ? "-thanks" : "") + (partner.replyWaiting ? "-reply" : ""))
                 .transition(.asymmetric(insertion: .offset(y: 22).combined(with: .opacity),
                                         removal: .offset(x: 40).combined(with: .opacity)))
         } else {
+            SectionHeader("Needs you").padding(.top, 14)
+            Text("Nothing needs you with \(who) right now.")
+                .type(.rowSub)
+                .foregroundStyle(Palette.inkSoft)
+                .padding(.vertical, 12)
+        }
+
+        SectionHeader("How \(who) is with you").padding(.top, 10)
+        WayChips(partner: partner)
+        if partner.stageValue.countsAsSupport {
+            MoneyRow(title: "A month", cents: $partner.monthlyCents, currency: partner.currency)
+        }
+
+        FormBlock("Keeping in touch") {
+            OptionalDateRow(title: "Follow up on", date: $partner.nextFollowUp)
+            OptionalDateRow(title: "Last contact", date: $partner.lastContact)
+        }
+
+        if partner.stageValue.countsAsSupport || !gifts.isEmpty {
+            SectionHeader("Gifts", count: gifts.isEmpty ? nil : gifts.count).padding(.top, 22)
+            ForEach(Array(gifts.prefix(4).enumerated()), id: \.element.id) { index, g in
+                Button { router.open(.gift(g)) } label: {
+                    Row(rule: index < min(gifts.count, 4) - 1) {
+                        RowText(title: Money.text(g.amountCents, g.currency),
+                                subtitle: (g.recurring ? "Monthly gift" : "One-off gift") + (g.thankedAt != nil ? " · thanked" : ""))
+                        WhenText(text: whenText(g.date))
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            if gifts.count > 4 { MoreNote(text: "+\(gifts.count - 4) earlier") }
             HStack {
                 ActionButton(title: "Record a gift", icon: .heart, style: .outlinedSmall) { recordingGift = true }
                 Spacer(minLength: 0)
             }
-            .padding(.vertical, 14)
+            .padding(.top, 10)
         }
+    }
+
+    @ViewBuilder
+    private var contactButtons: some View {
+        let call = PhoneLinks.call(partner.phone)
+        let app = PhoneLinks.whatsApp(partner.phone)
+        let mail = PhoneLinks.email(partner.email)
+        if call != nil || app != nil || mail != nil {
+            HStack(spacing: 8) {
+                if let call { ActionButton(title: "Call", icon: .phone, style: .outlinedSmall) { openURL(call) } }
+                if let app { ActionButton(title: "WhatsApp", icon: .message, style: .outlinedSmall) { openURL(app) } }
+                if let mail { ActionButton(title: "Email", icon: .mail, style: .outlinedSmall) { openURL(mail) } }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 14)
+        }
+    }
+
+    // MARK: History
+
+    private struct StoryItem {
+        let title: String
+        let subtitle: String
+        let when: String
+        let date: Date
+    }
+
+    /// Everything that happened with them, newest first: gifts, messages, notes, the last contact, when they were added.
+    private var storyItems: [StoryItem] {
+        var out: [StoryItem] = []
+        for g in gifts {
+            out.append(StoryItem(title: "Gave \(Money.text(g.amountCents, g.currency))",
+                                 subtitle: (g.recurring ? "Monthly gift" : "One-off gift") + (g.thankedAt != nil ? " · thanked" : ""),
+                                 when: whenText(g.date), date: g.date))
+        }
+        for m in partner.siteMessages {
+            out.append(StoryItem(title: "Wrote on hesent.me", subtitle: m.text.replacingOccurrences(of: "\n", with: " "),
+                                 when: whenText(m.at), date: m.at))
+        }
+        if let last = partner.lastContact {
+            out.append(StoryItem(title: "Last contact", subtitle: partner.stageValue.title, when: whenText(last), date: last))
+        }
+        for n in linkedNotes {
+            out.append(StoryItem(title: n.displayTitle, subtitle: n.kindValue.title, when: whenText(n.createdAt), date: n.createdAt))
+        }
+        out.append(StoryItem(title: "Added to your list", subtitle: partner.church,
+                             when: partner.createdAt.formatted(.dateTime.month(.abbreviated).year()), date: partner.createdAt))
+        return out.sorted { $0.date > $1.date }
+    }
+
+    @ViewBuilder
+    private var history: some View {
         let story = storyItems
-        SectionHeader("Story", count: story.count)
+        SectionHeader("History", count: story.count).padding(.top, 14)
         ForEach(Array(story.enumerated()), id: \.offset) { index, item in
             Row(rule: index < story.count - 1) {
                 RowText(title: item.title, subtitle: item.subtitle)
                 WhenText(text: item.when)
             }
         }
-        MoreLink(title: showDetails ? "Fewer details" : "Details, messages and notes") {
-            withAnimation(.easeOut(duration: 0.25)) { showDetails.toggle() }
+        HStack {
+            ActionButton(title: "Record a gift", icon: .heart, style: .outlinedSmall) { recordingGift = true }
+            Spacer(minLength: 0)
         }
-        if showDetails { details.transition(.opacity) }
+        .padding(.top, 10)
     }
+
+    // MARK: Messages
+
+    @ViewBuilder
+    private func messagesTab(_ messages: [SiteMessage]) -> some View {
+        SectionHeader("From hesent.me", count: messages.isEmpty ? nil : messages.count).padding(.top, 14)
+        if messages.isEmpty {
+            Text("\(who.capitalized) hasn't written to you on hesent.me.")
+                .type(.rowSub).foregroundStyle(Palette.inkSoft).padding(.vertical, 12)
+        } else {
+            ForEach(Array(messages.enumerated()), id: \.offset) { index, m in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(m.lang == "en" ? "English" : "Nederlands").type(.rowSub).foregroundStyle(Palette.inkSoft)
+                        Spacer(minLength: 8)
+                        Text(relativeDate(m.at)).type(.when).foregroundStyle(Palette.ink)
+                    }
+                    Text(m.text).type(.body).foregroundStyle(Palette.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                    if index == 0 && partner.replyWaiting {
+                        HStack(spacing: 8) {
+                            if let url = partner.replyURL {
+                                ActionButton(title: "Reply", icon: .mail, style: .filledSmall) { openURL(url); answered() }
+                            }
+                            ActionButton(title: "Mark answered", style: .outlinedSmall) { answered() }
+                        }
+                        .padding(.top, 6)
+                    }
+                }
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .bottom) {
+                    if index < messages.count - 1 { Rectangle().fill(Palette.rule).frame(height: Metrics.rule) }
+                }
+            }
+        }
+
+        FormBlock("Send \(who) something",
+                  footer: "From your partners guide, with their name filled in. Fill in the [brackets] before sending.") {
+            ForEach(MessageTemplate.suggested(for: partner)) { t in
+                ShareLink(item: t.text(for: partner)) {
+                    FieldRow {
+                        AnimatedIcon(.templates, size: 20).foregroundStyle(Palette.ink)
+                        Text(t.title).type(.bodyBold).foregroundStyle(Palette.ink)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            Menu {
+                ForEach(MessageTemplate.allCases) { t in ShareLink(t.title, item: t.text(for: partner)) }
+            } label: {
+                FieldRow(rule: false) {
+                    AnimatedIcon(.more, size: 20).foregroundStyle(Palette.ink)
+                    Text("All templates").type(.bodyBold).foregroundStyle(Palette.ink)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+
+    // MARK: Notes
+
+    private var linkedNotes: [Note] {
+        var out: [Note] = []
+        for case .note(let n) in Links.linked(to: .partner(partner), ctx) { out.append(n) }
+        return out.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    @ViewBuilder
+    private func notesTab(_ notes: [Note]) -> some View {
+        FormBlock("About \(who)") {
+            TextRow("What you talked about, family names, what they care about…", text: $partner.notes, vertical: true, lines: 4...14)
+        }
+        SectionHeader("Written notes", count: notes.isEmpty ? nil : notes.count).padding(.top, 22)
+        if notes.isEmpty {
+            Text("Prayer points and meeting notes you link to \(who) show up here.")
+                .type(.rowSub).foregroundStyle(Palette.inkSoft).padding(.vertical, 12)
+        } else {
+            ForEach(Array(notes.enumerated()), id: \.element.id) { index, n in
+                Button { router.open(.note(n)) } label: {
+                    Row(rule: index < notes.count - 1) {
+                        RowText(title: n.displayTitle, subtitle: n.kindValue.title)
+                        WhenText(text: whenText(n.createdAt))
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        HStack {
+            ActionButton(title: "Add a note", icon: .plus, style: .outlinedSmall) { addNote() }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 10)
+    }
+
+    private func addNote() {
+        let n = Note()
+        ctx.insert(n)
+        Links.link(.partner(partner), .note(n), ctx)
+        router.push(.record(.note(n)))
+    }
+
+    // MARK: Needs you
 
     private var dueLabel: String {
         if partner.replyWaiting, let m = partner.siteMessages.first { return "Sent on hesent.me \(relativeDate(m.at))" }
@@ -474,7 +691,7 @@ struct PartnerPage: View {
                 ActionButton(title: "Done", style: .outlined) { caughtUp(met: false) }
             }
         } else {
-            HeroCard(title: "Plan a coffee with \(who)", subtitle: "\(who.capitalized) would like to meet. Pick a day above.") {
+            HeroCard(title: "Plan a coffee with \(who)", subtitle: "\(who.capitalized) would like to meet. Pick a day under Keeping in touch.") {
                 share("Send invite", .invite, filled: true)
                 ActionButton(title: "We met", style: .outlined) { caughtUp(met: true) }
             }
@@ -499,80 +716,28 @@ struct PartnerPage: View {
         .buttonStyle(filled ? CapsuleStyle(kind: .filled) : CapsuleStyle(kind: .outlined))
     }
 
-    private struct StoryItem {
-        let title: String
-        let subtitle: String
-        let when: String
-        let date: Date
-    }
-
-    private var storyItems: [StoryItem] {
-        var out: [StoryItem] = []
-        for g in gifts {
-            out.append(StoryItem(title: "Gave \(Money.text(g.amountCents, g.currency))",
-                                 subtitle: g.recurring ? "Monthly gift" : "One-off gift" + (g.thankedAt != nil ? " · thanked" : ""),
-                                 when: whenText(g.date), date: g.date))
-        }
-        for m in partner.siteMessages {
-            out.append(StoryItem(title: "Wrote on hesent.me", subtitle: m.text.replacingOccurrences(of: "\n", with: " "),
-                                 when: whenText(m.at), date: m.at))
-        }
-        if let last = partner.lastContact {
-            out.append(StoryItem(title: "Last contact", subtitle: partner.stageValue.title, when: whenText(last), date: last))
-        }
-        for case .note(let n) in Links.linked(to: .partner(partner), ctx) {
-            out.append(StoryItem(title: n.displayTitle, subtitle: n.kindValue.title, when: whenText(n.createdAt), date: n.createdAt))
-        }
-        out.append(StoryItem(title: "Added to your list", subtitle: partner.church.isEmpty ? "" : partner.church,
-                             when: partner.createdAt.formatted(.dateTime.month(.abbreviated)), date: partner.createdAt))
-        return out.sorted { $0.date > $1.date }
-    }
-
-    // MARK: Details (the existing partner form)
+    // MARK: Details
 
     @ViewBuilder
     private var details: some View {
-        FormBlock("Name") {
+        FormBlock("Who") {
             TitleField(placeholder: "Name", text: $partner.name)
             SelectRow("Category", selection: Binding(get: { partner.categoryValue }, set: { partner.categoryValue = $0 })) {
                 ForEach(PartnerCategory.allCases) { Text($0.title).tag($0) }
             }
+            TextRow("Church", text: $partner.church)
+            OptionalDateRow(title: "Birthday", date: $partner.birthday)
         }
-        // Only when you want one: nobody needs a next step just for being in your people.
+        FormBlock("Reach them") {
+            TextRow("Phone", text: $partner.phone, keyboard: .phonePad, plain: true)
+            TextRow("Email", text: $partner.email, keyboard: .emailAddress, plain: true)
+            TextRow("Postal address (for cards)", text: $partner.address, vertical: true)
+        }
         FormBlock("Next step", footer: "From three days before the follow-up date, they show under Waiting on you and on Today.") {
             TextRow("What's next (call, coffee, a card…)", text: $partner.nextStep)
             QuickDates(date: $partner.nextFollowUp,
                        options: [.init(title: "Tomorrow", days: 1), .init(title: "In 3 days", days: 3),
                                  .init(title: "Next week", days: 7), .init(title: "In 2 weeks", days: 14)])
-            OptionalDateRow(title: "Last contact", date: $partner.lastContact)
-        }
-        if partner.stageValue.countsAsSupport || !gifts.isEmpty {
-            FormBlock("Gifts received") {
-                ForEach(gifts) { g in
-                    LinkedRow(record: .gift(g))
-                }
-                ActionRow(title: "Record a gift", icon: .gift) { recordingGift = true }
-            }
-        }
-        FormBlock("Messages", footer: "From your partners guide, with their name filled in. Fill in the [brackets] before sending.") {
-            ForEach(MessageTemplate.suggested(for: partner)) { t in
-                ShareLink(item: t.text(for: partner)) {
-                    FieldRow {
-                        AnimatedIcon(.templates, size: 20).foregroundStyle(Palette.ink)
-                        Text(t.title).type(.bodyBold).foregroundStyle(Palette.ink)
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
-            Menu {
-                ForEach(MessageTemplate.allCases) { t in ShareLink(t.title, item: t.text(for: partner)) }
-            } label: {
-                FieldRow {
-                    AnimatedIcon(.more, size: 20).foregroundStyle(Palette.ink)
-                    Text("All templates").type(.bodyBold).foregroundStyle(Palette.ink)
-                    Spacer(minLength: 0)
-                }
-            }
         }
         FormBlock("Giving") {
             MoneyRow(title: "Monthly", cents: $partner.monthlyCents, currency: partner.currency)
@@ -585,65 +750,47 @@ struct PartnerPage: View {
             ToggleRow("Thanked", isOn: Binding(get: { partner.thankedAt != nil }, set: { on in
                 if on { partner.markThanked(ctx) } else { partner.thankedAt = nil }
             }))
-            ToggleRow("Prays for you", isOn: $partner.prayer)
-            ToggleRow("Gets the newsletter", isOn: $partner.newsletter)
-        }
-        FormBlock("Contact") {
-            contactButtons
-            TextRow("Phone", text: $partner.phone, keyboard: .phonePad, plain: true)
-            TextRow("Email", text: $partner.email, keyboard: .emailAddress, plain: true)
-            TextRow("Church", text: $partner.church)
-            TextRow("Postal address (for cards)", text: $partner.address, vertical: true)
-            OptionalDateRow(title: "Birthday", date: $partner.birthday)
-        }
-        FormBlock("Notes") {
-            TextRow("What you talked about, prayer requests, family names…", text: $partner.notes, vertical: true, lines: 3...12)
         }
         LinksBlock(record: .partner(partner))
         DeleteButton(item: partner)
     }
-
-    @ViewBuilder
-    private var contactButtons: some View {
-        let call = PhoneLinks.call(partner.phone)
-        let app = PhoneLinks.whatsApp(partner.phone)
-        let mail = PhoneLinks.email(partner.email)
-        if call != nil || app != nil || mail != nil {
-            HStack(spacing: 8) {
-                if let call { ActionButton(title: "Call", icon: .phone, style: .outlinedSmall) { openURL(call) } }
-                if let app { ActionButton(title: "WhatsApp", icon: .message, style: .outlinedSmall) { openURL(app) } }
-                if let mail { ActionButton(title: "Email", icon: .mail, style: .outlinedSmall) { openURL(mail) } }
-            }
-            .padding(.vertical, 10)
-        }
-    }
 }
 
-/// How someone is with you, as four toggles (Gives, Prays, Gets letters, Wants to meet) in a 2 × 2 grid.
-/// Any mix is fine; tapping one saves at once.
+/// How someone is with you, as four cards (Gives, Prays, Gets letters, Wants to meet) in a 2 × 2 grid. Each card
+/// says whether the way is on, in words as well as colour. Any mix is fine; tapping one saves at once.
 private struct WayChips: View {
     @Environment(\.modelContext) private var ctx
     let partner: Partner
     @State private var tapped = 0
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
             ForEach(Way.allCases) { way in
                 let on = partner.has(way)
                 Button {
                     tapped += 1
                     withAnimation(Motion.indicator.rm) { partner.setWay(way, !on, ctx) }
                 } label: {
-                    HStack(spacing: 6) {
-                        if on { AnimatedIcon(.check, size: 15) }
-                        Text(way.title).type(TypeStyle(size: 14.5, wght: 650, relativeTo: .subheadline)).lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        AnimatedIcon(icon(for: way), size: 20)
+                        Text(way.title)
+                            .type(TypeStyle(size: 15.5, wght: 750, relativeTo: .subheadline))
+                            .lineLimit(1)
+                            .padding(.top, 6)
+                        Text(state(for: way, on: on))
+                            .type(TypeStyle(size: 13, wght: 600, relativeTo: .caption))
+                            .opacity(on ? 0.92 : 0.7)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
                     .foregroundStyle(on ? Palette.paper : Palette.ink)
-                    .frame(maxWidth: .infinity, minHeight: 40)
+                    .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+                    .padding(14)
                     .background {
-                        if on { Capsule().fill(Palette.ink) } else { Capsule().strokeBorder(Palette.chipRule, lineWidth: Metrics.outline) }
+                        let card = RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        if on { card.fill(Palette.ink) } else { card.strokeBorder(Palette.chipRule, lineWidth: Metrics.outline) }
                     }
-                    .contentShape(Capsule())
+                    .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -651,6 +798,23 @@ private struct WayChips: View {
         }
         .padding(.vertical, 10)
         .sensoryFeedback(.selection, trigger: tapped)
+    }
+
+    private func icon(for way: Way) -> Icon {
+        switch way {
+        case .gives: .heart
+        case .prays: .flame
+        case .letters: .mail
+        case .meet: .users
+        }
+    }
+
+    private func state(for way: Way, on: Bool) -> String {
+        guard on else { return "Not yet" }
+        if way == .gives, partner.monthlyCents > 0 {
+            return "Yes · \(Money.text(partner.monthlyCents, partner.currency)) a month"
+        }
+        return "Yes"
     }
 }
 // MARK: - All people

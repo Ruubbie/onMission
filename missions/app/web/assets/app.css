@@ -152,6 +152,7 @@ a { color: inherit; }
   .av { width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid var(--tomato); color: var(--tomato); display: grid; place-items: center; font-weight: 650; font-size: 14.5px; flex: none; letter-spacing: .02em; }
   .more { display: flex; align-items: center; gap: 8px; padding: 16px 0 0; font-weight: 650; font-size: 15px; color: var(--tomato); }
   .more svg { width: 18px; height: 18px; }
+  button.more { background: none; border: 0; font: inherit; cursor: pointer; text-align: left; }
 
   /* Prayer */
   #s-prayer .hi { left: 24px; top: 116px; font-size: 34px; }

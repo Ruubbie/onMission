@@ -69,7 +69,7 @@ struct ChecklistsPage: View {
                 .rise(1)
                 .at(18, 136)
             CapLine("Things left\non \(active.count) list\(active.count == 1 ? "" : "s")").rise(2).at(24, 292)
-            Picture(.checklists, height: 164).rise(3).at(204, 116)
+            Picture(.checklists, height: 143).rise(3).at(204, 116)
         } sheet: {
             Segments(items: segments, selection: $stop, tight: true)
             SheetScroll {

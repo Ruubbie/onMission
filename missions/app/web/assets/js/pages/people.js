@@ -25,19 +25,37 @@ export function build() {
     <div class="sheet" data-count="${count}">${isDesk() ? deskHtml(waiting) : sheetHtml(waiting)}</div>`;
 }
 
-/** "Someone gives" and All people, first in the sheet so neither needs digging for. */
+/** How many waiting people show before "Show all", so the sheet stays short until you ask for more. */
+const WAITING_SHOWN = 5;
+/** Whether the waiting list is expanded (kept while the page is open). */
+let showAllWaiting = false;
+
+/** "Someone gives" is the one primary action; the form opens under it. */
 function quick() {
-  return `<div class="quick"><button class="btn sm f" data-give-open>${I.heart}Someone gives</button>
-    <button class="btn sm o" data-all>All ${store.list("partners").length} people</button></div>${giveForm()}`;
+  return `<div class="quick"><button class="btn sm f" data-give-open>${I.heart}Someone gives</button></div>${giveForm()}`;
+}
+
+/** The waiting people, the first few unless the list is expanded. */
+function waitingRows(waiting, rowHtml) {
+  const shown = showAllWaiting ? waiting : waiting.slice(0, WAITING_SHOWN);
+  const more = waiting.length > WAITING_SHOWN
+    ? `<button class="more" data-show-all>${showAllWaiting ? "Show fewer" : `Show all ${waiting.length}`} ${I.arrow}</button>`
+    : "";
+  return shown.map(rowHtml).join("") + more;
+}
+
+/** All people, last in the sheet: the full list is one tap away but no longer competes with the waiting list. */
+function allLink() {
+  return `<a class="more" href="#/allpeople" data-all>All ${store.list("partners").length} people ${I.arrow}</a>`;
 }
 
 function sheetHtml(waiting) {
   if (!waiting.length) {
-    return `${quick()}<div class="sec">Waiting on you</div><div class="rw"><div class="tx"><div class="t1">Nobody's waiting on you</div><div class="t2">Nice. Nothing needs you right now.</div></div></div>`;
+    return `${quick()}<div class="sec">Waiting on you</div><div class="rw"><div class="tx"><div class="t1">Nobody's waiting on you</div><div class="t2">Nice. Nothing needs you right now.</div></div></div>${allLink()}`;
   }
-  // Everyone, not the first few: the sheet rises to the top bar when the list is longer than the screen.
+  // The sheet rises to the top bar when the list is longer than the screen.
   return `${quick()}<div class="sec">Waiting on you <b>${waiting.length}</b></div>
-    ${waiting.map((p) => row(p)).join("")}`;
+    ${waitingRows(waiting, row)}${allLink()}`;
 }
 
 /** The desktop sheet: everyone waiting on you, beside how people are with you (not a ladder: any mix counts). */
@@ -47,10 +65,10 @@ function deskHtml(waiting) {
   const most = Math.max(1, ...ways.map(([, n]) => n));
   return `<div class="dash">
     <section class="card wide">${quick()}<div class="sec">Waiting on you <b>${waiting.length}</b></div>
-      <div class="cols">${waiting.map(row).join("") || `<div class="rw"><div class="tx"><div class="t1">Nobody's waiting on you</div><div class="t2">Nice. Nothing needs you right now.</div></div></div>`}</div></section>
-    <section class="card"><div class="sec">How people are with you</div>
+      <div class="cols">${waiting.length ? waitingRows(waiting, row) : `<div class="rw"><div class="tx"><div class="t1">Nobody's waiting on you</div><div class="t2">Nice. Nothing needs you right now.</div></div></div>`}</div>${allLink()}</section>
+    <section class="card"><details><summary class="sec">How people are with you</summary>
       ${ways.map(([label, n]) => `<div class="bar-row"><span>${esc(label)}</span><div class="meter"><i style="width:${(n / most) * 100}%"></i></div><b>${n}</b></div>`).join("")}
-    </section>
+    </details></section>
   </div>`;
 }
 
@@ -74,6 +92,7 @@ export function init(root, ctx) {
 
   root.addEventListener("click", async (e) => {
     if (e.target.closest("[data-all]")) { location.hash = "#/allpeople"; return; }
+    if (e.target.closest("[data-show-all]")) { showAllWaiting = !showAllWaiting; ctx.refresh(); return; }
     const btn = e.target.closest("[data-action]");
     const row = e.target.closest("[data-person]");
     if (!row) return;
