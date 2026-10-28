@@ -47,15 +47,7 @@ export function build() {
     <div class="abs hand hi in">Before you fly</div>
     <div class="abs disp bign in" data-n>${totalLeft()}</div>
     <div class="abs cap cp in">Things left<br>on ${all.length} lists</div>
-    <svg class="abs art" style="left:200px;top:120px" width="176" height="230" viewBox="0 0 176 230"><g class="ln">
-      <path class="dots" stroke-dasharray="1 7" d="M30 196 C 40 172, 62 170, 74 160 M74 160 C 86 134, 106 130, 116 118 M116 118 C 128 96, 144 90, 150 78"/>
-      <path class="bgf" d="M8 206 C 8 196, 52 196, 52 206 C 52 214, 8 214, 8 206 Z"/>
-      <path class="bgf" d="M54 166 C 54 156, 96 156, 96 166 C 96 174, 54 174, 54 166 Z"/>
-      <path class="bgf" d="M96 124 C 96 114, 138 114, 138 124 C 138 132, 96 132, 96 124 Z"/>
-      <path class="bgf" d="M130 82 C 130 72, 170 72, 170 82 C 170 90, 130 90, 130 82 Z"/>
-      <path d="M150 78 L150 22"/><path class="crf" d="M150 22 L172 30 L150 38"/>
-      <circle class="crf" cx="30" cy="196" r="7"/>
-    </g></svg>
+    <img class="abs art pic in" src="assets/art/checklists.webp" alt="" style="left:204px;top:116px;width:176px">
     <div class="sheet" style="padding-top:10px">
       <div class="seg four" id="seg">${PHASES.map(([id, label]) => `<button data-phase="${id}" class="${id === phase ? "on" : ""}">${label}<i>${count(id)}</i></button>`).join("")}<i class="bar"></i></div>
       <div class="scroll" data-list>${shown.map(listRow).join("") || `<div class="rw"><div class="tx"><div class="t1">Nothing in this phase</div><div class="t2">Lists get their phase from the word on them, like "before leaving".</div></div></div>`}</div>

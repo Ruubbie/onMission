@@ -113,7 +113,9 @@ struct PackingPage: View {
                 .animation(.easeOut(duration: 0.7), value: packedKg)
                 .rise(2)
                 .at(24, 272)
-            Suitcase(level: level, wobble: wobble)
+            Picture(.packing, height: 160)
+                .pop(wobble, to: 1.04)
+                .rise(3)
                 .background {
                     GeometryReader { g in
                         Color.clear
@@ -121,7 +123,7 @@ struct PackingPage: View {
                             .onChange(of: g.frame(in: .global)) { _, f in caseFrame = f }
                     }
                 }
-                .at(244, 108)
+                .at(216, 112)
         } sheet: {
             Segments(items: segments, selection: $stop, tight: true)
             SheetScroll {

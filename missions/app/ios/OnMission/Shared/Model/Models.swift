@@ -275,6 +275,16 @@ extension Partner {
             rawData = Fingerprint.encode(d)
         }
     }
+
+    /// They would like to meet (coffee, a call): `data.wantsToMeet`, an extra field the web app writes too.
+    var wantsToMeet: Bool {
+        get { Fingerprint.decode(rawData).bool("wantsToMeet") }
+        set {
+            var d = Fingerprint.decode(rawData)
+            d["wantsToMeet"] = newValue ? .bool(true) : nil
+            rawData = Fingerprint.encode(d)
+        }
+    }
 }
 
 // MARK: - gifts (money actually received)

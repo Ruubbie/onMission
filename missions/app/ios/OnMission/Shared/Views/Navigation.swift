@@ -368,7 +368,7 @@ struct PaperSheet<Content: View>: View {
             }
             .padding(.top, 12)
             Text(title)
-                .type(TypeStyle(size: 30, wght: 820, tracking: -0.04, relativeTo: .title))
+                .type(TypeStyle(size: 30, wght: 820, tracking: -0.02, relativeTo: .title))
                 .foregroundStyle(Palette.ink)
                 .lineLimit(2)
                 .padding(.top, 6)

@@ -3,6 +3,7 @@
 import { store } from "../store.js";
 import { esc } from "../ui.js";
 import { I } from "../motion.js";
+import { involvement } from "./common.js";
 
 export const title = "Search";
 export const parent = "today";
@@ -20,7 +21,7 @@ function results(query) {
   if (!q) return `<div class="rw"><div class="tx"><div class="t1">Type to search</div><div class="t2">Tasks, people, papers and notes, in one place.</div></div></div>`;
   const hits = [];
   for (const t of store.list("tasks")) if (t.title?.toLowerCase().includes(q)) hits.push({ title: t.title, sub: `Task${t.dueDate ? ` · ${t.dueDate}` : ""}`, route: `task/${t.id}` });
-  for (const p of store.list("partners")) if (p.name?.toLowerCase().includes(q)) hits.push({ title: p.name, sub: `Person · ${p.stage}`, route: `partners/${p.id}` });
+  for (const p of store.list("partners")) if (p.name?.toLowerCase().includes(q)) hits.push({ title: p.name, sub: `Person · ${involvement(p)}`, route: `partners/${p.id}` });
   for (const d of store.list("documents")) if ([d.title, d.fileName, d.notes].some((x) => x && x.toLowerCase().includes(q))) hits.push({ title: d.title, sub: "Paper in the Vault", route: "vault" });
   for (const n of store.list("notes")) if ([n.title, n.body].some((x) => x && x.toLowerCase().includes(q))) hits.push({ title: n.title || "Untitled", sub: `Note · ${n.kind}`, route: n.kind === "prayer" ? "prayer" : "notes" });
   if (!hits.length) return `<div class="rw"><div class="tx"><div class="t1">Nothing found</div><div class="t2">Try a shorter word.</div></div></div>`;

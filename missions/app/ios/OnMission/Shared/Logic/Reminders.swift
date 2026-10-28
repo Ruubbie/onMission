@@ -38,9 +38,9 @@ enum Reminders {
             }
         }
         for p in Store.all(Partner.self, ctx) {
-            if p.stageValue.isOpen, let d = p.nextFollowUp, let at = nineAM(d), at > now {
+            if let d = p.nextFollowUp, let at = nineAM(d), at > now {
                 let step = p.nextStep.isEmpty ? "Follow up" : p.nextStep
-                items.append(Item(date: at, id: "partner-\(p.id)", title: "\(step): \(p.displayTitle)", body: "Support partner"))
+                items.append(Item(date: at, id: "partner-\(p.id)", title: "\(step): \(p.displayTitle)", body: "Your people"))
             }
             if p.stageValue.countsAsSupport, let b = p.birthday, let next = nextBirthday(b, after: now), let at = nineAM(next) {
                 items.append(Item(date: at, id: "bday-\(p.id)", title: "\(p.firstName) has a birthday today",

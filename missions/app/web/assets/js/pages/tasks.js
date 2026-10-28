@@ -18,15 +18,7 @@ export function build() {
   return `
     <div class="abs disp ttl in">Tasks</div>
     <div class="abs hand note in">${left} left, you got this</div>
-    <svg class="abs art" style="left:268px;top:104px" width="112" height="150" viewBox="0 0 112 150">
-      <g class="ln">
-        <path class="bgf" d="M14 22 C 40 20, 72 20, 98 23 C 102 24, 104 27, 104 31 L103 138 C 103 142, 100 145, 96 145 L16 146 C 11 146, 8 143, 8 138 L9 30 C 9 25, 11 23, 14 22 Z"/>
-        <path class="crf" d="M36 14 L76 14 L78 30 L34 30 Z"/>
-        <path d="M24 56 L32 64 L46 48"/><path d="M56 58 L90 57"/>
-        <path d="M24 88 L32 96 L46 80"/><path d="M56 90 L86 89"/>
-        <circle cx="34" cy="120" r="8"/><path d="M56 121 L80 120"/>
-      </g>
-    </svg>
+    <img class="abs art pic in" src="assets/art/tasks.webp" alt="" style="left:252px;top:96px;width:128px">
     <div class="sheet">${isDesk() ? board(buckets) : `
       <div class="seg" id="seg">${SEGS.map(([id, label]) => `<button data-seg="${id}" class="${id === seg ? "on" : ""}">${label}<i>${buckets[id].length}</i></button>`).join("")}<i class="bar"></i></div>
       <div class="tlist" id="tlist">${rows(buckets[seg])}</div>`}

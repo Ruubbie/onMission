@@ -86,7 +86,7 @@ enum CaptureKind: String, CaseIterable, Identifiable {
     var prompt: String {
         switch self {
         case .task: "Call Anna friday #support"
-        case .partner: "Name of someone to ask"
+        case .partner: "Name, and “€50 a month” if they give"
         case .prayer: "Something to pray about"
         case .thanks: "Something you're thankful for"
         case .sell: "Bike 150"
@@ -147,9 +147,17 @@ enum Capture {
             if let p = parsed.priority { t.priorityValue = p }
             return .task(t)
         case .partner:
-            let p = Partner()
-            p.name = text
-            ctx.insert(p)
+            // "Jan €50 a month" adds Jan and what they give in one go; a plain name just adds them.
+            let g = GivingLine.parse(text)
+            guard !g.name.isEmpty else { return nil }
+            let key = g.name.lowercased()
+            let p = Store.all(Partner.self, ctx).first { $0.name.trimmingCharacters(in: .whitespaces).lowercased() == key } ?? {
+                let p = Partner()
+                p.name = g.name
+                ctx.insert(p)
+                return p
+            }()
+            if g.cents > 0 { p.recordGiving(cents: g.cents, monthly: g.monthly, ctx) }
             result = .partner(p)
         case .prayer:
             let n = Note()
@@ -440,7 +448,9 @@ private struct CaptureForm: View {
                 .compactMap { $0 }
             return ("Due", parts.isEmpty ? "No date" : parts.joined(separator: " · "))
         case .partner:
-            return ("Stage", PartnerStage.idea.title)
+            let g = GivingLine.parse(line.text)
+            guard g.cents > 0 else { return ("Gives", "Add “€50 a month” if they do") }
+            return ("Gives", g.monthly ? "\(Money.text(g.cents, "EUR")) a month" : "\(Money.text(g.cents, "EUR")) once")
         case .prayer, .thanks, .packing:
             return ("Goes to", kind.place)
         case .sell:
@@ -563,5 +573,35 @@ private struct CaptureForm: View {
         focused = false
         router.captureOpen = false
         Motion.after(0.3) { router.open(rec) }
+    }
+}
+
+/// A person with what they give, if the line says so (as `parsePerson` in the web app's capture.js):
+/// "Jan €50 a month", "Kerk De Ark 400 euro per maand", "Oma €200". Without an amount it is just a name.
+enum GivingLine {
+    struct Result: Equatable {
+        var name: String
+        var cents = 0
+        var monthly = false
+    }
+
+    private static let amount = try! NSRegularExpression(pattern: #"€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro\b|eur\b)"#, options: .caseInsensitive)
+    private static let month = try! NSRegularExpression(pattern: #"\b(?:a|per|each|every)\s+(?:month|maand)\b|/\s*(?:month|maand|mnd|m)\b|\bmonthly\b|\bmaandelijks\b|\bp/?m\b"#, options: .caseInsensitive)
+    private static let words = try! NSRegularExpression(pattern: #"\b(?:gives?|geeft|pledged|once|eenmalig)\b"#, options: .caseInsensitive)
+
+    static func parse(_ text: String) -> Result {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let all = NSRange(t.startIndex..., in: t)
+        guard let m = amount.firstMatch(in: t, range: all) else { return Result(name: t) }
+        let groups = [1, 2].compactMap { Range(m.range(at: $0), in: t) }
+        let number = groups.first.map { String(t[$0]).replacingOccurrences(of: ",", with: ".") } ?? "0"
+        let cents = Int(((Double(number) ?? 0) * 100).rounded())
+        let monthly = month.firstMatch(in: t, range: all) != nil
+        var name = (t as NSString).replacingCharacters(in: m.range, with: " ")
+        for re in [month, words] {
+            name = re.stringByReplacingMatches(in: name, range: NSRange(name.startIndex..., in: name), withTemplate: " ")
+        }
+        name = name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return Result(name: name, cents: cents, monthly: monthly)
     }
 }

@@ -45,7 +45,7 @@ struct TasksView: View {
         Screen(posterHeight: 186, sheetTop: 10) {
             Lines("Tasks", .disp(92)).rise(0).at(22, 114)
             Hand(all.isEmpty ? "All clear" : "\(all.count) left, you got this", size: 30, tilt: -5).rise(1).at(28, 212)
-            LineArt(drawing: Art.clipboard).at(268, 104)
+            Picture(.tasks, height: 153).rise(2).at(252, 96)
         } sheet: {
             Segments(items: items, selection: $bucket)
             List {
@@ -77,6 +77,7 @@ struct TasksView: View {
                     .listRowSeparator(.hidden)
             }
             .listStyle(.plain)
+            .liftsSheet()
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListRowHeight, 1)
             .padding(.horizontal, -Metrics.sheetSide)

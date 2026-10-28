@@ -41,7 +41,7 @@ a { color: inherit; }
 
 /* Login card */
 .login { position: absolute; inset: 0; padding: 86px 26px 40px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
-.login h1 { font-stretch: 75%; font-weight: 820; font-size: 92px; line-height: .88; letter-spacing: -.045em; }
+.login h1 { font-stretch: 75%; font-weight: 820; font-size: 92px; line-height: .88; letter-spacing: -.02em; }
 .login .hand { font-size: 34px; }
 .login form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
 .login label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 650; }
@@ -71,8 +71,8 @@ a { color: inherit; }
   .abs { position: absolute; }
   .ln { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   /* Was a handwriting face; the site has none, so it is Archivo sized to the same x-height. */
-  .hand { font-weight: 650; line-height: 1; letter-spacing: -.02em; font-size-adjust: .34; }
-  .disp { font-stretch: 75%; font-weight: 820; letter-spacing: -.045em; line-height: .88; }
+  .hand { font-weight: 650; line-height: 1; letter-spacing: 0; font-size-adjust: .34; }
+  .disp { font-stretch: 75%; font-weight: 820; letter-spacing: -.02em; line-height: .88; }
   .cap { font-weight: 650; font-size: 19px; letter-spacing: -.01em; line-height: 1.15; }
   .bgf { fill: var(--flood); }
   .crf { fill: var(--cream); }
@@ -82,12 +82,13 @@ a { color: inherit; }
   .scr > .abs, .scr > svg, .pstage > .abs, .pstage > svg, .pstage > .pcard, .pstage > .pacts, .pstage > .pager, .poster > .abs, .done-art > .abs, .pg > .abs, .pg > svg, .pg > .reader, .pg > .rprog { margin-top: 20px; }
   .scr { position: absolute; inset: 0; display: none; }
   .scr.on { display: block; }
-  .sheet { position: absolute; left: 0; right: 0; bottom: 84px; background: var(--cream) var(--tex) 0 0 / var(--tex-size); box-shadow: 0 -1.5px 0 rgba(30,26,23,.85); color: var(--text); border-radius: 30px 30px 0 0; padding: 22px 20px 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; }
+  /* Plain paper: the texture stays on the poster, where no text sits on it. */
+  .sheet { position: absolute; left: 0; right: 0; bottom: 84px; background: var(--cream); box-shadow: 0 -1.5px 0 rgba(30,26,23,.85); color: var(--text); border-radius: 30px 30px 0 0; padding: 22px 20px 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; }
   /* The sheet is a column that scrolls as a whole, so its rows keep their height instead of squeezing. */
   .sheet > :not(.scroll) { flex-shrink: 0; }
-  .sec { display: flex; align-items: baseline; gap: 8px; font-size: 17px; font-weight: 820; letter-spacing: -.02em; color: var(--text); }
+  .sec { display: flex; align-items: baseline; gap: 8px; font-size: 17px; font-weight: 820; letter-spacing: -.01em; color: var(--text); }
   .sec b { margin-left: auto; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--text); opacity: .55; }
-  .t1 { font-size: 16.5px; font-weight: 700; line-height: 1.2; }
+  .t1 { font-size: 16.5px; font-weight: 700; line-height: 1.28; }
   .t2 { font-size: 13px; font-weight: 500; margin-top: 2px; opacity: .68; }
   .late { color: var(--error); opacity: 1; font-weight: 700; }
   /* Two lines at most, e.g. a message from hesent.me in a row. */
@@ -122,7 +123,7 @@ a { color: inherit; }
   #s-today .sheet { top: 404px; transition: transform .6s cubic-bezier(.6,0,.25,1); }
   #s-today.alldone .sheet { transform: translateY(110%); }
   .hero { padding: 12px 0 18px; border-bottom: 1.5px solid rgba(30,26,23,.16); margin-bottom: 18px; }
-  .hero .ht { font-weight: 820; font-size: 27px; line-height: 1.04; letter-spacing: -.035em; }
+  .hero .ht { font-weight: 820; font-size: 27px; line-height: 1.14; letter-spacing: -.015em; }
   .hero .t2 { margin-top: 6px; font-size: 14px; }
   .hero .acts { display: flex; gap: 8px; margin-top: 14px; }
   .poster { transition: opacity .35s, transform .45s cubic-bezier(.3,0,.2,1); }
@@ -155,7 +156,7 @@ a { color: inherit; }
   /* Prayer */
   #s-prayer .hi { left: 24px; top: 116px; font-size: 34px; }
   .pcard { position: absolute; left: 24px; right: 24px; top: 160px; }
-  .pcard .pt { font-weight: 820; font-size: 32px; line-height: 1.06; letter-spacing: -.04em; }
+  .pcard .pt { font-weight: 820; font-size: 32px; line-height: 1.14; letter-spacing: -.02em; }
   .pcard .pm { margin-top: 12px; font-size: 14.5px; font-weight: 600; opacity: .82; }
   .pcard { min-height: 210px; touch-action: pan-y; cursor: grab; }
   #pn { display: inline-block; }
@@ -216,7 +217,7 @@ a { color: inherit; }
   .capart { position: absolute; left: 0; top: 112px; width: 390px; height: 160px; color: var(--tomato); }
   .capart g.k { opacity: 0; transition: opacity .2s; }
   .capart g.k.on { opacity: 1; }
-  .entry { position: absolute; left: 24px; right: 24px; top: 290px; font-weight: 820; font-size: 32px; line-height: 1.04; letter-spacing: -.04em; min-height: 76px; }
+  .entry { position: absolute; left: 24px; right: 24px; top: 290px; font-weight: 820; font-size: 32px; line-height: 1.12; letter-spacing: -.02em; min-height: 76px; }
   .entry .ph { opacity: .3; }
   .caret { display: inline-block; width: 3px; height: .9em; background: var(--coral); vertical-align: -0.1em; margin-left: 2px; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
@@ -378,12 +379,51 @@ a { color: inherit; }
     *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
   }
 
+/* ===== The sheet rises =====
+   On a phone the sheet starts under the poster and rises to the top bar as soon as you scroll it, so the list gets
+   the whole screen. Pull down at its top (or tap its handle) and it drops back to show the poster. main.js sets .up;
+   .still skips the slide when a quiet redraw puts it back. */
+@media (max-width: 899px) {
+  .sheet { transition: top .5s cubic-bezier(.3,1.15,.4,1); }
+  #s-today .sheet { transition: top .5s cubic-bezier(.3,1.15,.4,1), transform .6s cubic-bezier(.6,0,.25,1); }
+  .sheet.up { top: 104px !important; }
+  .sheet.still { transition: none !important; }
+  .sheet::before { content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: rgba(30,26,23,.2); }
+}
+
+/* ===== Illustrations =====
+   The posters show the drawings from hesent.me and the ones made for each page (assets/art), not line art. */
+.pic { height: auto; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.pic[style*="height"] { width: auto; }
+/* An aside that must stay on one line (a person's page): cut off with an ellipsis rather than run into the name. */
+.oneline { right: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== People: what someone does, not how far along they are ===== */
+.quick { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 18px; }
+.ways { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 6px; }
+.ways .pl { display: inline-flex; align-items: center; gap: 6px; }
+.ways .pl svg { width: 15px; height: 15px; }
+.ways .pl.on { background: var(--tomato); }
+.give { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 0 0 18px; padding: 16px; border-radius: 20px; background: var(--paper-deep); }
+.give[hidden] { display: none; }
+.give-f { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 650; }
+.give-f input { height: 42px; padding: 0 14px; border-radius: 21px; border: 1.5px solid rgba(30,26,23,.25); background: var(--paper); font-size: 15.5px; font-weight: 600; outline: none; min-width: 0; }
+.give-f input:focus { border-color: var(--ink); }
+.give-how { grid-column: 1 / -1; display: flex; gap: 6px; }
+.give-how label { flex: 1; }
+.give-how input { position: absolute; opacity: 0; pointer-events: none; }
+.give-how span { display: flex; align-items: center; justify-content: center; height: 38px; border-radius: 19px; border: 1.5px solid rgba(30,26,23,.25); font-size: 14.5px; font-weight: 650; cursor: pointer; }
+.give-how input:checked + span { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.give-how input:focus-visible + span { outline: 2px solid var(--coral); outline-offset: 2px; }
+.give-acts { grid-column: 1 / -1; display: flex; gap: 8px; }
+.give > .give-f:only-of-type { grid-column: 1 / -1; }
+
 /* ===== Web additions ===== */
 /* Desktop-only pieces stay hidden on a phone. */
 .brand, .side-foot { display: none; }
 
 /* The capture text: a real field styled like the prototype's entry line. */
-.entry-input { position: absolute; left: 24px; right: 24px; top: 290px; height: 76px; padding: 0; border: 0; outline: none; background: transparent; color: var(--text); font-weight: 820; font-size: 32px; line-height: 1.04; letter-spacing: -.04em; }
+.entry-input { position: absolute; left: 24px; right: 24px; top: 290px; height: 76px; padding: 0; border: 0; outline: none; background: transparent; color: var(--text); font-weight: 820; font-size: 32px; line-height: 1.12; letter-spacing: -.02em; }
 .entry-input::placeholder { color: var(--text); opacity: .3; }
 #cap .chips { top: 430px; }
 #cap .guess { z-index: 2; }
@@ -435,7 +475,7 @@ a { color: inherit; }
 .led-f > span { font-size: 15px; font-weight: 650; color: var(--text); }
 .led-f input, .led-f textarea { width: 100%; padding: 12px 14px; border: 1.5px solid rgba(30,26,23,.22); border-radius: 14px; background: rgba(255,255,255,.3); font-size: 15.5px; line-height: 1.5; color: var(--text); outline: none; resize: vertical; }
 .led-f input:focus, .led-f textarea:focus { border-color: var(--tomato); }
-.led-f input#led-title { font-weight: 820; font-size: 26px; line-height: 1.1; letter-spacing: -.04em; }
+.led-f input#led-title { font-weight: 820; font-size: 26px; line-height: 1.1; letter-spacing: -.02em; }
 .led-f em { font-style: normal; font-size: 12.5px; opacity: .6; }
 .led-side { margin-top: 28px; padding-bottom: 32px; }
 .led-photos { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
@@ -459,7 +499,7 @@ a { color: inherit; }
 .led-sec { border: 1.5px solid rgba(30,26,23,.22); border-radius: 18px; background: rgba(255,255,255,.35); transition: border-color .2s; }
 .led-sec:focus-within { border-color: var(--tomato); }
 .led-sec-top { display: flex; align-items: center; gap: 8px; padding: 6px 6px 0 16px; }
-.led-sec-top input { flex: 1; min-width: 0; height: 44px; border: 0; background: none; outline: none; font-weight: 820; font-size: 20px; letter-spacing: -.035em; color: var(--text); }
+.led-sec-top input { flex: 1; min-width: 0; height: 44px; border: 0; background: none; outline: none; font-weight: 820; font-size: 20px; letter-spacing: -.015em; color: var(--text); }
 .led-sec-top .round { width: 36px; height: 36px; color: var(--tomato); opacity: .55; }
 .led-sec-top .round:hover { opacity: 1; }
 .led-sec-top .round svg { width: 16px; height: 16px; transform: rotate(45deg); }
@@ -661,7 +701,7 @@ a { color: inherit; }
   .tab, .tab.on { justify-content: flex-start; padding-left: 16px; }
   .tab:not(.on):hover { color: var(--text); }
   .tab .lb, .tab.on .lb { max-width: 160px; opacity: 1; margin-left: 12px; }
-  .brand { display: block; position: absolute; left: 24px; top: 34px; font-weight: 820; font-size: 28px; line-height: 1; letter-spacing: -.045em; color: var(--ink); }
+  .brand { display: block; position: absolute; left: 24px; top: 34px; font-weight: 820; font-size: 28px; line-height: 1; letter-spacing: -.02em; color: var(--ink); }
   #plus, #plus.x, #plus.gone, .phone.creampg #plus, .phone.creampg #plus.x { left: 12px; right: auto; top: 96px; width: calc(var(--nav) - 24px); height: 48px; border-radius: 24px;
     display: flex; justify-content: flex-start; gap: 12px; padding: 0 18px; background: var(--tomato); color: var(--cream); opacity: 1; pointer-events: auto; transform: none; font-weight: 650; font-size: 15px; }
   #plus:hover { background: #3A332D; }
@@ -701,7 +741,8 @@ a { color: inherit; }
   .scr > .ttl + .note { margin-top: 18px !important; }
   /* The task page sizes its title for a phone; on a desktop it has room to be a headline. */
   .pg > .abs > .disp { font-size: clamp(48px, 3.6vw, 80px) !important; max-width: 1200px; }
-  .scr > svg.abs, .pg > svg.abs, .poster > svg.abs { position: relative !important; left: auto !important; top: auto !important; margin: 24px 0 0 48px !important;
+  .scr > img.pic, .pg > img.pic, .poster > img.pic { width: auto !important; height: clamp(150px, 16vw, 230px) !important; }
+  .scr > svg.abs, .pg > svg.abs, .poster > svg.abs, .scr > img.pic, .pg > img.pic, .poster > img.pic { position: relative !important; left: auto !important; top: auto !important; margin: 24px 0 0 48px !important;
     grid-column: 3; grid-row: 1 / 4; align-self: end; }
 
   .sheet, .pg .sheet { position: relative !important; inset: auto !important; grid-column: 1 / -1; grid-row: 4; display: block; margin-top: 36px; overflow: visible;
@@ -723,7 +764,7 @@ a { color: inherit; }
   .card { min-width: 0; border: 1.5px solid rgba(30,26,23,.2); border-radius: 24px; padding: 22px 26px 20px; }
   .card > .sec:first-child { margin-bottom: 4px; }
   .card .hero:last-child { border-bottom: 0; margin-bottom: 0; }
-  .stat { margin-top: 12px; font-stretch: 75%; font-weight: 820; font-size: 60px; line-height: .9; letter-spacing: -.045em; color: var(--tomato); }
+  .stat { margin-top: 12px; font-stretch: 75%; font-weight: 820; font-size: 60px; line-height: .9; letter-spacing: -.02em; color: var(--tomato); }
   .meter { height: 10px; margin: 12px 0 8px; border-radius: 5px; background: rgba(30,26,23,.14); overflow: hidden; }
   .meter i { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
   .donecard { padding: 16px 0 6px; color: var(--accent); }

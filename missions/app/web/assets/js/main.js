@@ -197,6 +197,7 @@ function buildShell() {
   document.getElementById("plus").addEventListener("click", () => (isCaptureOpen() ? closeCapture() : openCapture()));
   initCapture();
   initCheckin();
+  initSheetLift(phone);
   shell = {
     phone, bar, screens: document.getElementById("screens"), pages: document.getElementById("pages"),
     kick: document.getElementById("kick"), back: document.getElementById("back"), gear: document.getElementById("gear"),
@@ -309,9 +310,11 @@ function render({ quiet = false } = {}) {
 
   // The tab underneath. A quiet redraw rebuilds it too, but nothing animates and scroll is kept.
   const scroll = keepScroll(shell.screens);
+  const tabUp = screenTab === tab && raised(shell.screens);
   shell.screens.innerHTML = `<section class="scr on" id="s-${tab}">${TABS[tab].build(ctx)}</section>`;
   ctx.root = shell.screens.firstElementChild;
   TABS[tab].init?.(ctx.root, ctx);
+  if (tabUp) raise(ctx.root, true);
   restoreScroll(shell.screens, scroll);
   if (screenTab !== tab) {
     screenTab = tab;
@@ -326,10 +329,12 @@ function render({ quiet = false } = {}) {
   if (isPage) {
     const P = PAGES[r.name];
     const isNew = !previous || previous.dataset.route !== location.hash;
+    const pageUp = !isNew && raised(shell.pages);
     shell.pages.innerHTML = `<section class="pg ${P.cream ? "cream" : ""}" data-route="${esc(location.hash)}">${P.build(ctx)}</section>`;
     const el = shell.pages.firstElementChild;
     ctx.root = el;
     P.init?.(el, ctx);
+    if (pageUp) raise(el, true);
     if (!isNew) restoreScroll(shell.pages, pageScroll);
     if (isNew && !quiet) {
       const [x, y] = lastPoint ?? [shell.phone.clientWidth / 2, 430];
@@ -352,11 +357,68 @@ function render({ quiet = false } = {}) {
 }
 
 function keepScroll(root) {
-  return [...root.querySelectorAll(".scroll, .scr, .pg")].map((el) => el.scrollTop);
+  return [...root.querySelectorAll(".scroll, .sheet, .scr, .pg")].map((el) => el.scrollTop);
 }
 // On a desktop the screen itself scrolls, so its own position is kept as well as its lists'.
 function restoreScroll(root, values) {
-  root.querySelectorAll(".scroll, .scr, .pg").forEach((el, i) => { if (values[i]) el.scrollTop = values[i]; });
+  root.querySelectorAll(".scroll, .sheet, .scr, .pg").forEach((el, i) => { if (values[i]) el.scrollTop = values[i]; });
+}
+
+// ---------- the sheet rises ------------------------------------------------------------------
+// On a phone the sheet starts under the poster. Scroll it (wheel, finger or keys) and it rises to the top bar;
+// pull down at its top, or tap its handle, and it drops back. See "The sheet rises" in app.css.
+
+function raised(root) {
+  return !!root.querySelector(".sheet.up");
+}
+
+/** Raises the sheet in a screen or page; `still` puts it up without the slide (a quiet redraw). */
+function raise(root, still = false) {
+  const sheet = root.querySelector(".sheet");
+  if (!sheet) return;
+  if (still) {
+    sheet.classList.add("still");
+    requestAnimationFrame(() => requestAnimationFrame(() => sheet.classList.remove("still")));
+  }
+  sheet.classList.add("up");
+}
+
+/** What scrolls inside a sheet: its list (.scroll) when it has one, otherwise the sheet itself. */
+function scrollerIn(sheet, target) {
+  return target.closest?.(".scroll") ?? sheet;
+}
+
+function initSheetLift(phone) {
+  const sheetAt = (target) => (sideQuery.matches ? null : target.closest?.(".scr .sheet, .pg .sheet"));
+  const up = (sheet, on) => sheet.classList.toggle("up", on);
+  phone.addEventListener("scroll", (e) => {
+    const sheet = e.target instanceof Element && sheetAt(e.target);
+    if (sheet && e.target.scrollTop > 6) up(sheet, true);
+  }, true);
+  phone.addEventListener("wheel", (e) => {
+    const sheet = sheetAt(e.target);
+    if (!sheet) return;
+    if (e.deltaY > 0) up(sheet, true);
+    else if (e.deltaY < 0 && scrollerIn(sheet, e.target).scrollTop <= 0) up(sheet, false);
+  }, { passive: true });
+  let start = null;
+  phone.addEventListener("touchstart", (e) => {
+    const sheet = sheetAt(e.target);
+    start = sheet ? { sheet, y: e.touches[0].clientY, top: scrollerIn(sheet, e.target).scrollTop } : null;
+  }, { passive: true });
+  phone.addEventListener("touchmove", (e) => {
+    if (!start) return;
+    const dy = e.touches[0].clientY - start.y;
+    if (dy < -12) up(start.sheet, true);
+    else if (dy > 48 && start.top <= 0) up(start.sheet, false);
+  }, { passive: true });
+  phone.addEventListener("touchend", () => { start = null; });
+  // The handle: the strip along the sheet's top edge.
+  phone.addEventListener("click", (e) => {
+    const sheet = sheetAt(e.target);
+    if (!sheet || e.target !== sheet) return;
+    if (e.clientY - sheet.getBoundingClientRect().top < 26) up(sheet, !sheet.classList.contains("up"));
+  });
 }
 
 /** The top bar, the + and the tab bar's colour, all from what's on screen. */

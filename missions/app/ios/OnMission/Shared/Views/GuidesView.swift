@@ -51,7 +51,7 @@ struct GuidesView: View {
             Hand("Read before you go").rise(0).at(24, 106)
             Lines("\(all.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine("Guides\n\(read) read so far").rise(2).at(24, 292)
-            BookArt(trigger: entry).at(190, 150)
+            Picture(.guides, height: 130).rise(3).at(192, 146)
         } sheet: {
             SheetScroll {
                 SectionHeader("Guides", count: all.count)
@@ -295,7 +295,7 @@ private struct MarkdownBlockView: View {
         switch block {
         case .heading(let level, let text):
             inline(text)
-                .type(level <= 2 ? TypeStyle(size: 26, wght: 820, tracking: -0.035, relativeTo: .title2)
+                .type(level <= 2 ? TypeStyle(size: 26, wght: 820, tracking: -0.015, relativeTo: .title2)
                                  : TypeStyle(size: 17, wght: 650, relativeTo: .headline))
                 .foregroundStyle(Palette.ink)
                 .padding(.top, level <= 2 ? 14 : 6)

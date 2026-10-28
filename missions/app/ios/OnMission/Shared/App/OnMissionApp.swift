@@ -181,7 +181,7 @@ struct RootView: View {
         if tasks.contains(where: { $0.isOverdue }) { out.insert(.tasks) }
         let today = Calendar.current.startOfDay(for: .now)
         let waiting = partners.contains { p in
-            (p.stageValue.isOpen && (p.nextFollowUp.map { $0 <= today } ?? false))
+            (p.nextFollowUp.map { $0 <= today } ?? false) || p.replyWaiting || (p.wantsToMeet && p.nextFollowUp == nil)
                 || (p.stageValue.countsAsSupport && p.thankedAt == nil)
         }
         if waiting { out.insert(.people) }

@@ -6,10 +6,12 @@ import { I, anim, draw } from "./motion.js";
 import { esc, toast } from "./ui.js";
 import { parseQuickTask, todayStr } from "./util.js";
 import { createTask, whenLabel } from "./pages/common.js";
+import { recordGiving } from "./pages/give.js";
+import { euroWhole } from "./pages/money.js";
 
 const KINDS = [
   { id: "task", label: "Task", field: "Due", tab: "tasks" },
-  { id: "person", label: "Person", field: "Stage", tab: "people" },
+  { id: "person", label: "Person", field: "Gives", tab: "people" },
   { id: "prayer", label: "Prayer", field: "Shows in", tab: "prayer" },
   { id: "note", label: "Note", field: "Link to", tab: "move" },
 ];
@@ -65,6 +67,29 @@ function stripped(text) {
   return text.replace(/^(@|person:|pray:|note:)\s*/i, "").trim();
 }
 
+const MONTHLY = /\b(?:a|per|each|every)\s+(?:month|maand)\b|\/\s*(?:month|maand|mnd|m)\b|\bmonthly\b|\bmaandelijks\b|\bp\/?m\b/i;
+
+/**
+ * A person with what they give, if the text says so: "Jan €50 a month", "Kerk 400 euro per maand", "Oma €200".
+ * Without an amount it is just a name.
+ */
+export function parsePerson(text) {
+  const t = stripped(text);
+  const amount = t.match(/€\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro\b|eur\b)/i);
+  if (!amount) return { name: t, cents: 0, monthly: false };
+  const cents = Math.round(parseFloat((amount[1] ?? amount[2]).replace(",", ".")) * 100);
+  const monthly = MONTHLY.test(t);
+  const name = t.replace(amount[0], " ").replace(MONTHLY, " ").replace(/\b(?:gives?|geeft|pledged|once|eenmalig)\b/gi, " ")
+    .replace(/\s+/g, " ").trim();
+  return { name, cents, monthly };
+}
+
+function personField(text) {
+  const g = parsePerson(text);
+  if (!g.cents) return "Add “€50 a month” if they do";
+  return g.monthly ? `${euroWhole(g.cents)} a month` : `${euroWhole(g.cents)} once`;
+}
+
 function paint(text) {
   const el = document.getElementById("cap");
   const k = KINDS.find((x) => x.id === kind);
@@ -83,7 +108,7 @@ function paint(text) {
   const parsed = kind === "task" ? parseQuickTask(text) : null;
   const value = {
     task: parsed?.dueDate ? whenLabel(parsed.dueDate) : "No date",
-    person: "To ask",
+    person: personField(text),
     prayer: "Prayer list",
     note: "Nothing yet",
   }[kind];
@@ -99,8 +124,9 @@ async function add() {
   if (kind === "task") {
     await createTask(parseQuickTask(text, todayStr()));
   } else if (kind === "person") {
-    const name = stripped(text);
-    await store.create("partners", { name, stage: "to-ask", currency: "EUR", prayer: false, newsletter: false, links: [] });
+    const g = parsePerson(text);
+    if (g.cents && g.name) await recordGiving(g.name, g.cents, g.monthly);
+    else await store.create("partners", { name: g.name, stage: "idea", currency: "EUR", prayer: false, newsletter: false, links: [] });
   } else if (kind === "prayer") {
     await store.create("notes", { title: text.slice(0, 60), kind: "prayer", body: stripped(text), area: null, pinned: false, public: false, links: [], prayedCount: 0 });
   } else {
@@ -108,7 +134,7 @@ async function add() {
   }
   input.value = "";
   closeCapture();
-  toast(kind === "person" ? `${stripped(text)} added to People` : `Added to ${k.label === "Prayer" ? "Prayer" : k.tab === "move" ? "Notes" : k.label + "s"}`);
+  toast(kind === "person" ? `${parsePerson(text).name} added to People` : `Added to ${k.label === "Prayer" ? "Prayer" : k.tab === "move" ? "Notes" : k.label + "s"}`);
   location.hash = kind === "note" ? "#/notes" : `#/${k.tab}`;
 }
 
