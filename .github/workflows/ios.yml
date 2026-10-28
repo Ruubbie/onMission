@@ -46,8 +46,9 @@ jobs:
 
   ipa:
     # Unsigned .ipa for sideloading (Sideloadly / AltStore sign it with your own Apple ID).
-    # Every push to main replaces the "latest" release with a fresh OnMission.ipa.
-    if: github.ref == 'refs/heads/main'
+    # Every push to main replaces the "latest" release with a fresh OnMission.ipa;
+    # on redesign/** branches it is attached to the run as a download instead.
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/redesign/')
     needs: build
     runs-on: macos-15
     permissions:
@@ -81,7 +82,14 @@ jobs:
           ls Payload/OnMission.app
           zip -qry -X OnMission.ipa Payload
           ls -lh OnMission.ipa
+      - name: Attach OnMission.ipa to the run
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OnMission-ipa
+          path: missions/app/ios/OnMission.ipa
       - name: Publish the "latest" release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
