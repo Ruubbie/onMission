@@ -84,7 +84,7 @@ enum TF {
 
     /// The font at one width and weight, built through the variation axes.
     static func uiFont(size: CGFloat, wdth: CGFloat = 100, wght: CGFloat) -> UIFont {
-        let key = "(size)|(wdth)|(wght)"
+        let key = "\(size)|\(wdth)|\(wght)"
         if let hit = cache[key] { return hit }
         let made: UIFont
         if let base = UIFont(name: archivoName, size: size) {

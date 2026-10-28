@@ -22,9 +22,6 @@ struct OnMissionApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                // Text follows the phone's text size up to one step above the default; the
-                // accessibility sizes would push the posters and rows off the screen.
-                .dynamicTypeSize(...DynamicTypeSize.xLarge)
         }
         .modelContainer(container)
     }
