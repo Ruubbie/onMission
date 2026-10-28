@@ -195,7 +195,7 @@
                                             <TextBlock Text="&#xE716;" FontFamily="{StaticResource IconFont}" FontWeight="Normal" VerticalAlignment="Center" Margin="0,0,10,0" />
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Stage}" FontWeight="Normal" FontSize="11.5" Foreground="{StaticResource Muted}" />
+                                                <TextBlock Text="{Binding Detail}" FontWeight="Normal" FontSize="11.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                         </DockPanel>
                                     </Button>

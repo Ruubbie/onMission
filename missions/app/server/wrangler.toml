@@ -1,5 +1,5 @@
 # Mission App API: sync + files for the iPhone app and the Windows helper.
-# Separate Worker from the newsletter site, same Cloudflare account.
+# Runs on Ruben's own server, behind nginx at api.hesent.me. Separate from the hesent.me site.
 name = "missionapp-api"
 main = "src/index.js"
 compatibility_date = "2025-06-01"
@@ -24,4 +24,3 @@ bucket_name = "missionapp-files"
 jurisdiction = "eu"
 
 # Secrets (npx wrangler secret put ...): SETUP_SECRET
-# Custom domain: add api.rubenonmission.nl under Settings > Domains & Routes after the first deploy.

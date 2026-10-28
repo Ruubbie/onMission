@@ -53,6 +53,8 @@ public partial class PartnersPage : UserControl, ISelectsEntity, ICreatesItems
         if (_vm.Selected?.Email is { Length: > 0 } mail) PageActions.Shell("mailto:" + mail);
     }
 
+    void Reply_Click(object sender, RoutedEventArgs e) => _vm.Reply();
+    void Answered_Click(object sender, RoutedEventArgs e) => _vm.MarkAnswered();
     void Contacted_Click(object sender, RoutedEventArgs e) { if (_vm.HasSelection) _vm.MarkContactedToday(); }
     void Thanked_Click(object sender, RoutedEventArgs e) { if (_vm.HasSelection) _vm.ThankedToday(); }
     void Log_Click(object sender, RoutedEventArgs e) => _vm.LogConversation();

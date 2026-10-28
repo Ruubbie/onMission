@@ -121,6 +121,8 @@
                                     </Button.Style>
                                 </Button>
                                 <TextBlock Text="{Binding AnsweredText}" FontWeight="Bold" VerticalAlignment="Center" />
+                                <CheckBox Content="Show on hesent.me" IsChecked="{Binding Public}" VerticalAlignment="Center" Margin="16,0,0,0"
+                                          ToolTip="Visitors see the title of this prayer note, not the text under it." />
                             </StackPanel>
                         </WrapPanel>
 

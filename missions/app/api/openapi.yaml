@@ -45,8 +45,8 @@ info:
       can add fields without a server change. Clients must ignore fields they don't know.
     - Errors: `{ "error": { "code": "string", "message": "human readable" } }`.
 servers:
-  - url: https://api.rubenonmission.nl
-    description: Production (Cloudflare Workers, EU data)
+  - url: https://api.hesent.me
+    description: Production (Ruben's own server)
   - url: http://localhost:8787
     description: Local dev (`npx wrangler dev`)
 security:
@@ -57,6 +57,8 @@ tags:
   - name: records
   - name: files
   - name: misc
+  - name: public
+    description: No login. Used by the public website hesent.me.
 
 paths:
   /v1/health:
@@ -356,12 +358,182 @@ paths:
                   records: { type: array, items: { $ref: "#/components/schemas/Record" } }
                   files: { type: array, items: { $ref: "#/components/schemas/FileInfo" } }
 
+  /v1/public/summary:
+    get:
+      tags: [public]
+      summary: What the public website (hesent.me) may show. No login.
+      description: |
+        Only what Ruben chose to share: the departure date, monthly support as a percentage
+        (never amounts or names), and prayer notes with `public: true`. Open prayers come first
+        (by `order`, then newest), then answered ones (newest first); at most 12 of each.
+        `letters`: the newest 5 online letters in `lang` (see /v1/public/letters), with the opening
+        paragraph of the body as plain text. Cached for 5 minutes.
+      security: []
+      parameters:
+        - name: tz
+          in: query
+          schema: { type: string, default: Europe/Amsterdam }
+          description: IANA time zone that decides "today"
+        - $ref: "#/components/parameters/Lang"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicSummary" }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /v1/public/letters:
+    get:
+      tags: [public]
+      summary: Every letter on hesent.me in one language, newest first. No login.
+      description: |
+        A newsletter is online when its status is `sent` and it has `public: true` (or an https `webUrl`).
+        It is listed in a language once it has a title in that language (`title` for nl, `titleEn` for en).
+        The list has no bodies; `photo` is the lead photo (the cover, for an arranged letter). Cached for 5 minutes.
+        One letter (/v1/public/letters/{key}) also carries `sections` and `layout` ({ cover, columns, footer }) when it is
+        arranged and its body still matches its sections in that language.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Lang"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [letters]
+                properties:
+                  letters: { type: array, items: { $ref: "#/components/schemas/PublicLetter" } }
+
+  /v1/public/letters/{key}:
+    get:
+      tags: [public]
+      summary: One whole letter, with the newer and older one. No login.
+      description: |
+        Only the part of `key` before the first dash is looked up (the issue number, or the first 8
+        characters of the id when there is no number), so old links keep working after a title change.
+      security: []
+      parameters:
+        - { name: key, in: path, required: true, schema: { type: string } }
+        - $ref: "#/components/parameters/Lang"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [letter, newer, older]
+                properties:
+                  letter: { $ref: "#/components/schemas/PublicLetter" }
+                  newer: { oneOf: [{ $ref: "#/components/schemas/PublicLetterLink" }, { type: "null" }] }
+                  older: { oneOf: [{ $ref: "#/components/schemas/PublicLetterLink" }, { type: "null" }] }
+                  support:
+                    type: object
+                    description: "For the funds piece: the monthly support as a percentage of the target, as in /v1/public/summary"
+                    properties:
+                      percentOfTarget: { type: [integer, "null"] }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/public/photos/{id}:
+    get:
+      tags: [public]
+      summary: A photo used by an online letter. No login.
+      description: Only files listed in `photos` of an online newsletter, and only images. Cached for a day.
+      security: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { $ref: "#/components/schemas/Uuid" } }
+      responses:
+        "200":
+          description: The image
+          content:
+            image/*: { schema: { type: string, format: binary } }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/public/subscribe:
+    post:
+      tags: [public]
+      summary: Newsletter sign-up from hesent.me. No login.
+      description: |
+        Creates a `partners` record on stage `idea` ("On my list") with `newsletter: true` and the tag
+        `website`, or switches `newsletter` on for an existing partner with the same email (name and stage
+        stay as they are). `lang` is the language the reader wants the letters in; it is kept as the tag
+        `lang-nl` or `lang-en` (replacing an earlier one). The answer is the same whether or not the email was known.
+        A filled-in `website` field (a hidden bot trap) gets a 201 and stores nothing.
+        Rate limit: 5 sign-ups per IP per hour, 200 in total per hour.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name: { type: string, maxLength: 80 }
+                email: { type: string, maxLength: 200 }
+                lang: { type: string, enum: [nl, en], default: nl, description: "Language for the letters" }
+                website: { type: string, description: "Bot trap: leave empty" }
+      responses:
+        "201":
+          description: Signed up
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /v1/public/message:
+    post:
+      tags: [public]
+      summary: A message to Ruben from the giving page on hesent.me. No login.
+      description: |
+        For someone who gives (or thinks about it) and wants to get to know Ruben. The message lands on the
+        `partners` record with the same email, or on a new one on stage `idea` ("On my list") with the tags
+        `website` and `lang-nl`/`lang-en`. It is added to the top of `siteMessages` (the newest 20 are kept) and,
+        with the date, to the top of `notes`; `replyWaiting` is set to true, `nextFollowUp` to today (an earlier
+        planned day stays), `nextStep` to "Reply to their message from hesent.me" and `lastContactAt` to today.
+        An existing partner keeps their name, stage and newsletter setting.
+        A filled-in `website` field (a hidden bot trap) gets a 201 and stores nothing.
+        Rate limit: 5 messages per IP per hour; 200 public sign-ups and messages together per hour.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, message]
+              properties:
+                name: { type: string, maxLength: 80 }
+                email: { type: string, maxLength: 200 }
+                message: { type: string, maxLength: 2000, description: "Line breaks are kept; more than one empty line in a row becomes one" }
+                lang: { type: string, enum: [nl, en], default: nl, description: "The language of the page it was sent from" }
+                website: { type: string, description: "Bot trap: leave empty" }
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
 components:
   securitySchemes:
     bearer:
       type: http
       scheme: bearer
       description: Device token from /v1/auth/login
+
+  parameters:
+    Lang:
+      name: lang
+      in: query
+      schema: { type: string, enum: [nl, en], default: nl }
+      description: The language of the letters
 
   responses:
     Error:
@@ -544,6 +716,18 @@ components:
             nextFollowUp: { $ref: "#/components/schemas/Date" }
             thankedAt: { $ref: "#/components/schemas/Date" }
             notes: { type: string }
+            replyWaiting: { type: boolean, description: "A message from hesent.me waits for an answer. Set by the server; the apps clear it when Ruben has replied" }
+            siteMessages:
+              type: array
+              description: Messages sent from the giving page on hesent.me, newest first (at most 20). Written by the server only; the apps send them back untouched.
+              items:
+                type: object
+                required: [at, name, text]
+                properties:
+                  at: { type: string, format: date-time }
+                  name: { type: string, description: "The name they filled in with this message" }
+                  text: { type: string }
+                  lang: { type: string, enum: [nl, en] }
     BudgetEntry:
       allOf:
         - $ref: "#/components/schemas/Common"
@@ -602,6 +786,7 @@ components:
             pinned: { type: boolean }
             kind: { type: string, enum: [note, prayer, journal, meeting, idea], default: note }
             answeredAt: { $ref: "#/components/schemas/Date", description: "For prayer notes" }
+            public: { type: boolean, default: false, description: "Prayer notes only: show it on hesent.me (GET /v1/public/summary shows the title, never the body)" }
     Document:
       allOf:
         - $ref: "#/components/schemas/Common"
@@ -660,9 +845,44 @@ components:
             status: { type: string, enum: [idea, draft, ready, sent] }
             plannedDate: { $ref: "#/components/schemas/Date" }
             sentAt: { $ref: "#/components/schemas/Timestamp" }
-            body: { type: string, description: Markdown draft }
+            body: { type: string, description: "Markdown, in Dutch. ## starts a section" }
             webUrl: { type: string }
             notes: { type: string }
+            public: { type: boolean, description: "Show on hesent.me once sent" }
+            place: { type: string, example: "Queenstown, NZ" }
+            subtitle: { type: string }
+            note: { type: string, description: "A short side note or quote, placed beside a photo" }
+            nextTime: { type: string, description: "What the next letter is about" }
+            funds: { type: string, description: "Optional: Ruben's own line about the support, on the funds piece (a standard line otherwise)" }
+            prayers: { type: array, items: { type: string } }
+            titleEn: { type: string }
+            subtitleEn: { type: string }
+            bodyEn: { type: string, description: "Markdown, in English" }
+            noteEn: { type: string }
+            nextTimeEn: { type: string }
+            fundsEn: { type: string }
+            prayersEn: { type: array, items: { type: string } }
+            photos: { type: array, items: { $ref: "#/components/schemas/LetterPhoto" } }
+            sections:
+              type: array
+              description: "The letter as sections (written in the web app). body and bodyEn are these joined as Markdown (## title, then the text); once a body no longer matches, that language is laid out automatically again"
+              items:
+                type: object
+                required: [id]
+                properties:
+                  id: { type: string }
+                  title: { type: [string, "null"] }
+                  titleEn: { type: [string, "null"] }
+                  body: { type: string }
+                  bodyEn: { type: string }
+            layout:
+              type: [object, "null"]
+              description: "Where each piece goes on hesent.me (the web app Arrange page). Pieces are s:<section id>, p:<photo id>, prayers, note, next (next time and the sign-up) and funds (the support so far and Give). Pieces not named go where they would go by themselves (next and funds: the footer); pieces under off stay off the page. A layout without footer gets one, with next moved into it. Null: automatic, with next and funds in the footer"
+              properties:
+                cover: { type: [string, "null"], description: "The photo id that leads in the header" }
+                columns: { type: array, maxItems: 3, items: { type: array, items: { type: string } } }
+                footer: { type: array, items: { type: string }, description: "The pieces that close the letter, side by side under the columns" }
+                off: { type: array, items: { type: string } }
     Setting:
       type: object
       description: |
@@ -676,6 +896,10 @@ components:
         supportMinimumMonthlyCents: { type: integer, example: 75000 }
         currency: { type: string, example: EUR }
         nzdPerEur: { type: number, example: 1.85 }
+        givingIban: { type: [string, "null"], description: "Shown on hesent.me under Give (GET /v1/public/summary). Empty: the site says the details follow soon." }
+        givingHolder: { type: [string, "null"], description: "Account holder name shown with the IBAN" }
+        givingReference: { type: [string, "null"], description: "Reference to put on the transfer" }
+        givingUrl: { type: [string, "null"], description: "https link to give online; anything else is not shown" }
         value: { description: "Free value for other keys" }
 
     SyncRequest:
@@ -777,3 +1001,94 @@ components:
             total: { type: integer }
             missingFile: { type: integer }
             expiringWithin180Days: { type: integer }
+
+    PublicSummary:
+      type: object
+      required: [today, departureDate, daysToDeparture, support, giving, prayers, letters]
+      properties:
+        today: { $ref: "#/components/schemas/Date" }
+        departureDate: { type: [string, "null"], format: date }
+        daysToDeparture: { type: [integer, "null"], description: "Negative once departed" }
+        support:
+          type: object
+          properties:
+            percentOfTarget: { type: [integer, "null"], description: "Committed + giving partners as a whole percentage of the monthly target; null without a target" }
+        giving:
+          type: [object, "null"]
+          description: "The main settings' giving fields; null while givingIban is empty"
+          required: [iban, holder, reference, url]
+          properties:
+            iban: { type: string }
+            holder: { type: [string, "null"] }
+            reference: { type: [string, "null"] }
+            url: { type: [string, "null"], description: "Only an https link" }
+        prayers:
+          type: array
+          items:
+            type: object
+            required: [text, addedAt, answeredAt]
+            properties:
+              text: { type: string, description: "The prayer note title (max 280 characters)" }
+              addedAt: { $ref: "#/components/schemas/Date" }
+              answeredAt: { type: [string, "null"], format: date }
+        letters:
+          type: array
+          items:
+            type: object
+            required: [key, title, sentAt, webUrl, excerpt]
+            properties:
+              key: { type: string, description: "The letter's address on hesent.me, for /v1/public/letters/{key}" }
+              title: { type: string, description: "Max 140 characters" }
+              sentAt: { $ref: "#/components/schemas/Date" }
+              webUrl: { type: [string, "null"], description: "An outside copy of the letter (https), if there is one" }
+              excerpt: { type: [string, "null"], description: "The first paragraph of the body as plain text, max ~320 characters" }
+    PublicLetter:
+      type: object
+      description: One online letter in one language (see /v1/public/letters).
+      required: [key, number, title, subtitle, place, sentAt, webUrl, excerpt]
+      properties:
+        key: { type: string, example: "3-een-nieuw-hoofdstuk" }
+        number: { type: [integer, "null"] }
+        title: { type: string }
+        subtitle: { type: [string, "null"] }
+        place: { type: [string, "null"], example: "Queenstown, NZ" }
+        sentAt: { $ref: "#/components/schemas/Date" }
+        webUrl: { type: [string, "null"] }
+        excerpt: { type: [string, "null"] }
+        body: { type: string, description: "Markdown. Only on /v1/public/letters/{key}" }
+        note: { type: [string, "null"], description: "A short side note or quote. Only on the letter itself" }
+        nextTime: { type: [string, "null"], description: "What the next letter is about. Only on the letter itself" }
+        funds: { type: [string, "null"], description: "Ruben's own line on the funds piece; null for the standard line. Only on the letter itself" }
+        prayers: { type: array, items: { type: string }, description: "Only on the letter itself" }
+        photos:
+          type: array
+          description: "Only on the letter itself; the first is the lead photo"
+          items: { $ref: "#/components/schemas/PublicPhoto" }
+        photo:
+          description: "Only in the list: the lead photo"
+          oneOf: [{ $ref: "#/components/schemas/PublicPhoto" }, { type: "null" }]
+    PublicLetterLink:
+      type: object
+      required: [key, title, sentAt]
+      properties:
+        key: { type: string }
+        title: { type: string }
+        sentAt: { $ref: "#/components/schemas/Date" }
+    PublicPhoto:
+      type: object
+      required: [url, caption, width, height]
+      properties:
+        url: { type: string, description: "Path on this server, /v1/public/photos/{id}" }
+        caption: { type: [string, "null"] }
+        width: { type: [integer, "null"] }
+        height: { type: [integer, "null"] }
+    LetterPhoto:
+      type: object
+      description: A photo in a newsletter. The bytes are a file (PUT /v1/files/{id}).
+      required: [id]
+      properties:
+        id: { $ref: "#/components/schemas/Uuid" }
+        caption: { type: string }
+        captionEn: { type: string }
+        width: { type: integer }
+        height: { type: integer }

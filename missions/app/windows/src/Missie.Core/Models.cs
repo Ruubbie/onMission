@@ -135,7 +135,64 @@ public sealed class Partner : Entity
     public string? Notes { get; set; }
 
     [JsonIgnore] public bool CountsAsSupport => Stage is "committed" or "giving";
+
+    /// <summary>The next step the server sets with a message from hesent.me.</summary>
+    public const string ReplyStep = "Reply to their message from hesent.me";
+
+    // replyWaiting and siteMessages are written by the server (POST /v1/public/message) and kept in Extra.
+    /// <summary>A message from hesent.me waits for an answer.</summary>
+    [JsonIgnore] public bool ReplyWaiting => Extra is { } x && x.TryGetValue("replyWaiting", out var v) && v.ValueKind == JsonValueKind.True;
+
+    /// <summary>Messages from the giving page on hesent.me, newest first.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<SiteMessage> SiteMessages
+    {
+        get
+        {
+            if (Extra is not { } x || !x.TryGetValue("siteMessages", out var arr) || arr.ValueKind != JsonValueKind.Array) return [];
+            var list = new List<SiteMessage>();
+            foreach (var m in arr.EnumerateArray())
+            {
+                if (m.ValueKind != JsonValueKind.Object) continue;
+                string Str(string k) => m.TryGetProperty(k, out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                if (!DateTimeOffset.TryParse(Str("at"), out var at) || Str("text").Length == 0) continue;
+                list.Add(new SiteMessage(at, Str("name"), Str("text"), Str("lang") == "en" ? "en" : "nl"));
+            }
+            return list;
+        }
+    }
+
+    /// <summary>The message is answered: no longer waiting, and the reply follow-up the server set goes.</summary>
+    public void MarkAnswered(DateOnly today)
+    {
+        LastContactAt = today;
+        if (Extra is not { } x) return;
+        x.Remove("replyWaiting");
+        if (x.TryGetValue("nextStep", out var step) && step.ValueKind == JsonValueKind.String && step.GetString() == ReplyStep)
+        {
+            x.Remove("nextStep");
+            NextFollowUp = null;
+        }
+        if (x.Count == 0) Extra = null;
+    }
+
+    /// <summary>A mailto link back, in the language they wrote in, with their newest message quoted.</summary>
+    public string? ReplyMailto()
+    {
+        if (string.IsNullOrWhiteSpace(Email)) return null;
+        var m = SiteMessages.FirstOrDefault();
+        if (m is null) return "mailto:" + Email.Trim();
+        var en = m.Lang == "en";
+        var first = (m.Name.Length > 0 ? m.Name : Name).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        var quote = string.Join("\n", m.Text.Split('\n').Select(l => "> " + l));
+        var body = $"{(en ? "Hi" : "Hoi")} {first},\n\n\n\n{(en ? "You wrote on hesent.me" : "Je schreef op hesent.me")}:\n{quote}";
+        var subject = en ? "Your message on hesent.me" : "Je bericht op hesent.me";
+        return $"mailto:{Email.Trim()}?subject={Uri.EscapeDataString(subject)}&body={Uri.EscapeDataString(body)}";
+    }
 }
+
+/// <summary>A message someone sent from the giving page on hesent.me (one entry of Partner siteMessages).</summary>
+public sealed record SiteMessage(DateTimeOffset At, string Name, string Text, string Lang);
 
 /// <summary>A gift actually received (for thank-yous and the real monthly total).</summary>
 public sealed class Gift : Entity
@@ -216,6 +273,8 @@ public sealed class Note : Entity
     /// <summary>note, prayer, journal, meeting, idea.</summary>
     public string? Kind { get; set; } = "note";
     public DateOnly? AnsweredAt { get; set; }
+    /// <summary>Prayer notes only: shown on hesent.me (the title, never the body). Null and false both mean private.</summary>
+    public bool? Public { get; set; }
 }
 
 /// <summary>An important document you must not lose. The file lives at /v1/files/{fileId} and in the local vault.</summary>

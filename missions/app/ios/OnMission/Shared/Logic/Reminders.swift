@@ -2,7 +2,8 @@ import Foundation
 import SwiftData
 import UserNotifications
 
-/// Local notifications at 9:00 for due tasks, partner follow-ups, partner birthdays and expiring documents.
+/// Local notifications at 9:00 for due tasks, partner follow-ups, partner birthdays and expiring documents,
+/// and right away for a new message from hesent.me.
 /// Rebuilt after every sync and when the app opens, so they always match your data.
 enum Reminders {
     static func requestPermission() async -> Bool {
@@ -57,6 +58,25 @@ enum Reminders {
         }
 
         center.removeAllPendingNotificationRequests()
+
+        // A new message from hesent.me: right away, once (not only at 9:00 on the follow-up day).
+        let defaults = UserDefaults.standard
+        var told = defaults.stringArray(forKey: toldKey) ?? []
+        let recent = now.addingTimeInterval(-3 * 86_400)
+        for p in Store.all(Partner.self, ctx) where p.replyWaiting {
+            guard let m = p.siteMessages.first, m.at > recent else { continue }
+            let key = "\(p.id)/\(TimeFormat.string(m.at))"
+            guard !told.contains(key) else { continue }
+            told.append(key)
+            let content = UNMutableNotificationContent()
+            content.title = "\(m.name.isEmpty ? p.displayTitle : m.name) wrote to you on hesent.me"
+            content.body = m.text
+            content.sound = .default
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            try? await center.add(UNNotificationRequest(identifier: "message-\(key)", content: content, trigger: trigger))
+        }
+        defaults.set(Array(told.suffix(200)), forKey: toldKey)
+
         // iOS keeps at most 64 pending; schedule the nearest ones.
         for item in items.sorted(by: { $0.date < $1.date }).prefix(60) {
             let content = UNMutableNotificationContent()
@@ -68,6 +88,9 @@ enum Reminders {
             try? await center.add(UNNotificationRequest(identifier: item.id, content: content, trigger: trigger))
         }
     }
+
+    /// The hesent.me messages already notified, as "partnerId/sentAt".
+    private static let toldKey = "notifiedSiteMessages"
 
     private static func nineAM(_ day: Date) -> Date? {
         Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: day)

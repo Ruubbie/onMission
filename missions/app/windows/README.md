@@ -12,7 +12,7 @@ The desktop helper for bigger PC work: bulk-editing partners and budget, writing
 ## First run
 
 - The app opens with starter data (checklists from the visa plan, budget lines, packing list, document placeholders).
-- To sync: **Settings** → server URL (default `https://api.92-5-233-11.sslip.io`; change it to `https://api.rubenonmission.nl` once that domain is live) → log in with the same email and password as on the iPhone. The first time ever, use **Create account** with the server's setup secret.
+- To sync: **Settings** → server URL (default `https://api.92-5-233-11.sslip.io`; change it to `https://api.hesent.me`) → log in with the same email and password as on the iPhone. The first time ever, use **Create account** with the server's setup secret.
 - After that it syncs on start, every 5 minutes, and when you click the sync pill (or press F5).
 
 ## What's in it
