@@ -152,7 +152,7 @@ struct VaultPage: View {
                 .transition(.opacity)
                 .rise(2)
                 .at(24, 292)
-            Picture(.vault, height: 180).rise(3).at(208, 118)
+            Picture(.vault, height: 164).rise(3).at(208, 118)
             AllInStamp(play: stampPlay)
                 .opacity(allIn ? 1 : 0)
                 .at(206 + 124 - 36, 116 + 192 - 36)
@@ -299,7 +299,7 @@ struct DocumentsPage: View {
             Hand("Every paper").rise(0).at(24, 106)
             Lines("\(docs.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine(soon > 0 ? "\(soon) expiring\nsoon" : "\(docs.filter(\.hasFile).count) with a file").rise(2).at(24, 292)
-            Picture(.vault, height: 180).rise(3).at(208, 118)
+            Picture(.vault, height: 164).rise(3).at(208, 118)
         } sheet: {
             if docs.count > 6 {
                 SearchField(text: $search, prompt: "Search \(docs.count) papers")

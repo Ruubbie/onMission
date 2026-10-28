@@ -113,7 +113,7 @@ struct PackingPage: View {
                 .animation(.easeOut(duration: 0.7), value: packedKg)
                 .rise(2)
                 .at(24, 272)
-            Picture(.packing, height: 160)
+            Picture(.packing, height: 142)
                 .pop(wobble, to: 1.04)
                 .rise(3)
                 .background {

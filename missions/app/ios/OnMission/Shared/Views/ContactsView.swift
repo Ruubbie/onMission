@@ -19,7 +19,7 @@ struct ContactsPage: View {
             Hand("Who to call").rise(0).at(24, 106)
             Lines("\(contacts.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine("Offices and people\nto reach").rise(2).at(24, 292)
-            Picture(.contacts, height: 140).rise(3).at(228, 146)
+            Picture(.contacts, height: 157).rise(3).at(228, 146)
         } sheet: {
             if contacts.count > 6 {
                 SearchField(text: $search, prompt: "Search \(contacts.count) contacts")

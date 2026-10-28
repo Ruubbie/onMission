@@ -51,7 +51,7 @@ struct GuidesView: View {
             Hand("Read before you go").rise(0).at(24, 106)
             Lines("\(all.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine("Guides\n\(read) read so far").rise(2).at(24, 292)
-            Picture(.guides, height: 130).rise(3).at(192, 146)
+            Picture(.guides, height: 112).rise(3).at(192, 146)
         } sheet: {
             SheetScroll {
                 SectionHeader("Guides", count: all.count)

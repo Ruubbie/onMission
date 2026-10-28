@@ -59,7 +59,7 @@ struct BudgetPage: View {
             }
             .id(mode)
             .transition(.asymmetric(insertion: .offset(y: 14).combined(with: .opacity), removal: .offset(y: -14).combined(with: .opacity)))
-            Picture(.budget, height: 156).rise(3).at(228, 208)
+            Picture(.budget, height: 132).rise(3).at(228, 208)
         } sheet: {
             Segments(items: segments, selection: $mode)
             SheetScroll {
@@ -343,7 +343,7 @@ struct SellingPage: View {
                 .rise(1)
                 .at(20, 140)
             CapLine("Sold so far\n\(listed) \(listed == 1 ? "thing" : "things") listed").rise(2).at(24, 252)
-            Picture(.selling, height: 129).rise(3).at(224, 196)
+            Picture(.selling, height: 121).rise(3).at(224, 196)
         } sheet: {
             SheetScroll {
                 SectionHeader("On the market", count: market.count)

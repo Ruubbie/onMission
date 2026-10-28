@@ -138,7 +138,7 @@ struct PeopleView: View {
             CapLine("of \(euros(settings.supportTargetMonthlyCents)) a month · \(Int((fraction * 100).rounded()))%", size: 18)
                 .rise(2).at(24, 238)
             // What friends give: letters, a coffee, flowers, a heart. Not a trail to climb.
-            Picture(.people, height: 153).rise(3).at(214, 236)
+            Picture(.people, height: 163).rise(3).at(214, 236)
         } sheet: {
             SheetScroll {
                 HStack(spacing: 8) {
@@ -357,7 +357,7 @@ struct PartnerPage: View {
                 .frame(width: 350, alignment: .leading)
                 .rise(1)
                 .at(20, 140)
-            Picture(.partner, height: 128).rise(3).at(256, 250)
+            Picture(.partner, height: 137).rise(3).at(256, 250)
         } sheet: {
             SheetScroll { sheet }
         }
