@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-// Form controls for the detail pages, on the cream sheet: rows divided by tomato rules, labels in ink,
-// values and actions in tomato. The system pop-ups (menus, the calendar) still open from them.
+// Form controls for the detail pages, on the paper sheet: rows divided by fine ink rules, labels in ink,
+// values in bold ink. The system pop-ups (menus, the calendar) still open from them.
 
 // MARK: - Blocks and rows
 
@@ -121,7 +121,7 @@ struct ValueRow: View {
     }
 }
 
-/// A tappable row in tomato with an icon (Attach a file, Record a gift…).
+/// A tappable row with an icon (Attach a file, Record a gift…).
 struct ActionRow: View {
     let title: String
     var icon: Icon = .chev
@@ -135,8 +135,8 @@ struct ActionRow: View {
             action()
         } label: {
             FieldRow {
-                AnimatedIcon(icon, size: 20, trigger: play).foregroundStyle(Palette.tomato)
-                Text(title).type(.bodyBold).foregroundStyle(role == .destructive ? Palette.tomatoInk : Palette.ink)
+                AnimatedIcon(icon, size: 20, trigger: play).foregroundStyle(role == .destructive ? Palette.error : Palette.ink)
+                Text(title).type(.bodyBold).foregroundStyle(role == .destructive ? Palette.error : Palette.ink)
                 Spacer(minLength: 4)
             }
             .contentShape(Rectangle())
@@ -147,8 +147,8 @@ struct ActionRow: View {
 
 // MARK: - Toggle
 
-/// A tomato track with a cream knob. Set once on the root, so every Toggle uses it.
-struct TomatoToggleStyle: ToggleStyle {
+/// A sage track with a paper knob when on, an ink outline when off. Set once on the root, so every Toggle uses it.
+struct PaperToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button {
             configuration.isOn.toggle()
@@ -159,10 +159,10 @@ struct TomatoToggleStyle: ToggleStyle {
                     .foregroundStyle(Palette.ink)
                 Spacer(minLength: 0)
                 ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Capsule().fill(configuration.isOn ? Palette.tomato : Color.clear)
-                    Capsule().strokeBorder(configuration.isOn ? Palette.tomato : Palette.chipRule, lineWidth: 1.6)
+                    Capsule().fill(configuration.isOn ? Palette.sageDeep : Color.clear)
+                    Capsule().strokeBorder(configuration.isOn ? Palette.sageDeep : Palette.chipRule, lineWidth: Metrics.outline)
                     Circle()
-                        .fill(configuration.isOn ? Palette.cream : Palette.ink.opacity(0.35))
+                        .fill(configuration.isOn ? Palette.paper : Palette.ink.opacity(0.35))
                         .frame(width: 22, height: 22)
                         .padding(.horizontal, 4)
                 }
@@ -178,8 +178,8 @@ struct TomatoToggleStyle: ToggleStyle {
     }
 }
 
-extension ToggleStyle where Self == TomatoToggleStyle {
-    static var tomato: TomatoToggleStyle { TomatoToggleStyle() }
+extension ToggleStyle where Self == PaperToggleStyle {
+    static var paper: PaperToggleStyle { PaperToggleStyle() }
 }
 
 /// A toggle as a row.
@@ -193,13 +193,13 @@ struct ToggleRow: View {
     }
 
     var body: some View {
-        FieldRow { Toggle(title, isOn: $isOn).toggleStyle(.tomato) }
+        FieldRow { Toggle(title, isOn: $isOn).toggleStyle(.paper) }
     }
 }
 
 // MARK: - Select
 
-/// Label on the left, the current value in tomato on the right; tapping opens the system menu.
+/// Label on the left, the current value in bold ink on the right; tapping opens the system menu.
 struct SelectRow<V: Hashable, Content: View>: View {
     let title: String
     @Binding var selection: V
@@ -216,26 +216,26 @@ struct SelectRow<V: Hashable, Content: View>: View {
             Picker(title, selection: $selection) { content }
                 .pickerStyle(.menu)
                 .labelsHidden()
-                .tint(Palette.tomatoInk)
+                .tint(Palette.ink)
         }
     }
 }
 
 // MARK: - Dates
 
-/// "Fri 9 Oct" in tomato with a calendar icon. Tapping opens the system calendar.
+/// "Fri 9 Oct" with a calendar icon, in an outlined capsule. Tapping opens the system calendar.
 struct DateField: View {
     @Binding var date: Date
     var components: DatePickerComponents = .date
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(text).type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body)).foregroundStyle(Palette.tomatoInk).lineLimit(1)
-            AnimatedIcon(.calendar, size: 17).foregroundStyle(Palette.tomato)
+            Text(text).type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body)).foregroundStyle(Palette.ink).lineLimit(1)
+            AnimatedIcon(.calendar, size: 17).foregroundStyle(Palette.ink)
         }
         .padding(.horizontal, 12)
         .frame(minHeight: 36)
-        .overlay(Capsule().strokeBorder(Palette.chipRule, lineWidth: 1.6))
+        .overlay(Capsule().strokeBorder(Palette.chipRule, lineWidth: Metrics.outline))
         // The real (invisible) picker on top takes the tap and opens the calendar.
         .overlay {
             DatePicker("", selection: $date, displayedComponents: components)
@@ -308,12 +308,12 @@ struct QuickDates: View {
                         withAnimation(Motion.indicator.rm) { date = target }
                     } label: {
                         Text(option.title)
-                            .type(TypeStyle(size: 14, wght: 800, relativeTo: .subheadline))
-                            .foregroundStyle(on ? Palette.cream : Palette.ink)
+                            .type(TypeStyle(size: 14, wght: 650, relativeTo: .subheadline))
+                            .foregroundStyle(on ? Palette.paper : Palette.ink)
                             .padding(.horizontal, 12)
                             .frame(minHeight: 36)
                             .background {
-                                if on { Capsule().fill(Palette.tomato) } else { Capsule().strokeBorder(Palette.chipRule, lineWidth: 1.6) }
+                                if on { Capsule().fill(Palette.ink) } else { Capsule().strokeBorder(Palette.chipRule, lineWidth: Metrics.outline) }
                             }
                     }
                     .buttonStyle(.plain)
@@ -344,8 +344,8 @@ struct MoneyRow: View {
     var body: some View {
         LabeledRow("\(title) (\(symbol))") {
             TextField("0", value: amount, format: .number)
-                .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                .foregroundStyle(Palette.tomatoInk)
+                .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.trailing)
                 .keyboardType(.decimalPad)
                 .frame(maxWidth: 140)
@@ -371,7 +371,7 @@ struct StepperRow: View {
             HStack(spacing: 6) {
                 step(.minus, enabled: value > range.lowerBound) { value -= 1 }
                 Text("\(value)")
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
                     .monospacedDigit()
                     .frame(minWidth: 28)
                 step(.plus, enabled: value < range.upperBound) { value += 1 }
@@ -382,9 +382,9 @@ struct StepperRow: View {
     private func step(_ icon: Icon, enabled: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             AnimatedIcon(icon, size: 16)
-                .foregroundStyle(enabled ? Palette.tomato : Palette.inkFaint)
+                .foregroundStyle(enabled ? Palette.ink : Palette.inkFaint)
                 .frame(width: 36, height: 36)
-                .overlay(Circle().strokeBorder(Palette.chipRule, lineWidth: 1.6))
+                .overlay(Circle().strokeBorder(Palette.chipRule, lineWidth: Metrics.outline))
                 .contentShape(Circle())
         }
         .buttonStyle(.press)
@@ -392,14 +392,14 @@ struct StepperRow: View {
     }
 }
 
-/// The page's own title, edited in place (big, condensed).
+/// The page's own title, edited in place (big and tight, like the letter title on the web).
 struct TitleField: View {
     let placeholder: String
     @Binding var text: String
 
     var body: some View {
         TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkFaint), axis: .vertical)
-            .type(TypeStyle(size: 26, wdth: 78, wght: 800, relativeTo: .title))
+            .type(TypeStyle(size: 26, wght: 820, tracking: -0.04, relativeTo: .title))
             .foregroundStyle(Palette.ink)
             .lineLimit(1...4)
             .padding(.vertical, 6)

@@ -62,9 +62,9 @@ struct GuidesView: View {
                             if g.progress >= 1 {
                                 HStack(spacing: 4) {
                                     AnimatedIcon(.check, size: 15)
-                                    Text("Read").type(TypeStyle(size: 13, wght: 800, relativeTo: .footnote))
+                                    Text("Read").type(TypeStyle(size: 13, wght: 650, relativeTo: .footnote))
                                 }
-                                .foregroundStyle(Palette.tomatoInk)
+                                .foregroundStyle(Palette.ink)
                             } else {
                                 GuideBar(progress: g.progress, delay: 0.5 + Double(index) * 0.09)
                             }
@@ -87,10 +87,10 @@ private struct GuideBar: View {
 
     var body: some View {
         Capsule()
-            .fill(Palette.tomato.opacity(0.18))
+            .fill(Palette.ink.opacity(0.18))
             .frame(width: 46, height: 6)
             .overlay(alignment: .leading) {
-                Capsule().fill(Palette.tomato).frame(width: 46 * shown, height: 6)
+                Capsule().fill(Palette.sageDeep).frame(width: 46 * shown, height: 6)
             }
             .onAppear {
                 Motion.after(delay) { withAnimation(.curve(0.2, 0.85, 0.25, 1, 0.8).rm) { shown = progress } }
@@ -110,8 +110,8 @@ private struct BookArt: View {
                 let p = seg(t, 1.1, 1.1, Ease(0.5, 0, 0.3, 1))
                 let turning = p > 0 && p < 1
                 ZStack(alignment: .topLeading) {
-                    SVGShape(d: Art.bookRight).fill(Palette.tomato)
-                    SVGShape(d: Art.bookRight).stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineJoin: .round))
+                    SVGShape(d: Art.bookRight).fill(Palette.flood)
+                    SVGShape(d: Art.bookRight).stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineJoin: .round))
                 }
                 .frame(width: 180, height: 160, alignment: .topLeading)
                 .scaleEffect(x: 1 - 2 * min(p / 0.85, 1), y: 1, anchor: UnitPoint(x: 0.5, y: 85.0 / 160))
@@ -123,14 +123,14 @@ private struct BookArt: View {
     }
 }
 
-// MARK: - The reader (a cream page)
+// MARK: - The reader (a paper page)
 
 private struct ReaderMetrics: PreferenceKey {
     static let defaultValue: [CGFloat] = [0, 0]
     static func reduce(value: inout [CGFloat], nextValue: () -> [CGFloat]) { value = nextValue() }
 }
 
-/// A guide on cream: its title big in tomato, the text, and Mark as read. A thin bar under the top bar
+/// A guide on paper: its title big in ink, the text, and Mark as read. A thin bar under the top bar
 /// tracks how far you've scrolled.
 struct GuideReader: View {
     let guide: GuidesView.Guide
@@ -147,7 +147,7 @@ struct GuideReader: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     Lines(wrapLines(guide.title, .disp(62), width: 342, maxLines: 4), .disp(62), lineHeight: 0.9, minScale: 0.6)
-                        .foregroundStyle(Palette.tomato)
+                        .foregroundStyle(Palette.ink)
                         .padding(.top, 14)
                         .accessibilityAddTraits(.isHeader)
                     MarkdownView(markdown: guide.text, skipTitle: true)
@@ -162,9 +162,9 @@ struct GuideReader: View {
                     ShareLink(item: guide.text) {
                         HStack(spacing: 8) {
                             AnimatedIcon(.share, size: 17)
-                            Text("Share this guide").type(.buttonSmall)
+                            Text("Share this guide").type(.label)
                         }
-                        .foregroundStyle(Palette.tomatoInk)
+                        .foregroundStyle(Palette.ink)
                         .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .padding(.top, 8)
@@ -195,13 +195,13 @@ struct GuideReader: View {
         }
         .overlay(alignment: .top) {
             ZStack(alignment: .bottom) {
-                Palette.cream
+                Paper()
                 Capsule()
-                    .fill(Palette.tomato.opacity(0.15))
+                    .fill(Palette.ink.opacity(0.15))
                     .frame(height: 3)
                     .overlay(alignment: .leading) {
                         GeometryReader { g in
-                            Capsule().fill(Palette.tomato).frame(width: g.size.width * scrolled)
+                            Capsule().fill(Palette.sageDeep).frame(width: g.size.width * scrolled)
                         }
                     }
                     .padding(.horizontal, Metrics.gutter)
@@ -211,7 +211,7 @@ struct GuideReader: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
-        .background(Palette.cream)
+        .paper()
         .foregroundStyle(Palette.ink)
     }
 
@@ -295,9 +295,9 @@ private struct MarkdownBlockView: View {
         switch block {
         case .heading(let level, let text):
             inline(text)
-                .type(level <= 2 ? TypeStyle(size: 26, wdth: 78, wght: 800, relativeTo: .title2)
-                                 : TypeStyle(size: 17, wght: 800, relativeTo: .headline))
-                .foregroundStyle(level <= 2 ? Palette.tomato : Palette.ink)
+                .type(level <= 2 ? TypeStyle(size: 26, wght: 820, tracking: -0.035, relativeTo: .title2)
+                                 : TypeStyle(size: 17, wght: 650, relativeTo: .headline))
+                .foregroundStyle(Palette.ink)
                 .padding(.top, level <= 2 ? 14 : 6)
                 .accessibilityAddTraits(.isHeader)
         case .paragraph(let text):
@@ -307,7 +307,7 @@ private struct MarkdownBlockView: View {
                 .foregroundStyle(Palette.ink)
         case .bullet(let text, let indent):
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Circle().fill(Palette.tomato).frame(width: 6, height: 6).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                Circle().fill(Palette.sageDeep).frame(width: 6, height: 6).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
                 inline(text).type(.body).lineSpacing(4).foregroundStyle(Palette.ink)
             }
             .padding(.leading, CGFloat(indent) * 16)
@@ -315,9 +315,9 @@ private struct MarkdownBlockView: View {
             HStack(alignment: .top, spacing: 16) {
                 Text(number)
                     .type(.disp(46))
-                    .foregroundStyle(Palette.tomato)
+                    .foregroundStyle(Palette.ink)
                     .frame(minWidth: 30, alignment: .leading)
-                    .offset(y: FontMetrics.shift(.archivo, size: 46, lineHeight: 0.85))
+                    .offset(y: FontMetrics.shift(size: 46, lineHeight: 0.85))
                 inline(text).type(.body).lineSpacing(4).foregroundStyle(Palette.ink.opacity(0.85))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -327,7 +327,7 @@ private struct MarkdownBlockView: View {
         case .quote(let text):
             Text(text)
                 .type(.hand(30))
-                .foregroundStyle(Palette.tomato)
+                .foregroundStyle(Palette.sageDeep)
                 .rotationEffect(.degrees(-2))
                 .padding(.vertical, 10)
         case .rule:

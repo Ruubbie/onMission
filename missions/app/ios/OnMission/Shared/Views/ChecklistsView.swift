@@ -65,7 +65,7 @@ struct ChecklistsPage: View {
                 .contentTransition(.numericText(value: Double(all)))
                 .animation(.easeOut(duration: 0.48), value: all)
                 .lineLimit(1)
-                .offset(y: FontMetrics.shift(.archivo, size: size, lineHeight: 0.78) + (184 - size) * 0.5)
+                .offset(y: FontMetrics.shift(size: size, lineHeight: 0.78) + (184 - size) * 0.5)
                 .rise(1)
                 .at(18, 136)
             CapLine("Things left\non \(active.count) list\(active.count == 1 ? "" : "s")").rise(2).at(24, 292)
@@ -164,7 +164,7 @@ private struct ChecklistBox: View {
                     RowText(title: list.displayTitle,
                             subtitle: n == 0 ? "No items yet" : (full ? "All done" : "\(done) of \(n) done"))
                     AnimatedIcon(.chev, size: 20, trigger: chev)
-                        .foregroundStyle(Palette.tomato)
+                        .foregroundStyle(Palette.ink)
                         .rotationEffect(.degrees(open ? 90 : 0))
                 }
                 .padding(.vertical, 12)
@@ -179,7 +179,7 @@ private struct ChecklistBox: View {
                         ChecklistItemRow(item: item)
                     }
                     HStack(spacing: 12) {
-                        AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                        AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.ink).frame(width: 22)
                         TextField("", text: $newText, prompt: Text("Add an item").foregroundStyle(Palette.inkFaint))
                             .type(.bodyBold)
                             .submitLabel(.done)
@@ -191,7 +191,7 @@ private struct ChecklistBox: View {
                             Text("Edit list").type(.buttonSmall)
                             AnimatedIcon(.arrow, size: 15)
                         }
-                        .foregroundStyle(Palette.tomatoInk)
+                        .foregroundStyle(Palette.ink)
                         .frame(minHeight: 40)
                         .contentShape(Rectangle())
                     }
@@ -289,7 +289,7 @@ struct ChecklistDetail: View {
                     }
             }
             FieldRow {
-                AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.tomato).frame(width: 22)
+                AnimatedIcon(.plus, size: 18).foregroundStyle(Palette.ink).frame(width: 22)
                 TextField("", text: $newText, prompt: Text("Add an item").foregroundStyle(Palette.inkFaint))
                     .type(.bodyBold)
                     .submitLabel(.done)

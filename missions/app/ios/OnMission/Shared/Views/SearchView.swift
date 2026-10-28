@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Find anything (a cream page from Move): tasks, people, papers, notes, prayers, lists, letters.
+/// Find anything (a paper page from Move): tasks, people, papers, notes, prayers, lists, letters.
 struct SearchPage: View {
     @Environment(\.modelContext) private var ctx
     @Environment(Router.self) private var router
@@ -22,10 +22,10 @@ struct SearchPage: View {
     var body: some View {
         let found = results
         let typing = query.trimmingCharacters(in: .whitespaces).count >= 2
-        CreamPage {
+        PaperPage {
             Text("Find anything")
                 .type(.disp(62))
-                .foregroundStyle(Palette.tomato)
+                .foregroundStyle(Palette.ink)
                 .padding(.top, 10)
                 .accessibilityAddTraits(.isHeader)
             SearchField(text: $query, prompt: "Passport, Anna, insurance…")
@@ -34,7 +34,7 @@ struct SearchPage: View {
             if !typing {
                 Text("Tasks, people, papers, notes, prayers, checklists and letters.")
                     .type(.hand(26))
-                    .foregroundStyle(Palette.tomato)
+                    .foregroundStyle(Palette.sageDeep)
                     .rotationEffect(.degrees(-2))
                     .padding(.top, 14)
             } else if found.isEmpty {

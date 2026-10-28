@@ -15,7 +15,7 @@ struct OnMissionApp: App {
     }()
 
     init() {
-        // Fonts first: TF checks once whether Archivo and Caveat are available.
+        // Fonts first: TF checks once whether Archivo is available.
         FontLoader.registerBundledFonts()
     }
 
@@ -27,7 +27,7 @@ struct OnMissionApp: App {
     }
 }
 
-/// Registers every .ttf in the app bundle, so Archivo and Caveat work without listing them in Info.plist.
+/// Registers every .ttf in the app bundle, so Archivo works without listing it in Info.plist.
 enum FontLoader {
     static func registerBundledFonts() {
         var urls = Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? []
@@ -93,10 +93,10 @@ struct RootView: View {
         .environment(router)
         .environment(captureCenter)
         .environment(\.colorScheme, .light)
-        .toggleStyle(.tomato)
-        .tint(Palette.tomato)
-        .preferredColorScheme(router.statusLight ? .dark : .light)
-        .animation(.easeOut(duration: 0.3), value: router.statusLight)
+        .toggleStyle(.paper)
+        .tint(Palette.ink)
+        // Paper everywhere, so the status bar stays dark.
+        .preferredColorScheme(.light)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             router.keyboardShown = true
         }
@@ -244,7 +244,7 @@ struct RootView: View {
 
 // MARK: - Top bar
 
-/// Back, the kicker, Settings (on Move) and room for the +. Kicker and buttons are cream on tomato, ink on cream pages.
+/// Back, the kicker, Settings (on Move) and room for the +, all in ink.
 struct TopBar: View {
     @Environment(Router.self) private var router
     @Environment(\.chrome) private var chrome
@@ -273,19 +273,18 @@ struct TopBar: View {
             // The + sits here.
             Color.clear.frame(width: 44, height: 44)
         }
-        .foregroundStyle(router.topInk)
+        .foregroundStyle(Palette.ink)
         .padding(.leading, hasBack ? 16 : Metrics.gutter)
         .padding(.trailing, 18)
         .frame(height: Metrics.topBar)
         .padding(.top, chrome.top - 3)
         .animation(.curve(0.3, 1.2, 0.4, 1, 0.42).rm, value: hasBack)
         .animation(.easeOut(duration: 0.3), value: kicker)
-        .animation(.easeOut(duration: 0.3), value: router.topInk)
     }
 }
 
-/// The + (Capture): a cream circle with a tomato plus; it turns into a tomato × while Capture is open,
-/// and hides on pushed pages and during the check-in.
+/// The + (Capture): an ink circle with a paper plus; while Capture is open it turns into a bare ink ×,
+/// and it hides on pushed pages and during the check-in.
 struct PlusButton: View {
     @Environment(Router.self) private var router
     @Environment(\.chrome) private var chrome
@@ -301,9 +300,9 @@ struct PlusButton: View {
                 router.captureOpen.toggle()
             } label: {
                 AnimatedIcon(.plus, size: 20, trigger: play)
-                    .foregroundStyle(open ? Palette.cream : Palette.tomato)
+                    .foregroundStyle(open ? Palette.ink : Palette.paper)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(open ? Palette.tomato : Palette.cream))
+                    .background(Circle().fill(open ? Color.clear : Palette.ink))
                     .rotationEffect(.degrees(open ? 135 : 0))
                     .contentShape(Circle())
             }
@@ -337,12 +336,12 @@ struct TabBar: View {
 
         init(_ mode: BarMode) {
             switch mode {
-            case .cream:
-                bar = Palette.cream; ink = Palette.ink.opacity(0.6); pill = Palette.tomato; on = Palette.cream
+            case .paper:
+                bar = Palette.paper; ink = Palette.ink.opacity(0.6); pill = Palette.ink; on = Palette.paper
             case .flood:
-                bar = Palette.tomato; ink = Palette.creamFaint; pill = Palette.cream; on = Palette.tomato
+                bar = Palette.paperDeep; ink = Palette.ink.opacity(0.6); pill = Palette.ink; on = Palette.paperDeep
             case .gold:
-                bar = Palette.marigold; ink = Palette.ink.opacity(0.6); pill = Palette.ink; on = Palette.marigold
+                bar = Palette.ochre; ink = Palette.ink.opacity(0.6); pill = Palette.ink; on = Palette.ochre
             }
         }
     }
@@ -554,7 +553,8 @@ struct PageView: View {
 
 // MARK: - Answered
 
-/// A marigold circle floods out of the Answered button: the words by hand, a sunrise draws itself.
+/// An ochre circle floods out of the Answered button: the words as an aside, a sunrise draws itself and a
+/// pink flower from hesent.me sits in the grass.
 struct AnsweredLayer: View {
     let flood: AnsweredFlood
     @Environment(\.chrome) private var chrome
@@ -577,6 +577,7 @@ struct AnsweredLayer: View {
                         .rise(1)
                         .offset(x: 24, y: 214 - 104)
                     LineArt(drawing: Art.sunrise, ink: .onGold, delay: 0.26).offset(x: 95, y: 318 - 104)
+                    Picture(.flowerPink, height: 46, tilt: -16).rise(2).offset(x: 292, y: 452 - 104)
                     CapLine("Saved in Prayer & thanks", size: 18)
                         .frame(width: 390)
                         .rise(2)
@@ -586,7 +587,7 @@ struct AnsweredLayer: View {
             }
             .foregroundStyle(Palette.ink)
             .frame(width: geo.size.width, height: geo.size.height)
-            .background(Palette.marigold)
+            .background(Palette.ochre)
             .environment(\.entry, shown)
             .environment(\.entryDelay, 0.16)
             .mask {

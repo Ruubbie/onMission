@@ -47,7 +47,7 @@ extension PartnerStage {
 }
 
 extension PartnerCategory {
-    /// "close friend" for the handwritten aside.
+    /// "close friend" for the aside.
     var aside: String {
         switch self {
         case .a: "close friend"
@@ -81,6 +81,29 @@ extension Partner {
         Automations.partnerThanked(self, ctx)
     }
 
+    /// The next step the server sets with a message from hesent.me.
+    static let replyStep = "Reply to their message from hesent.me"
+
+    /// The hesent.me message is answered: no longer waiting on you, and the reply follow-up goes.
+    func markAnswered() {
+        replyWaiting = false
+        lastContact = Calendar.current.startOfDay(for: .now)
+        if nextStep == Partner.replyStep {
+            nextStep = ""
+            nextFollowUp = nil
+        }
+    }
+
+    /// An email back, in the language they wrote in, with their newest message quoted.
+    var replyURL: URL? {
+        guard let m = siteMessages.first else { return PhoneLinks.email(email) }
+        let en = m.lang == "en"
+        let first = (m.name.isEmpty ? name : m.name).split(separator: " ").first.map(String.init) ?? ""
+        let quote = m.text.split(separator: "\n", omittingEmptySubsequences: false).map { "> \($0)" }.joined(separator: "\n")
+        let body = "\(en ? "Hi" : "Hoi") \(first),\n\n\n\n\(en ? "You wrote on hesent.me" : "Je schreef op hesent.me"):\n\(quote)"
+        return PhoneLinks.email(email, subject: en ? "Your message on hesent.me" : "Je bericht op hesent.me", body: body)
+    }
+
     /// "Gives €50 a month", "Thinking it over", "To ask".
     var line: String {
         if monthlyCents > 0 && stageValue.countsAsSupport { return "Gives \(Money.text(monthlyCents, currency)) a month" }
@@ -99,7 +122,7 @@ extension Partner {
 
 // MARK: - People tab
 
-/// People (handoff §5): monthly support big on tomato, a walker up the trail to the percentage;
+/// People (handoff §5): monthly support big on the poster, a walker up the trail to the percentage;
 /// the people waiting on you, each with one action.
 struct PeopleView: View {
     @Environment(\.modelContext) private var ctx
@@ -144,10 +167,10 @@ struct PeopleView: View {
         .captureContext(.partner)
     }
 
-    /// The "Needs you" group: follow-ups due and thanks owed.
+    /// The "Needs you" group: messages from hesent.me first, then thanks owed and follow-ups due.
     private func waitingList(_ i: Insights) -> [Partner] {
         var out: [Partner] = []
-        for p in i.toThank + i.followUps where !out.contains(where: { $0.id == p.id }) {
+        for p in i.messages + i.toThank + i.followUps where !out.contains(where: { $0.id == p.id }) {
             out.append(p)
         }
         return out
@@ -169,8 +192,8 @@ private struct TrailArt: View {
                 ZStack(alignment: .topLeading) {
                     SVGShape(d: Art.trailPath)
                         .trim(from: 0, to: f)
-                        .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
-                    Circle().fill(Palette.cream)
+                        .stroke(Palette.ink, style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
+                    Circle().fill(Palette.ink)
                         .frame(width: 13, height: 13)
                         .position(spot.point)
                 }
@@ -182,19 +205,21 @@ private struct TrailArt: View {
     }
 }
 
-/// A person waiting on you, with the one thing to do: Say thanks, Check in, or Ask.
+/// A person waiting on you, with the one thing to do: Reply, Say thanks, Check in, or Ask.
 private struct WaitingRow: View {
     @Environment(\.modelContext) private var ctx
     @Environment(Router.self) private var router
+    @Environment(\.openURL) private var openURL
     let partner: Partner
     let gifts: [Gift]
     var rule = true
     @State private var thanked = false
     @State private var heart = 0
 
-    private enum Action { case thanks, checkIn, ask }
+    private enum Action { case reply, thanks, checkIn, ask }
 
     private var action: Action {
+        if partner.replyWaiting { return .reply }
         if partner.needsThanks(gifts) { return .thanks }
         if partner.stageValue == .asked || partner.stageValue == .thinking { return .checkIn }
         return .ask
@@ -203,6 +228,9 @@ private struct WaitingRow: View {
     private var subtitle: String {
         if thanked { return "Thanked just now" }
         switch action {
+        case .reply:
+            guard let m = partner.siteMessages.first else { return "Wrote to you on hesent.me" }
+            return "Wrote \(relativeDate(m.at)) on hesent.me: “\(m.text.replacingOccurrences(of: "\n", with: " "))”"
         case .thanks:
             if let g = gifts.filter({ $0.partnerID == partner.id && $0.thankedAt == nil }).max(by: { $0.date < $1.date }) {
                 return "Gave \(Money.text(g.amountCents, g.currency)) \(relativeDate(g.date))"
@@ -225,10 +253,12 @@ private struct WaitingRow: View {
     var body: some View {
         Row(rule: rule) {
             Avatar(name: partner.displayTitle)
-            RowText(title: partner.displayTitle, subtitle: subtitle, late: late)
+            RowText(title: partner.displayTitle, subtitle: subtitle, late: late || action == .reply)
                 .contentShape(Rectangle())
                 .onTapGesture { router.push(.partner(partner)) }
             switch action {
+            case .reply:
+                ActionButton(title: "Reply", style: .filledSmall) { reply() }
             case .thanks:
                 Button { sayThanks() } label: {
                     ButtonLabel(title: thanked ? "Thanked" : "Say thanks", icon: thanked ? .heart : nil, trigger: heart, small: true)
@@ -248,6 +278,16 @@ private struct WaitingRow: View {
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    /// Opens the email back and counts the message as answered.
+    private func reply() {
+        if let url = partner.replyURL { openURL(url) } else { router.push(.partner(partner)); return }
+        let p = partner
+        router.showToast("Marked \(p.firstName.isEmpty ? p.displayTitle : p.firstName)'s message as answered")
+        Motion.after(0.7) {
+            withAnimation(Motion.fold.rm) { p.markAnswered() }
+        }
     }
 
     private func sayThanks() {
@@ -304,9 +344,9 @@ struct PartnerPage: View {
 
     @ViewBuilder
     private var sheet: some View {
-        SectionHeader("Next", count: dueLabel, color: Palette.tomatoInk)
+        SectionHeader("Next", count: dueLabel)
         hero
-            .id(partner.stage + (partner.needsThanks(gifts) ? "-thanks" : ""))
+            .id(partner.stage + (partner.needsThanks(gifts) ? "-thanks" : "") + (partner.replyWaiting ? "-reply" : ""))
             .transition(.asymmetric(insertion: .offset(y: 22).combined(with: .opacity),
                                     removal: .offset(x: 40).combined(with: .opacity)))
         let story = storyItems
@@ -324,6 +364,7 @@ struct PartnerPage: View {
     }
 
     private var dueLabel: String {
+        if partner.replyWaiting, let m = partner.siteMessages.first { return "Sent on hesent.me \(relativeDate(m.at))" }
         guard partner.stageValue.isOpen, let d = partner.nextFollowUp else { return "" }
         let cal = Calendar.current
         let today = cal.startOfDay(for: .now)
@@ -334,8 +375,31 @@ struct PartnerPage: View {
         return shortDate(d)
     }
 
+    /// A message from hesent.me waiting for an answer comes before whatever the stage asks for.
     @ViewBuilder
     private var hero: some View {
+        if partner.replyWaiting, let m = partner.siteMessages.first {
+            HeroCard(title: "\(who.capitalized) wrote to you", subtitle: "“\(m.text)”") {
+                if let url = partner.replyURL {
+                    ActionButton(title: "Reply", icon: .mail) {
+                        openURL(url)
+                        answered()
+                    }
+                }
+                ActionButton(title: "Mark answered", style: .outlined) { answered() }
+            }
+        } else {
+            stageHero
+        }
+    }
+
+    private func answered() {
+        router.showToast("Marked as answered")
+        Motion.after(0.5) { withAnimation(Motion.arrive.rm) { partner.markAnswered() } }
+    }
+
+    @ViewBuilder
+    private var stageHero: some View {
         let thanks = partner.needsThanks(gifts)
         let late = (partner.nextFollowUp.map { $0 < Calendar.current.startOfDay(for: .now) } ?? false) && partner.stageValue.isOpen
         switch partner.stageValue {
@@ -420,6 +484,10 @@ struct PartnerPage: View {
                                  subtitle: g.recurring ? "Monthly gift" : "One-off gift" + (g.thankedAt != nil ? " · thanked" : ""),
                                  when: whenText(g.date), date: g.date))
         }
+        for m in partner.siteMessages {
+            out.append(StoryItem(title: "Wrote on hesent.me", subtitle: m.text.replacingOccurrences(of: "\n", with: " "),
+                                 when: whenText(m.at), date: m.at))
+        }
         if let last = partner.lastContact {
             out.append(StoryItem(title: "Last contact", subtitle: partner.stageValue.title, when: whenText(last), date: last))
         }
@@ -466,7 +534,7 @@ struct PartnerPage: View {
             ForEach(MessageTemplate.suggested(for: partner)) { t in
                 ShareLink(item: t.text(for: partner)) {
                     FieldRow {
-                        AnimatedIcon(.templates, size: 20).foregroundStyle(Palette.tomato)
+                        AnimatedIcon(.templates, size: 20).foregroundStyle(Palette.ink)
                         Text(t.title).type(.bodyBold).foregroundStyle(Palette.ink)
                         Spacer(minLength: 0)
                     }
@@ -476,7 +544,7 @@ struct PartnerPage: View {
                 ForEach(MessageTemplate.allCases) { t in ShareLink(t.title, item: t.text(for: partner)) }
             } label: {
                 FieldRow {
-                    AnimatedIcon(.more, size: 20).foregroundStyle(Palette.tomato)
+                    AnimatedIcon(.more, size: 20).foregroundStyle(Palette.ink)
                     Text("All templates").type(.bodyBold).foregroundStyle(Palette.ink)
                     Spacer(minLength: 0)
                 }
@@ -542,24 +610,24 @@ private struct StagePath: View {
         let out = stage == .declined || stage == .paused
         ZStack(alignment: .topLeading) {
             SVGShape(d: "M40 26 L350 26")
-                .stroke(Palette.cream, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: [1, 8]))
+                .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round, dash: [1, 8]))
             Path { p in
                 p.move(to: CGPoint(x: 40, y: 26))
                 p.addLine(to: CGPoint(x: x(pos), y: 26))
             }
-            .stroke(Palette.cream, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+            .stroke(Palette.ink, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
             ForEach(0..<6, id: \.self) { i in
                 let reached = x(CGFloat(i)) <= x(pos) + 0.5
                 Circle()
-                    .fill(reached ? Palette.cream : Palette.tomato)
-                    .overlay(Circle().stroke(Palette.cream, lineWidth: 2.4))
+                    .fill(reached ? Palette.ink : Palette.paperDeep)
+                    .overlay(Circle().stroke(Palette.ink, lineWidth: 2.4))
                     .frame(width: 11, height: 11)
                     .position(x: x(CGFloat(i)), y: 26)
                 Button { onPick(PartnerStage.path[i]) } label: {
-                    Text(PartnerStage.pathLabels[i].uppercased())
-                        // Narrower than the kicker: the stops are 62pt apart and THINKING is the longest.
-                        .type(TypeStyle(size: 11.5, wdth: 80, wght: 800, tracking: 0.06, relativeTo: nil))
-                        .foregroundStyle(Palette.cream)
+                    Text(PartnerStage.pathLabels[i])
+                        // Small: the stops are 62pt apart and Thinking is the longest.
+                        .type(TypeStyle(size: 12, wght: 650, relativeTo: nil))
+                        .foregroundStyle(Palette.ink)
                         .opacity(i == stage.pathIndex ? 1 : 0.5)
                         .fixedSize()
                         .frame(width: 60, height: 44)
@@ -571,7 +639,7 @@ private struct StagePath: View {
                 .accessibilityAddTraits(i == stage.pathIndex ? .isSelected : [])
             }
             Circle()
-                .stroke(Palette.cream, lineWidth: 2)
+                .stroke(Palette.ink, lineWidth: 2)
                 .frame(width: 22, height: 22)
                 .keyframeAnimator(initialValue: HaloValue(), trigger: halo) { view, v in
                     view.scaleEffect(v.scale).opacity(v.opacity)
@@ -586,7 +654,7 @@ private struct StagePath: View {
                     }
                 }
                 .position(x: x(pos), y: 26)
-            Circle().fill(Palette.cream)
+            Circle().fill(Palette.ink)
                 .frame(width: 22, height: 22)
                 .position(x: x(pos), y: 26)
                 .accessibilityHidden(true)
@@ -661,7 +729,8 @@ struct AllPeoplePage: View {
             Hand("Your people").rise(0).at(24, 106)
             Lines("\(partners.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine("\(monthly.count) give monthly\n\(euros(together)) together").rise(2).at(24, 292)
-            LineArt(drawing: Art.group).at(206, 146)
+            // The traveller waving to everyone who sends him.
+            Picture(.travellerWave, height: 232).rise(3).at(264, 110)
         } sheet: {
             Pills(items: items, selection: $category)
             SearchField(text: $search, prompt: "Search \(partners.count) people")
@@ -765,7 +834,7 @@ private struct RecordGiftSheet: View {
     @State private var recurring = false
 
     var body: some View {
-        CreamSheet(title: "Gift from \(partner.displayTitle)", save: "Save", saveDisabled: cents <= 0, onSave: {
+        PaperSheet(title: "Gift from \(partner.displayTitle)", save: "Save", saveDisabled: cents <= 0, onSave: {
             Automations.recordGift(for: partner, cents: cents, recurring: recurring, ctx)
             dismiss()
         }) {
@@ -789,7 +858,7 @@ struct BulkAddPartners: View {
     @State private var category: PartnerCategory = .b
 
     var body: some View {
-        CreamSheet(title: "Add names", save: "Add", onSave: add) {
+        PaperSheet(title: "Add names", save: "Add", onSave: add) {
             FormBlock("One name per line",
                       footer: "Family, church, friends, school, work, sport, neighbours, YWAM, your phone contacts. Write everyone down; you don't decide for someone else whether they'll give.") {
                 TextEditor(text: $text)
@@ -797,7 +866,7 @@ struct BulkAddPartners: View {
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 240)
                     .padding(8)
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.chipRule, lineWidth: 1.6))
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.chipRule, lineWidth: Metrics.outline))
                     .padding(.vertical, 8)
             }
             SelectRow("Category for all", selection: $category) {

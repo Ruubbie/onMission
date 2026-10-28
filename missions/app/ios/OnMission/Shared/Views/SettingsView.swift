@@ -23,7 +23,8 @@ struct SettingsView: View {
                 .rise(1)
                 .at(18, 134)
             CapLine("Leaving for\n\(s.destination)").rise(2).at(24, 272)
-            LineArt(drawing: Art.planeLoop).at(236, 266)
+            // The mountains he is leaving for, in ink, from hesent.me.
+            Picture(.mountains, height: 66).rise(3).at(206, 294)
         } sheet: {
             SheetScroll {
                 if let s = settingsList.first {
@@ -49,10 +50,10 @@ struct SettingsView: View {
                 FormBlock("About") {
                     Text("You do this with God. This app helps you plan, remember and follow up; it doesn't speak for Him.")
                         .type(.hand(24))
-                        .foregroundStyle(Palette.tomato)
+                        .foregroundStyle(Palette.sageDeep)
                         .rotationEffect(.degrees(-1.5))
                         .padding(.vertical, 12)
-                    Text("Icons: Lucide (ISC licence), with motion from lucide-animated by pqoqubbw (MIT). Type: Archivo and Caveat (SIL Open Font License).")
+                    Text("Icons: Lucide (ISC licence), with motion from lucide-animated by pqoqubbw (MIT). Type: Archivo (SIL Open Font License). Drawings of the traveller, his suitcase and the mountains from hesent.me.")
                         .type(.small)
                         .foregroundStyle(Palette.inkFaint)
                         .fixedSize(horizontal: false, vertical: true)
@@ -102,16 +103,16 @@ private struct MissionBlock: View {
             LabeledRow("Your first name") {
                 TextField("", text: Binding(get: { settings.ownerName }, set: { settings.ownerName = $0 }),
                           prompt: Text("For the greeting").foregroundStyle(Palette.inkFaint))
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                    .foregroundStyle(Palette.tomatoInk)
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                    .foregroundStyle(Palette.ink)
                     .multilineTextAlignment(.trailing)
                     .textContentType(.givenName)
             }
             LabeledRow("Destination") {
                 TextField("", text: Binding(get: { settings.destination }, set: { settings.destination = $0 }),
                           prompt: Text("Queenstown, NZ").foregroundStyle(Palette.inkFaint))
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                    .foregroundStyle(Palette.tomatoInk)
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                    .foregroundStyle(Palette.ink)
                     .multilineTextAlignment(.trailing)
             }
             DateRow(title: "Leaving", date: $settings.departureDate)
@@ -120,8 +121,8 @@ private struct MissionBlock: View {
             MoneyRow(title: "Average monthly gift", cents: $settings.averageGiftCents)
             LabeledRow("NZ dollars per euro") {
                 TextField("1.85", value: $settings.nzdPerEur, format: .number)
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                    .foregroundStyle(Palette.tomatoInk)
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                    .foregroundStyle(Palette.ink)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.decimalPad)
                     .frame(maxWidth: 100)
@@ -155,13 +156,13 @@ private struct SyncRow: View {
                 }
                 .rotationEffect(.degrees(sync.isSyncing ? 360 : 0))
                 .animation(sync.isSyncing ? .linear(duration: 0.9).repeatForever(autoreverses: false) : .default, value: sync.isSyncing)
-                .foregroundStyle(Palette.tomato)
+                .foregroundStyle(Palette.ink)
                 .frame(width: 20, height: 20)
                 Text("Sync").type(.bodyBold).foregroundStyle(Palette.ink)
                 Spacer(minLength: 8)
                 Text(status)
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                    .foregroundStyle(sync.lastError != nil ? Palette.tomatoInk : Palette.inkSoft)
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                    .foregroundStyle(sync.lastError != nil ? Palette.error : Palette.inkSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .pop(pop, to: 1.12)
@@ -229,7 +230,7 @@ private struct AccountBlock: View {
                     .textContentType(.password)
             }
             if let message {
-                Text(message).type(.small).foregroundStyle(Palette.tomatoInk).padding(.top, 8)
+                Text(message).type(.small).foregroundStyle(Palette.error).padding(.top, 8)
             }
             Button {
                 Task { await logIn() }
@@ -247,12 +248,12 @@ private struct AccountBlock: View {
         FormBlock("Account", footer: "The app syncs when it opens and every 2 minutes while it's open.") {
             LabeledRow("Signed in as \(sync.email)") {
                 Button("Sign out") { confirmSignOut = true }
-                    .type(TypeStyle(size: 15.5, wght: 800, relativeTo: .body))
-                    .foregroundStyle(Palette.tomatoInk)
+                    .type(TypeStyle(size: 15.5, wght: 650, relativeTo: .body))
+                    .foregroundStyle(Palette.ink)
             }
             ValueRow(label: "Server", value: sync.serverURL)
             if let error = sync.lastError {
-                Text(error).type(.small).foregroundStyle(Palette.tomatoInk).padding(.top, 8)
+                Text(error).type(.small).foregroundStyle(Palette.error).padding(.top, 8)
             }
             ActionRow(title: "Test the connection", icon: .link) {
                 Task { message = await sync.testConnection() }
@@ -281,7 +282,7 @@ private struct AccountBlock: View {
                 Text("Loading…").type(.small).foregroundStyle(Palette.inkFaint).padding(.vertical, 12)
             }
             if let devicesError {
-                Text(devicesError).type(.small).foregroundStyle(Palette.tomatoInk).padding(.vertical, 8)
+                Text(devicesError).type(.small).foregroundStyle(Palette.error).padding(.vertical, 8)
             }
         }
     }
@@ -331,7 +332,7 @@ private struct DeviceRow: View {
 
     var body: some View {
         Row(rule: rule) {
-            AnimatedIcon(icon, size: 22).foregroundStyle(Palette.tomato).frame(width: 28)
+            AnimatedIcon(icon, size: 22).foregroundStyle(Palette.ink).frame(width: 28)
             RowText(title: device.name + (device.current ? " (this iPhone)" : ""),
                     subtitle: device.lastSeenAt.map { "Seen \(relativeDate($0))" } ?? device.platform)
             if !device.current {

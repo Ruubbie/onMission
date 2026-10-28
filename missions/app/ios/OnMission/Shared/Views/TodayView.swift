@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Today (handoff §5): days till you leave, big on tomato; the one most urgent task as a hero card;
-/// the rest of today as rows. Clear the day and the sheet drops: All done.
+/// Today (handoff §5): days till you leave, big on the poster beside the traveller on his way; the one most
+/// urgent task as a hero card; the rest of today as rows. Clear the day and the sheet drops: All done.
 struct TodayView: View {
     @Environment(\.modelContext) private var ctx
     @Environment(Router.self) private var router
@@ -14,7 +14,6 @@ struct TodayView: View {
 
     @State private var leaving = false
     @State private var heroPlay = 0
-    @State private var doneDraw = 0
 
     private var settings: MissionSettings { settingsList.first ?? MissionSettings() }
 
@@ -39,7 +38,6 @@ struct TodayView: View {
         .onAppear { router.todayAllDone = allDone }
         .onChange(of: allDone) { _, now in
             router.todayAllDone = now
-            if now { doneDraw += 1 }
         }
         .captureContext(.task)
     }
@@ -61,11 +59,12 @@ struct TodayView: View {
             .lineLimit(1)
             .minimumScaleFactor(0.4)
             .frame(width: 210, alignment: .leading)
-            .offset(y: FontMetrics.shift(.archivo, size: 218, lineHeight: 0.78))
+            .offset(y: FontMetrics.shift(size: 218, lineHeight: 0.78))
             .rise(1)
             .at(18, 150)
         CapLine("Days till \(settings.city)").rise(2).at(24, 332)
-        LineArt(drawing: Art.mountain).at(208, 140)
+        // The traveller with his suitcase, walking out of the poster towards the day he leaves.
+        Picture(.travellerWalk, height: 214).rise(3).at(254, 122)
     }
 
     // MARK: Sheet
@@ -157,14 +156,13 @@ struct TodayView: View {
             PosterCanvas(height: 640, scale: 1) {
                 Lines("All\ndone.", .disp(128)).at(22, 128)
                 Hand(name.isEmpty ? "Go enjoy the evening" : "Go enjoy the evening, \(name)", size: 34, tilt: -4).at(26, 368)
-                LineArt(drawing: Art.hammock, delay: 0.38, trigger: doneDraw).at(80, 430)
-                // Ollie's one cameo: asleep, small, under the hammock.
-                Ollie(pose: .sleep, height: 54).at(300, 590)
+                // The traveller sits on his suitcase with a letter: nothing left to do today.
+                Picture(.travellerRead, height: 236).at(112, 420)
             }
             Spacer(minLength: 0)
         }
         .modifier(ChromeOffset())
-        .foregroundStyle(Palette.cream)
+        .foregroundStyle(Palette.ink)
         .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("All done. Go enjoy the evening.")

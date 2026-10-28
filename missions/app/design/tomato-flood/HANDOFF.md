@@ -1,5 +1,7 @@
 # Tomato Flood: handoff for the iPhone build
 
+> **Update (28 Oct 2026): the colours and type below are replaced.** The iPhone app now looks like the web app (`missions/app/web/assets/app.css`): the same screens, layout and motion, drawn in hesent.me’s paper and ink with the paper texture, Archivo only (no Caveat), sentence case, sage for what is done, and the traveller drawings from hesent.me on several posters. Ollie is no longer in the app (his PNGs are in `design/ollie`). The current values are in `design/tokens.json`. Layout, flows and motion in this document still apply.
+
 This is the brief for rebuilding the onMission iPhone app (SwiftUI, iOS 17, SwiftData) in the new **Tomato Flood** style. Ruben approved this direction after five rounds of prototypes.
 
 - **Source of truth:** [prototype.html](prototype.html), which sits next to this file. Open it in a browser (it needs internet for Google Fonts). Every screen, page, overlay and animation in this document can be clicked through there, and the side panel has buttons that jump straight to each moment. If this document and the prototype disagree, the prototype wins.
@@ -127,7 +129,7 @@ These are the five tabs:
 | Tasks | clipboard-check | overdue tasks |
 | People | users | people waiting on you |
 | Prayer | flame | — |
-| Move | plane-takeoff | — |
+| Move | plane (custom, rounded) | — |
 
 Build it as a custom view; hide the system tab bar. There is no border or hairline.
 
@@ -364,7 +366,7 @@ The icons are **Lucide** geometry (ISC licence), and each one's motion is ported
 | list | `clipboard-check` | Tasks tab, Checklists tile | the check draws (320ms ease-in-out) |
 | users | `users` | People tab | the second person slides in from x −6 (spring 200/13, 100ms delay) |
 | flame | `flame` | Prayer tab, I prayed | the outline draws (450ms, 100ms delay) |
-| plane | `plane-takeoff` | Move tab | the plane takes off from (−25, +10), scale 0.8, −15° (1.1s, `0.25, 1, 0.5, 1`) |
+| plane | custom rounded plane | Move tab | the plane takes off from (−25, +10), scale 0.8, −15° (1.1s, `0.25, 1, 0.5, 1`) |
 | plus | `plus` | + | rotates 180° (spring 100/15) |
 | x | `x` | close | the two strokes draw one after the other (320ms, 200ms apart) |
 | phone | `phone-call` | Call | rings: rotates 10 → 20 → −10 → 10 → 0° with a slight scale (900ms); the waves blink |

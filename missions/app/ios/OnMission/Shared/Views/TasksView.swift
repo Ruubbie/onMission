@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Tasks (handoff §5): "TASKS" on tomato, the sheet starts high because the list is the point.
+/// Tasks (handoff §5): "Tasks" big on the poster, the sheet starts high because the list is the point.
 /// Today · This week · Later, with the existing swipe actions.
 struct TasksView: View {
     enum Bucket: String, CaseIterable {
@@ -56,12 +56,12 @@ struct TasksView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .swipeActions(edge: .leading) {
-                            Button("Done") { toggle(t) }.tint(Palette.tomato)
+                            Button("Done") { toggle(t) }.tint(Palette.sageDeep)
                         }
                         .swipeActions {
                             Button("Delete", role: .destructive) { Store.delete(t, in: ctx) }
-                            Button("Next week") { reschedule(t, days: 7) }.tint(Palette.plum)
-                            Button("Tomorrow") { reschedule(t, days: 1) }.tint(Palette.marigold)
+                            Button("Next week") { reschedule(t, days: 7) }.tint(Palette.ink)
+                            Button("Tomorrow") { reschedule(t, days: 1) }.tint(Palette.ochre)
                         }
                         .contextMenu { menu(for: t) }
                 }
@@ -342,7 +342,7 @@ struct TaskPage: View {
             TextRow("Link (website, form…)", text: $task.sourceURL, keyboard: .URL, plain: true)
             if let url = URL(string: task.sourceURL), !task.sourceURL.isEmpty, url.scheme != nil {
                 Link(destination: url) {
-                    FieldRow { AnimatedIcon(.link, size: 20).foregroundStyle(Palette.tomato); Text("Open link").type(.bodyBold) }
+                    FieldRow { AnimatedIcon(.link, size: 20).foregroundStyle(Palette.ink); Text("Open link").type(.bodyBold) }
                 }
             }
         }
@@ -375,7 +375,7 @@ struct LinkedRow: View {
                 default: DocBox(icon: record.icon, trigger: play)
                 }
                 RowText(title: record.title, subtitle: record.typeLabel)
-                AnimatedIcon(.chev, size: 20, trigger: play).foregroundStyle(Palette.tomato)
+                AnimatedIcon(.chev, size: 20, trigger: play).foregroundStyle(Palette.ink)
             }
         }
         .buttonStyle(.plain)

@@ -31,7 +31,7 @@ extension Art {
     ])
 }
 
-// MARK: - Prayer (handoff §5): one prayer, a candle, I prayed
+// MARK: - Prayer (handoff §5): one prayer, a candle with the traveller kneeling beside it, I prayed
 
 struct PrayerView: View {
     @Environment(\.modelContext) private var ctx
@@ -64,6 +64,7 @@ struct PrayerView: View {
             } else {
                 card(list[i], count: list.count).rise(1).at(24, 160)
             }
+            Picture(.travellerPray, height: 168).rise(3).at(4, 414)
             candle.at(135, 392)
             Hand("Amen.", size: 46, tilt: -9)
                 .scaleEffect(amen ? 1 : 0.6)
@@ -92,7 +93,7 @@ struct PrayerView: View {
                 Text("Answered & thanks").type(.buttonSmall)
                 AnimatedIcon(.arrow, size: 16, trigger: linkPlay)
             }
-            .foregroundStyle(Palette.cream)
+            .foregroundStyle(Palette.ink)
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
@@ -113,7 +114,7 @@ struct PrayerView: View {
             .lineLimit(1)
             .padding(.top, 12)
         }
-        .foregroundStyle(Palette.cream)
+        .foregroundStyle(Palette.ink)
         .frame(width: 342, alignment: .topLeading)
         .frame(minHeight: 210, alignment: .topLeading)
         .contentShape(Rectangle())
@@ -133,12 +134,12 @@ struct PrayerView: View {
     private func buttons(_ p: Note, count: Int) -> some View {
         HStack(spacing: 10) {
             Button { answered(p) } label: { Text("Answered") }
-                .buttonStyle(CapsuleStyle(kind: .outlined, onTomato: true))
+                .buttonStyle(.outlined)
             Button { prayed(p) } label: {
                 ButtonLabel(title: praying ? "Prayed" : "I prayed", icon: .flame, trigger: prayedPlay)
                     .frame(minWidth: 110)
             }
-            .buttonStyle(CapsuleStyle(kind: .filled, onTomato: true))
+            .buttonStyle(.filled)
             .pop(prayedPlay, to: 1.06)
         }
         .frame(width: 390)
@@ -151,7 +152,7 @@ struct PrayerView: View {
                 HStack(spacing: 7) {
                     ForEach(0..<count, id: \.self) { j in
                         Capsule()
-                            .fill(Palette.cream)
+                            .fill(Palette.ink)
                             .frame(width: j == current ? 20 : 7, height: 7)
                             .opacity(j == current ? 1 : 0.4)
                     }
@@ -160,7 +161,7 @@ struct PrayerView: View {
             } else {
                 Text("\(current + 1) of \(count)")
                     .type(.small)
-                    .foregroundStyle(Palette.creamSoft)
+                    .foregroundStyle(Palette.inkSoft)
                     .monospacedDigit()
             }
         }
@@ -175,7 +176,7 @@ struct PrayerView: View {
             ZStack(alignment: .topLeading) {
                 let g = seg(t, 0.26, 0.52, Ease(0.3, 1.5, 0.5, 1))
                 SVGShape(d: "M60 14 V5 M36 26 L30 21 M84 26 L90 21 M30 50 H21 M90 50 H99")
-                    .stroke(Palette.cream, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
+                    .stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineCap: .round))
                     .frame(width: 120, height: 190, alignment: .topLeading)
                     .scaleEffect(0.6 + 0.4 * g, anchor: UnitPoint(x: 0.5, y: 46.0 / 190))
                     .opacity(min(g, 1))
@@ -298,16 +299,16 @@ struct PrayerView: View {
     }
 }
 
-/// The flame: cream, with a tomato inner line.
+/// The flame: coral with an ink outline and an ochre heart, as on the web.
 private struct FlameShape: View {
     private static let outer = "M60 24 C 68 38, 74 44, 74 56 A 14 14 0 0 1 46 56 C 46 44, 52 38, 60 24 Z"
     private static let inner = "M60 46 C 63 51, 66 54, 66 59 A 6 6 0 0 1 54 59 C 54 54, 57 51, 60 46 Z"
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            SVGShape(d: Self.outer).fill(Palette.cream)
-            SVGShape(d: Self.outer).stroke(Palette.cream, style: StrokeStyle(lineWidth: 2.4, lineJoin: .round))
-            SVGShape(d: Self.inner).stroke(Palette.tomato, style: StrokeStyle(lineWidth: 2.2, lineJoin: .round))
+            SVGShape(d: Self.outer).fill(Palette.coral)
+            SVGShape(d: Self.outer).stroke(Palette.ink, style: StrokeStyle(lineWidth: Metrics.line, lineJoin: .round))
+            SVGShape(d: Self.inner).stroke(Palette.ochre, style: StrokeStyle(lineWidth: 2.2, lineJoin: .round))
         }
         .frame(width: 120, height: 190, alignment: .topLeading)
     }
@@ -459,6 +460,9 @@ struct PrayerDetail: View {
                     TextRow(note.answeredAt == nil ? "More about it" : "How it was answered", text: $note.body,
                             vertical: true, lines: 3...12)
                 }
+                FormBlock("Website", footer: "Visitors see this prayer point, not the notes under it.") {
+                    ToggleRow("Show on hesent.me", isOn: $note.isPublic)
+                }
             }
             LinksBlock(record: .note(note))
             DeleteButton(item: note)
@@ -493,7 +497,8 @@ struct NotesPage: View {
             Hand("Notes & journal").rise(0).at(24, 106)
             Lines("\(all.count)", .disp(184), lineHeight: 0.78).rise(1).at(18, 136)
             CapLine(since(all)).rise(2).at(24, 292)
-            LineArt(drawing: Art.notebook).at(212, 124)
+            // The traveller writing a postcard.
+            Picture(.travellerWrite, height: 196).rise(3).at(198, 122)
         } sheet: {
             Pills(items: items, selection: $kind)
             if all.count > 8 {
@@ -505,7 +510,7 @@ struct NotesPage: View {
                         Button { router.push(.record(.note(n))) } label: {
                             Row(rule: index < shown.count - 1) {
                                 if n.pinned {
-                                    AnimatedIcon(.pin, size: 16, trigger: 0).foregroundStyle(Palette.tomato)
+                                    AnimatedIcon(.pin, size: 16, trigger: 0).foregroundStyle(Palette.ink)
                                 }
                                 RowText(title: n.displayTitle, subtitle: preview(n))
                                 WhenText(text: whenText(n.createdAt))
@@ -562,14 +567,14 @@ struct NotesPage: View {
     }
 }
 
-/// A note on a cream page: title, kind, the words, and its links.
+/// A note on a paper page: title, kind, the words, and its links.
 struct NoteDetail: View {
     @Bindable var note: Note
     @State private var sharePlay = 0
 
     var body: some View {
         let kinds = NoteKind.allCases.map { Pills<String>.Item(value: $0.rawValue, title: $0.title) }
-        CreamPage {
+        PaperPage {
             TitleField(placeholder: "Title", text: $note.title)
             Pills(items: kinds, selection: $note.kind, tight: true)
                 .padding(.top, 14)
@@ -592,7 +597,7 @@ struct NoteDetail: View {
                     Text("Share").type(.bodyBold)
                     Spacer(minLength: 0)
                 }
-                .foregroundStyle(Palette.tomatoInk)
+                .foregroundStyle(Palette.ink)
                 .frame(minHeight: 48)
                 .contentShape(Rectangle())
             }
